@@ -3,6 +3,8 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "license": "Apache-2.0",
+  "author": "Christopher Maximilian Altmann",
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.9.3"
