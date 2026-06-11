@@ -1,2 +1,2 @@
 # event-contract-builder
-A tool to build YAML specifications for event contracts (prediction markets).
+An MCP server for generating YAML and JSON event contract specifications for prediction markets.
