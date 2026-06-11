@@ -49,7 +49,7 @@ event-contract-builder/
 ├── src/
 │   ├── schema/
 │   │   ├── outcome.ts          # BinaryOutcomeSchema; OutcomeSchema = BinaryOutcomeSchema (Phase 1)
-│   │   ├── resolution.ts        # ResolutionSource, ResolverType, ResolutionInfo
+│   │   ├── resolution.ts        # ResolutionSource, ResolutionAuthority, ResolutionInfo
 │   │   ├── schedule.ts          # Schedule (open/close/expiration/settlement, ISO 8601)
 │   │   ├── contract-terms.ts    # Optional ContractTerms (tickSize, currency, limits...)
 │   │   ├── event-contract.ts    # Top-level EventContractSpecSchema + ContractStatus
@@ -89,7 +89,7 @@ event-contract-builder/
 All fields get `.describe(...)` for JSON-schema/MCP/IDE hints. Top-level type is `EventContractSpec`.
 
 - **`outcome.ts`**: `BinaryOutcomeSchema` (`type: "binary"`, `yesLabel`/`noLabel` defaults "Yes"/"No"). `OutcomeSchema = BinaryOutcomeSchema` for Phase 1 — it keeps the `type: "binary"` discriminator field so it can become `z.discriminatedUnion("type", [...])` in Phase 2 without breaking existing data.
-- **`resolution.ts`**: `ResolutionSourceSchema` (name, optional `url` via `z.url()`), `ResolverTypeSchema = z.enum(["exchange","third-party","oracle","governance-vote"])`, `ResolutionInfoSchema` (criteria, sources min 1, resolverType).
+- **`resolution.ts`**: `PrimaryResolutionSourceSchema` (id, name, owner, type, accessMethod, optional document/url/notes), `FallbackResolutionSourceSchema` (hierarchyRank, id, name, owner, type, accessMethod, optional document, required triggerCondition, optional url/notes), `PrimaryResolutionAuthoritySchema` (id, name, type, accessMethod, optional notes), `FallbackResolutionAuthoritySchema` (hierarchyRank, id, name, type, accessMethod, optional notes), `ResolutionInfoSchema` (criteria, primaryResolutionSource, fallbackResolutionSources default `[]`, primaryResolutionAuthority, fallbackResolutionAuthorities default `[]`). The old resolver type concept is now modeled as resolution authority.
 - **`schedule.ts`**: `ScheduleSchema` with `timezone` (default "UTC"), `openDate`/`closeDate`/`expirationDate`/`settlementDate` all `z.iso.datetime({ offset: true })`, `.refine(closeDate > openDate)`.
 - **`contract-terms.ts`**: `ContractTermsSchema` — all-optional (`.partial()`): `tickSize`, `contractUnit`, `settlementCurrency` (3-char), `minOrderSize`, `maxOrderSize`, `positionLimit`.
 - **`event-contract.ts`**: `ContractStatusSchema = z.enum(["draft","proposed","active","closed","settled","cancelled"])`. `EventContractSpecSchema`: `specVersion` (literal `"1.0"`, default), `id`, `slug` (lowercase-hyphen regex), `title`, `description`, `category`, `tags` (default `[]`), `outcome` (OutcomeSchema), `resolution`, `schedule`, `contractTerms` (optional), `status` (default "draft"), `metadata` (optional `z.record(z.string(), z.unknown())`).
