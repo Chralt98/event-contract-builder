@@ -1,5 +1,7 @@
 {
   "name": "event-contract-builder",
+  "version": "0.1.0",
+  "description": "A TypeScript library, CLI, and MCP server for generating, validating, and converting YAML/JSON event contract specifications for prediction markets.",
   "module": "index.ts",
   "type": "module",
   "private": true,
