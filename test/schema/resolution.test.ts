@@ -7,9 +7,16 @@ const validResolutionInfo = {
     id: "venue-attendance-report",
     name: "Venue attendance report",
     owner: "Example Arena",
-    type: "official-report",
-    accessMethod: "Published event settlement PDF",
-    document: "Final Attendance Report",
+    type: "official_report",
+    accessMethod: "web",
+    document: {
+      identifier: "Final Attendance Report",
+      qualifiers: {
+        year: "2026",
+        section: "Final attendance",
+        field: "Certified attendance",
+      },
+    },
     url: "https://example.com/final-attendance",
     notes: "Use the final published report, not preliminary estimates.",
   },
@@ -19,9 +26,15 @@ const validResolutionInfo = {
       id: "promoter-settlement-statement",
       name: "Promoter settlement statement",
       owner: "Example Promotions",
-      type: "settlement-statement",
-      accessMethod: "Promoter-provided document",
-      document: "Settlement Statement",
+      type: "official_record",
+      accessMethod: "private",
+      document: {
+        identifier: "Settlement Statement",
+        qualifiers: {
+          year: "2026",
+          section: "Settlement summary",
+        },
+      },
       triggerCondition: "Primary venue attendance report is unavailable 48 hours after event end.",
       url: "https://example.com/settlement-statement",
       notes: "Use only if signed by the venue and promoter.",
@@ -30,8 +43,8 @@ const validResolutionInfo = {
   primaryResolutionAuthority: {
     id: "market-operations-desk",
     name: "Market operations desk",
-    type: "exchange",
-    accessMethod: "Internal resolution workflow",
+    type: "administrator",
+    accessMethod: "private",
     notes: "Publishes final resolution notice.",
   },
   fallbackResolutionAuthorities: [
@@ -39,8 +52,8 @@ const validResolutionInfo = {
       hierarchyRank: 1,
       id: "independent-event-auditor",
       name: "Independent event auditor",
-      type: "third-party",
-      accessMethod: "Written resolution memo",
+      type: "auditor",
+      accessMethod: "manual_request",
       notes: "Used when the operations desk declares a conflict.",
     },
   ],
@@ -78,8 +91,9 @@ describe("ResolutionInfoSchema", () => {
           id: "promoter-settlement-statement",
           name: "Promoter settlement statement",
           owner: "Example Promotions",
-          type: "settlement-statement",
-          accessMethod: "Promoter-provided document",
+          type: "official_record",
+          accessMethod: "private",
+          document: validResolutionInfo.fallbackResolutionSources[0]?.document,
         },
       ],
     });
@@ -93,13 +107,14 @@ describe("ResolutionInfoSchema", () => {
       primaryResolutionSource: {
         name: "Venue attendance report",
         owner: "Example Arena",
-        type: "official-report",
-        accessMethod: "Published event settlement PDF",
+        type: "official_report",
+        accessMethod: "web",
+        document: validResolutionInfo.primaryResolutionSource.document,
       },
       primaryResolutionAuthority: {
         name: "Market operations desk",
-        type: "exchange",
-        accessMethod: "Internal resolution workflow",
+        type: "administrator",
+        accessMethod: "private",
       },
     });
 
@@ -114,10 +129,67 @@ describe("ResolutionInfoSchema", () => {
           hierarchyRank: 0,
           id: "independent-event-auditor",
           name: "Independent event auditor",
-          type: "third-party",
-          accessMethod: "Written resolution memo",
+          type: "auditor",
+          accessMethod: "manual_request",
         },
       ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("rejects unknown source types and access methods", () => {
+    const result = ResolutionInfoSchema.safeParse({
+      ...validResolutionInfo,
+      primaryResolutionSource: {
+        ...validResolutionInfo.primaryResolutionSource,
+        type: "settlement-statement",
+        accessMethod: "Published event settlement PDF",
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("requires document references to include an identifier", () => {
+    const result = ResolutionInfoSchema.safeParse({
+      ...validResolutionInfo,
+      primaryResolutionSource: {
+        ...validResolutionInfo.primaryResolutionSource,
+        document: {
+          qualifiers: {
+            year: "2026",
+            section: "Final attendance",
+          },
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  test("allows document references without source-specific qualifiers", () => {
+    const result = ResolutionInfoSchema.safeParse({
+      ...validResolutionInfo,
+      primaryResolutionSource: {
+        ...validResolutionInfo.primaryResolutionSource,
+        document: {
+          identifier: "Final Attendance Report",
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects unknown authority types and access methods", () => {
+    const result = ResolutionInfoSchema.safeParse({
+      ...validResolutionInfo,
+      primaryResolutionAuthority: {
+        ...validResolutionInfo.primaryResolutionAuthority,
+        type: "expert_analysis",
+        accessMethod: "database",
+      },
     });
 
     expect(result.success).toBe(false);
