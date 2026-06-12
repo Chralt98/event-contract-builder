@@ -13,7 +13,9 @@ bun run build
 
 ## Installation
 
+```sh
 npm install event-contract-builder
+```
 
 ## Usage
 
