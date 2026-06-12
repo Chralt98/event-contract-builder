@@ -2,14 +2,48 @@
   "name": "event-contract-builder",
   "version": "0.1.0",
   "description": "A TypeScript library, CLI, and MCP server for generating, validating, and converting YAML/JSON event contract specifications for prediction markets.",
-  "module": "index.ts",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
-  "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./src": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./cnl": {
+      "types": "./dist/src/cnl.d.ts",
+      "default": "./dist/src/cnl.js"
+    },
+    "./schema": {
+      "types": "./dist/src/schema/event-contract.d.ts",
+      "default": "./dist/src/schema/event-contract.js"
+    }
+  },
   "license": "Apache-2.0",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "DISCLAIMER.md"
+  ],
   "scripts": {
-    "test": "bun test"
+    "build": "bun build ./index.ts ./src/index.ts ./src/cnl.ts ./src/schema/event-contract.ts --outdir ./dist --target node --format esm --external zod && tsc -p tsconfig.build.json",
+    "test": "bun run build && bun test"
   },
   "author": "Christopher Maximilian Altmann",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Chralt98/event-contract-builder.git"
+  },
+  "homepage": "https://github.com/Chralt98/event-contract-builder#readme",
+  "bugs": {
+    "url": "https://github.com/Chralt98/event-contract-builder/issues"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^25.9.3"
