@@ -36,8 +36,8 @@ export const TEMPLATES = {
     "This contract resolves YES if {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, {COMPARATOR_PHRASE} {THRESHOLD} {UNIT}, applying the {REVISION_POLICY} as of the resolution deadline; otherwise it resolves NO.",
   binaryOccurrence:
     "This contract resolves YES if the following event {COMPARATOR_PHRASE} within {WINDOW}: {EVENT_CLAUSE} Otherwise it resolves NO.",
-  bucketMembership:
-    "This contract resolves to the single bucket outcome listed in section payout whose range contains the value of {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, applying the {REVISION_POLICY}; bucket lower bounds are inclusive and upper bounds are exclusive.",
+  rangeMembership:
+    "This contract resolves to the single range outcome listed in section payout whose range contains the value of {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, applying the {REVISION_POLICY}; range lower bounds are inclusive and upper bounds are exclusive.",
 } as const;
 
 /** Fixed English realizations of contingency unmet-dispositions. */
@@ -119,8 +119,8 @@ export function renderCanonicalStatement(spec: EventContractSpecT): string {
         )
         .replace("{WINDOW}", W)
         .replace("{EVENT_CLAUSE}", c.eventClause);
-    case "bucket-membership":
-      return TEMPLATES.bucketMembership
+    case "range-membership":
+      return TEMPLATES.rangeMembership
         .replace("{METRIC}", c.metric.name)
         .replace("{PUBLISHER}", primary.publisher)
         .replace("{SOURCE}", primary.name)

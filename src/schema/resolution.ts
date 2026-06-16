@@ -108,14 +108,14 @@ const OccurrenceCriterion = z.object({
 });
 
 /**
- * Bucket-membership criterion: resolves by locating the measured `metric`
- * value within a ladder of contiguous buckets (defined on the payout); the
- * bucket containing the value wins. Used for threshold-bucket payouts where
+ * Range-membership criterion: resolves by locating the measured `metric`
+ * value within a ladder of contiguous ranges (defined on the payout); the
+ * range containing the value wins. Used for threshold-range payouts where
  * the outcome is "which range did the value fall into" rather than a single
  * true/false comparison.
  */
-const BucketMembershipCriterion = z.object({
-  kind: z.literal("bucket-membership"),
+const RangeMembershipCriterion = z.object({
+  kind: z.literal("range-membership"),
   metric: Metric,
 });
 
@@ -126,7 +126,7 @@ const BucketMembershipCriterion = z.object({
  *
  * - `threshold` — numeric comparison against one or two bounds.
  * - `occurrence` — whether a discrete event did or did not occur.
- * - `bucket-membership` — which contiguous bucket the metric falls into.
+ * - `range-membership` — which contiguous range the metric falls into.
  *
  * `Resolution.canonicalStatement` is deterministically rendered from this
  * value (see `COMPARATOR_PHRASES` and the CNL renderer), so the criterion
@@ -136,7 +136,7 @@ export const Criterion = z
   .discriminatedUnion("kind", [
     ThresholdCriterion,
     OccurrenceCriterion,
-    BucketMembershipCriterion,
+    RangeMembershipCriterion,
   ])
   .describe(
     "Structured resolution criterion; canonicalStatement is rendered from this",
