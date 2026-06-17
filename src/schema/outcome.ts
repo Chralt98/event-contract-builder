@@ -7,5 +7,7 @@ import { z } from "zod";
  */
 export const OutcomeSchema = z.object({
   type: z.literal("binary").describe("Outcome type discriminator."),
-  values: z.tuple([z.literal("Yes"), z.literal("No")]).describe("Binary outcome values."),
+  values: z
+    .tuple([z.literal("Yes"), z.literal("No")])
+    .describe("Binary outcome values."),
 });

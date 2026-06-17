@@ -36,6 +36,7 @@ The goal is to build out the actual product described in the README: tooling for
 - **Type strategy**: Zod v4 schemas are the runtime source of truth; TS types come via `z.infer`. Thin hand-written interfaces (`extends` the inferred type) carry the public-facing JSDoc.
 
 Verified during research (using the installed `zod@4.4.3` and `@modelcontextprotocol/sdk@1.29.0`):
+
 - `.refine()` on a member schema works fine inside `z.discriminatedUnion()` — confirmed with a live test (relevant once Phase 2 introduces the union).
 - `z.iso.datetime({ offset: true })` exists and validates ISO 8601 datetimes correctly.
 - `McpServer.registerTool(name, config, cb)` accepts `inputSchema` as a **raw Zod shape object** (`Record<string, ZodType>`), not a `z.object(...)` — the SDK builds the JSON schema and validates internally.
@@ -150,7 +151,7 @@ event-contract-builder convert <file> -t yaml|json [-o output] [-f from-format] 
 
 ## Implementation order
 
-1. Schema layer (`src/schema/*`) + schema tests. *(in progress: `outcome.ts` done, binary-only)*
+1. Schema layer (`src/schema/*`) + schema tests. _(in progress: `outcome.ts` done, binary-only)_
 2. Library layer (`src/lib/*`) + library tests.
 3. Root `index.ts` barrel + `package.json` exports/types.
 4. CLI (`src/cli/*`) + bin entry + tests.

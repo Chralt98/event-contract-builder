@@ -1,6 +1,6 @@
 # Controlled Natural Language (CNL) Grammar — v0.1
 
-The DSL's English layer is *controlled*: a closed vocabulary, fixed sentence
+The DSL's English layer is _controlled_: a closed vocabulary, fixed sentence
 templates, and a deterministic renderer. The goal is that two careful readers
 — or a reader and a settlement engine — can never disagree about what a
 sentence commits the contract to.
@@ -89,8 +89,8 @@ sentences rather than template renders. They must still:
    rather than judgments ("widely reported", "official confirmation");
 4. resolve every date word against the window's stated timezone.
 
-A useful authoring test: *could a settlement clerk with no market context
-execute this sentence using only the named sources?* If executing it requires
+A useful authoring test: _could a settlement clerk with no market context
+execute this sentence using only the named sources?_ If executing it requires
 opinion, the sentence is not yet CNL.
 
 ## Revision-policy phrases

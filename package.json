@@ -33,7 +33,9 @@
   ],
   "scripts": {
     "build": "bun build ./index.ts ./src/index.ts ./src/cnl.ts ./src/schema/event-contract.ts --outdir ./dist --target node --format esm --external zod && tsc -p tsconfig.build.json",
-    "test": "bun run build && bun test"
+    "test": "bun run build && bun test",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "author": "Christopher Maximilian Altmann",
   "repository": {
@@ -46,7 +48,8 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@types/node": "^25.9.3"
+    "@types/node": "^25.9.3",
+    "prettier": "^3.8.4"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"

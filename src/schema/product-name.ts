@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { renderProductName, NUMERIC_COMPARATOR_PHRASES } from "../cnl-product-name";
+import {
+  renderProductName,
+  NUMERIC_COMPARATOR_PHRASES,
+} from "../cnl-product-name";
 
 /**
  * Trader-facing question string rendered from `ProductNameStructure`.

@@ -32,3 +32,27 @@ export const Slug = z
   .string()
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Must be lowercase kebab-case")
   .describe("Stable lowercase kebab-case identifier");
+
+/**
+ * CNL sentence: a single declarative English sentence in the controlled
+ * vocabulary (see docs/cnl-grammar.md). Structural checks only — must start
+ * with a capital letter, end with a period, and contain no hedging terms.
+ */
+export const CnlSentence = z
+  .string()
+  .min(20)
+  .max(600)
+  .regex(
+    /^[A-Z].*\.$/s,
+    "Must be a complete sentence (capitalized, ending in a period)",
+  )
+  .refine(
+    (s) =>
+      !/\b(approximately|roughly|about|around|reasonable|significant|materially|generally|etc\.?)\b/i.test(
+        s,
+      ),
+    "CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
+  )
+  .describe(
+    "A single precise sentence in the controlled vocabulary; vague terms are rejected",
+  );

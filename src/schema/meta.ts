@@ -2,6 +2,10 @@ import { z } from "zod";
 import { IsoDate, Slug } from "./common";
 import { ProductName } from "./product-name";
 
+/* -------------------------------------------------------------------------- */
+/* §1 Meta                                                                    */
+/* -------------------------------------------------------------------------- */
+
 /** Document lifecycle status. Deliberately stops short of any filing status. */
 export const DraftStatus = z
   .enum([

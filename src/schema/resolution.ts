@@ -1,30 +1,10 @@
 import { z } from "zod";
 import { COMPARATOR_PHRASES } from "../cnl-resolution-statement";
-import { IsoDateTime, Slug, IanaTimezone } from "./common";
+import { IsoDateTime, Slug, IanaTimezone, CnlSentence } from "./common";
 
-/**
- * CNL sentence: a single declarative English sentence in the controlled
- * vocabulary (see docs/cnl-grammar.md). Structural checks only — must start
- * with a capital letter, end with a period, and contain no hedging terms.
- */
-export const CnlSentence = z
-  .string()
-  .min(20)
-  .max(600)
-  .regex(
-    /^[A-Z].*\.$/s,
-    "Must be a complete sentence (capitalized, ending in a period)",
-  )
-  .refine(
-    (s) =>
-      !/\b(approximately|roughly|about|around|reasonable|significant|materially|generally|etc\.?)\b/i.test(
-        s,
-      ),
-    "CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
-  )
-  .describe(
-    "A single precise sentence in the controlled vocabulary; vague terms are rejected",
-  );
+/* -------------------------------------------------------------------------- */
+/* §4 Resolution                                                              */
+/* -------------------------------------------------------------------------- */
 
 /** A measured quantity with its unit and exact measurement method. */
 export const Metric = z.object({

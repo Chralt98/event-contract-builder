@@ -25,7 +25,8 @@ export const PRODUCT_NAME_TEMPLATES = {
   /** "Will Kansas City Chiefs win the 2027 Super Bowl?" */
   "binary-event": "Will {SUBJECT} {VERB_PHRASE}?",
   /** "Will Elon Musk join the Fed before January 20, 2027?" */
-  "binary-event-with-date": "Will {SUBJECT} {VERB_PHRASE} {PREPOSITION} {DATE}?",
+  "binary-event-with-date":
+    "Will {SUBJECT} {VERB_PHRASE} {PREPOSITION} {DATE}?",
   /** "Will GDP be above 3%?" */
   "numeric-threshold": "Will {METRIC} be {COMPARATOR} {VALUE}{UNIT_SUFFIX}?",
   /** "Will CPI be between 2.5% and 3.0%?" */

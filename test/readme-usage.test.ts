@@ -47,7 +47,8 @@ describe("README usage example", () => {
         terminalAmbiguityPolicy: "void-and-refund",
         edgeCases: [
           {
-            scenario: "If the source retracts the first value before the deadline.",
+            scenario:
+              "If the source retracts the first value before the deadline.",
             disposition:
               "Use the corrected value published before the deadline.",
           },
