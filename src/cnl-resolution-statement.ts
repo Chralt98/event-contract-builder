@@ -38,6 +38,10 @@ export const TEMPLATES = {
     "This contract resolves YES if the following event {COMPARATOR_PHRASE} within {WINDOW}: {EVENT_CLAUSE} Otherwise it resolves NO.",
   rangeMembership:
     "This contract resolves to the single range outcome listed in section payout whose range contains the value of {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, applying the {REVISION_POLICY}; range lower bounds are inclusive and upper bounds are exclusive.",
+  contingencyAllOf:
+    "This contract's primary criterion applies only if all of the conditions listed in section contingency hold by their stated evaluation deadlines; otherwise the contract {DISPOSITION}.",
+  contingencyAnyOf:
+    "This contract's primary criterion applies only if at least one of the conditions listed in section contingency holds by its stated evaluation deadline; otherwise the contract {DISPOSITION}.",
 } as const;
 
 /** Fixed English realizations of contingency unmet-dispositions. */
@@ -45,10 +49,30 @@ export const UNMET_DISPOSITION_PHRASES: Record<string, string> = {
   "void-and-refund":
     "is voided and all positions are refunded at acquisition price",
   "resolve-no": "resolves NO",
-  "resolve-to-floor": "settles at the floor value stated in section payout",
   "exchange-determination-per-rulebook":
     "is resolved by exchange determination under the rulebook",
 };
+
+/** Structural type so this module needs no runtime import from the schema. */
+export interface ContingencyLike {
+  mode: "all-of" | "any-of";
+  ifUnmet: keyof typeof UNMET_DISPOSITION_PHRASES | string;
+}
+
+/**
+ * Deterministically render the contingency CNL statement. The schema's
+ * superRefine compares this to `contingency.canonicalStatement` at parse time.
+ */
+export function renderContingencyStatement(c: ContingencyLike): string {
+  const tpl =
+    c.mode === "all-of"
+      ? TEMPLATES.contingencyAllOf
+      : TEMPLATES.contingencyAnyOf;
+  return tpl.replace(
+    "{DISPOSITION}",
+    phraseFor(UNMET_DISPOSITION_PHRASES, c.ifUnmet, "unmet disposition"),
+  );
+}
 
 const REVISION_POLICY_PHRASES: Record<string, string> = {
   "first-published-value": "first published value",

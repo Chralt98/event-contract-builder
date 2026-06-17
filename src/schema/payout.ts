@@ -27,3 +27,7 @@ export const BinaryPayout = PayoutBase.extend({
 }).describe(
   "Binary contract: fixed payout if the criterion holds, otherwise noPays (usually 0)",
 );
+
+export const Payout = z
+  .discriminatedUnion("type", [BinaryPayout])
+  .describe("Payout structure (binary | categorical | scalar)");
