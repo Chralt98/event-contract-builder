@@ -28,3 +28,5 @@ export const IntegrityAssessment = z
     }
   })
   .describe("Narrative analysis supporting DCM Core Principle 3");
+
+export type IntegrityAssessmentT = z.infer<typeof IntegrityAssessment>;

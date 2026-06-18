@@ -39,3 +39,7 @@ export const PublicInterestAssessment = z
   .describe(
     "Self-assessment against proposed § 40.11(a)(5)-(6) public-interest factors",
   );
+
+export type PublicInterestAssessmentT = z.infer<
+  typeof PublicInterestAssessment
+>;

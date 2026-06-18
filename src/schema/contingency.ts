@@ -65,3 +65,5 @@ export const Contingency = z
   .describe(
     "Optional conditional-market wrapper: the contract is contingent on stated conditions",
   );
+
+export type ContingencyT = z.infer<typeof Contingency>;

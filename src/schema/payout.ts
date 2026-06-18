@@ -31,3 +31,5 @@ export const BinaryPayout = PayoutBase.extend({
 export const Payout = z
   .discriminatedUnion("type", [BinaryPayout])
   .describe("Payout structure (binary | categorical | scalar)");
+
+export type PayoutT = z.infer<typeof Payout>;

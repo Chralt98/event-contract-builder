@@ -32,3 +32,5 @@ export const Trading = z
       .describe("When funds move after final resolution"),
   })
   .describe("Listing/trading terms a DCM product committee will ask about");
+
+export type TradingT = z.infer<typeof Trading>;

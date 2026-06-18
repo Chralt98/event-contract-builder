@@ -146,3 +146,5 @@ export const Underlying = z
   .describe(
     "What the contract is about, its working classification, and the proposed § 40.11 enumerated-activity screen",
   );
+
+export type UnderlyingT = z.infer<typeof Underlying>;

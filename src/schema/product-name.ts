@@ -150,3 +150,5 @@ export const ProductName = z
   .describe(
     "Trader-facing product name question rendered from structured template slots",
   );
+
+export type ProductNameT = z.infer<typeof ProductName>;

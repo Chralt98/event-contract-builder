@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { OutcomeSchema } from "../../src/schema/outcome";
+import { Outcome } from "../../src/schema/outcome";
 
-describe("OutcomeSchema", () => {
+describe("Outcome", () => {
   test("accepts a binary outcome with Yes/No values", () => {
-    const result = OutcomeSchema.parse({
+    const result = Outcome.parse({
       type: "binary",
       values: ["Yes", "No"],
     });
@@ -12,7 +12,7 @@ describe("OutcomeSchema", () => {
   });
 
   test("rejects a non-binary type discriminator", () => {
-    const result = OutcomeSchema.safeParse({
+    const result = Outcome.safeParse({
       type: "categorical",
       values: ["Yes", "No"],
     });
@@ -20,7 +20,7 @@ describe("OutcomeSchema", () => {
   });
 
   test("rejects values other than Yes/No", () => {
-    const result = OutcomeSchema.safeParse({
+    const result = Outcome.safeParse({
       type: "binary",
       values: ["Maybe", "No"],
     });
@@ -28,7 +28,7 @@ describe("OutcomeSchema", () => {
   });
 
   test("requires the values field", () => {
-    const result = OutcomeSchema.safeParse({ type: "binary" });
+    const result = Outcome.safeParse({ type: "binary" });
     expect(result.success).toBe(false);
   });
 });

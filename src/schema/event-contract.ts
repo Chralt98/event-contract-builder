@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Resolution } from "./resolution";
 import { Meta } from "./meta";
 import { Underlying } from "./underlying";
-import { OutcomeSchema } from "./outcome";
+import { Outcome } from "./outcome";
 import { Trading } from "./trading";
 import { Payout } from "./payout";
 import { IntegrityAssessment as Integrity } from "./integrity-assessment";
@@ -20,7 +20,7 @@ export const EventContractSpec = z
     dsl: z.literal("event-contract-cnl/0.1"),
     meta: Meta,
     underlying: Underlying,
-    outcome: OutcomeSchema,
+    outcome: Outcome,
     trading: Trading,
     resolution: Resolution,
     payout: Payout,

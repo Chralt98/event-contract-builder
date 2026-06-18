@@ -243,3 +243,5 @@ export const Resolution = z
       });
     }
   });
+
+export type ResolutionT = z.infer<typeof Resolution>;

@@ -62,3 +62,5 @@ export const Meta = z
     authors: z.array(z.string().min(2)).min(1),
   })
   .describe("Identification and lifecycle metadata");
+
+export type MetaT = z.infer<typeof Meta>;

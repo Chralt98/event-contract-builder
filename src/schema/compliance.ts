@@ -30,3 +30,5 @@ export const Compliance = z
   .describe(
     "Draft compliance posture; intentionally cannot express a filed/certified state",
   );
+
+export type ComplianceT = z.infer<typeof Compliance>;

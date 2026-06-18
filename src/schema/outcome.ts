@@ -5,9 +5,11 @@ import { z } from "zod";
  * `z.discriminatedUnion("type", [...])` once categorical and scalar
  * outcomes are added (see PLAN.md roadmap).
  */
-export const OutcomeSchema = z.object({
+export const Outcome = z.object({
   type: z.literal("binary").describe("Outcome type discriminator."),
   values: z
     .tuple([z.literal("Yes"), z.literal("No")])
     .describe("Binary outcome values."),
 });
+
+export type OutcomeT = z.infer<typeof Outcome>;
