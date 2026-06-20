@@ -10,6 +10,14 @@ export const Outcome = z.object({
   values: z
     .tuple([z.literal("Yes"), z.literal("No")])
     .describe("Binary outcome values."),
+  yesDefinition: z
+    .string()
+    .min(10)
+    .describe("Plain-language definition of what constitutes a Yes outcome"),
+  noDefinition: z
+    .string()
+    .min(10)
+    .describe("Plain-language definition of what constitutes a No outcome"),
 });
 
 export type OutcomeT = z.infer<typeof Outcome>;

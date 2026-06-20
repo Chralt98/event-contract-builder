@@ -6,9 +6,13 @@ describe("Outcome", () => {
     const result = Outcome.parse({
       type: "binary",
       values: ["Yes", "No"],
+      yesDefinition: "The resolution criterion holds as stated in the canonical statement",
+      noDefinition: "The resolution criterion does not hold",
     });
     expect(result.type).toBe("binary");
     expect(result.values).toEqual(["Yes", "No"]);
+    expect(result.yesDefinition).toBeDefined();
+    expect(result.noDefinition).toBeDefined();
   });
 
   test("rejects a non-binary type discriminator", () => {

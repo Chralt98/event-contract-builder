@@ -11,6 +11,7 @@ export const Currency = z
   .describe("ISO 4217 currency code");
 
 const PayoutBase = z.object({
+  settlementType: z.literal("cash-settled"),
   currency: Currency,
   /** Notional paid per contract at full value (e.g. 1.00 = $1 binary). */
   contractSize: z

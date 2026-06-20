@@ -37,6 +37,14 @@ export const Meta = z
     title: z.string().min(10).max(160),
     /** Short title for tickets/mobile, ≤ 50 chars. */
     shortTitle: z.string().max(50).optional(),
+    /** Contract type. */
+    contractType: z.literal("Event Contract"),
+    /** Exchange instrument type. */
+    type: z.literal("Swap (Binary Option)"),
+    /** Exchange product category. */
+    instrumentCategory: z.literal("Event"),
+    /** Exchange product subcategory. */
+    instrumentSubcategory: z.literal("Binary Option"),
     /** Underlying domain; drives review heuristics, not legality. */
     category: z.enum([
       "economic-indicator",
