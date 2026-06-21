@@ -75,50 +75,89 @@ export const EventContractSpec = z
           message: `canonicalStatement must equal the deterministic render: "${rendered}"`,
         });
       }
-      // Enumerated-activity screen consistency (proposed § 40.11).
-      const screen = spec.underlying.enumeratedActivityScreen;
-      const anyInvolved = Object.values(screen.activities).some(
-        (a) => a.settlementDeterminedByActivity,
-      );
-      if (anyInvolved !== screen.anyEnumeratedActivityInvolved) {
-        ctx.addIssue({
-          code: "custom",
-          path: [
-            "underlying",
-            "enumeratedActivityScreen",
-            "anyEnumeratedActivityInvolved",
-          ],
-          message:
-            "anyEnumeratedActivityInvolved must equal whether any activity has settlementDeterminedByActivity === true",
-        });
-      }
-      if (
-        screen.anyEnumeratedActivityInvolved &&
-        !spec.publicInterestAssessment
-      ) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["publicInterestAssessment"],
-          message:
-            "publicInterestAssessment is required when an enumerated activity is involved (proposed § 40.11(a)(5)-(6))",
-        });
-      }
-      // If gaming is flagged involved, its three-prong definition test must be recorded.
+    }
+    // Enumerated-activity screen consistency (proposed § 40.11).
+    const screen = spec.underlying.enumeratedActivityScreen;
+    const anyInvolved = Object.values(screen.activities).some(
+      (a) => a.settlementDeterminedByActivity,
+    );
+    if (anyInvolved !== screen.anyEnumeratedActivityInvolved) {
+      ctx.addIssue({
+        code: "custom",
+        path: [
+          "underlying",
+          "enumeratedActivityScreen",
+          "anyEnumeratedActivityInvolved",
+        ],
+        message:
+          "anyEnumeratedActivityInvolved must equal whether any activity has settlementDeterminedByActivity === true",
+      });
+    }
+    if (
+      screen.anyEnumeratedActivityInvolved &&
+      !spec.publicInterestAssessment
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["publicInterestAssessment"],
+        message:
+          "publicInterestAssessment is required when an enumerated activity is involved (proposed § 40.11(a)(5)-(6))",
+      });
+    }
+    // If gaming is flagged involved, its three-prong definition test must be recorded.
+    if (
+      screen.activities.gaming.settlementDeterminedByActivity &&
+      !screen.activities.gaming.gamingDefinition
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: [
+          "underlying",
+          "enumeratedActivityScreen",
+          "activities",
+          "gaming",
+          "gamingDefinition",
+        ],
+        message:
+          "record the proposed § 40.11(b)(1) three-prong gaming-definition test when gaming is assessed as involved",
+      });
+    }
+    // Activity-specific public-interest factor cross-validations.
+    const pia = spec.publicInterestAssessment;
+    if (pia) {
       if (
         screen.activities.gaming.settlementDeterminedByActivity &&
-        !screen.activities.gaming.gamingDefinition
+        !pia.gamingFactors
       ) {
         ctx.addIssue({
           code: "custom",
-          path: [
-            "underlying",
-            "enumeratedActivityScreen",
-            "activities",
-            "gaming",
-            "gamingDefinition",
-          ],
+          path: ["publicInterestAssessment", "gamingFactors"],
           message:
-            "record the proposed § 40.11(b)(1) three-prong gaming-definition test when gaming is assessed as involved",
+            "gamingFactors required when gaming is assessed as involved in the enumerated-activity screen",
+        });
+      }
+      if (
+        screen.activities.unlawfulUnderFederalOrStateLaw
+          .settlementDeterminedByActivity &&
+        !pia.unlawfulActivityFactors
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["publicInterestAssessment", "unlawfulActivityFactors"],
+          message:
+            "unlawfulActivityFactors required when unlawful activity is assessed as involved",
+        });
+      }
+      const terrorismWarInvolved =
+        screen.activities.terrorism.settlementDeterminedByActivity ||
+        screen.activities.assassination.settlementDeterminedByActivity ||
+        screen.activities.war.settlementDeterminedByActivity;
+      if (terrorismWarInvolved && !pia.terrorismWarFactors) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["publicInterestAssessment", "terrorismWarFactors"],
+          message:
+            "terrorismWarFactors required when terrorism, assassination, or war is assessed as involved",
         });
       }
     }

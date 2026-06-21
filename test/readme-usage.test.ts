@@ -114,6 +114,17 @@ function makeResolution() {
           "If the BLS has not published by the deadline, extend the resolution deadline by 30 calendar days and re-check.",
       },
     ],
+    calculationMethodologyControls: {
+      settlementCalculationProcedure:
+        "Use the CPI-U All Items year-over-year percent change as published in the BLS CPI Summary for the reference month, rounded to one decimal place.",
+      methodologyLockedBeforeLaunch: true,
+      unspecifiedMethodologyDisposition: "void-and-refund" as const,
+    },
+    fallbackControls: {
+      orderingLockedAfterLaunch: true,
+      fallbackComputationsSpecified: true,
+      unspecifiedFallbackDisposition: "void-and-refund" as const,
+    },
     scheduledResolutionTime: "2027-01-15T12:00:00Z",
     resolutionDeadline: "2027-01-31T23:59:59Z",
     maximumResolutionDelayHours:

@@ -91,6 +91,62 @@ export const TerminalAmbiguityPolicy = z
     "Pre-committed disposition when no source/criterion can determine the outcome",
   );
 
+export const CalculationMethodologyControls = z
+  .object({
+    /** How the settlement value is extracted or computed from the source data. */
+    settlementCalculationProcedure: z
+      .string()
+      .min(50)
+      .describe(
+        "Exact procedure for deriving the settlement value from source data — table, field, formula, rounding rule",
+      ),
+    /** Is the methodology fully specified and locked before the contract begins trading? */
+    methodologyLockedBeforeLaunch: z
+      .boolean()
+      .describe(
+        "Whether the calculation methodology is fully specified and immutable before the first trading time",
+      ),
+    /** Disposition when methodology was not fully locked and the primary value is unavailable. Reuses TerminalAmbiguityPolicy values. */
+    unspecifiedMethodologyDisposition: TerminalAmbiguityPolicy,
+  })
+  .describe(
+    "Controls ensuring the settlement calculation methodology is transparent and locked pre-launch (Appendix C (c)(3))",
+  );
+
+export const FallbackControls = z
+  .object({
+    /** Is the fallback ordering immutable after launch? */
+    orderingLockedAfterLaunch: z
+      .boolean()
+      .describe(
+        "Whether the fallback source hierarchy may not be reordered after the contract begins trading",
+      ),
+    /** Are fallback computation procedures fully specified before launch? */
+    fallbackComputationsSpecified: z
+      .boolean()
+      .describe(
+        "Whether each fallback source's extraction procedure, query, and rounding rules are locked before launch",
+      ),
+    /** Disposition when a fallback is triggered but its computation was not pre-specified. Reuses TerminalAmbiguityPolicy values. */
+    unspecifiedFallbackDisposition: TerminalAmbiguityPolicy,
+  })
+  .superRefine((f, ctx) => {
+    if (
+      !f.fallbackComputationsSpecified &&
+      f.unspecifiedFallbackDisposition !== "void-and-refund"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["unspecifiedFallbackDisposition"],
+        message:
+          "when fallback computations are not pre-specified, void-and-refund is the safest disposition — document why a different choice was made if overriding",
+      });
+    }
+  })
+  .describe(
+    "Controls ensuring fallback source ordering and methodology cannot be changed post-launch",
+  );
+
 export const Resolution = z
   .object({
     criterion: Criterion,
@@ -114,6 +170,10 @@ export const Resolution = z
       .describe("All sources; first usable one per fallback order governs"),
     primarySourceId: Slug,
     fallbacks: z.array(Fallback).max(5).default([]),
+    /** How the settlement value is computed and controls ensuring methodology is locked. */
+    calculationMethodologyControls: CalculationMethodologyControls,
+    /** Controls on fallback source ordering and methodology immutability. */
+    fallbackControls: FallbackControls,
     /** Expected resolution time — when the outcome is planned to be determined. */
     scheduledResolutionTime: IsoDateTime,
     /** Hard deadline by which the contract MUST be resolved. */
@@ -215,4 +275,6 @@ export const Resolution = z
     }
   });
 
+export type CalculationMethodologyControlsT = z.infer<typeof CalculationMethodologyControls>;
+export type FallbackControlsT = z.infer<typeof FallbackControls>;
 export type ResolutionT = z.infer<typeof Resolution>;
