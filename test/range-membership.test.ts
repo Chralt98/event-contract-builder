@@ -399,6 +399,14 @@ function makeRangeSpec(): EventContractSpecT {
         },
       ],
       disputeWindowHours: 24,
+      forceMajeure: {
+        tradingHaltPermitted: true,
+        deadlineExtensionPermitted: true,
+        maxDeadlineExtensionDays: 90,
+        prohibitedSubstitutions:
+          "Unranked sources, provisional data, and discretionary metric changes may not be substituted even under force majeure.",
+        ultimateDisposition: "void-and-refund" as const,
+      },
     },
     payout: {
       type: "binary" as const,

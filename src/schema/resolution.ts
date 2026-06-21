@@ -147,6 +147,49 @@ export const FallbackControls = z
     "Controls ensuring fallback source ordering and methodology cannot be changed post-launch",
   );
 
+export const ForceMajeure = z
+  .object({
+    /** Can the exchange halt trading during a force majeure event? */
+    tradingHaltPermitted: z
+      .boolean()
+      .describe("Whether the exchange may halt trading during force majeure"),
+    /** Can the resolution deadline be extended? */
+    deadlineExtensionPermitted: z
+      .boolean()
+      .describe(
+        "Whether the resolution deadline may be extended during force majeure",
+      ),
+    /** Maximum extension if permitted. */
+    maxDeadlineExtensionDays: z
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .describe("Maximum calendar days the deadline may be extended"),
+    /** What source substitutions are prohibited even during force majeure? */
+    prohibitedSubstitutions: z
+      .string()
+      .min(30)
+      .describe(
+        "Sources or data types that may not be substituted even under force majeure — e.g. unranked sources, provisional data, discretionary metrics",
+      ),
+    /** Disposition if force majeure persists past any extended deadline. */
+    ultimateDisposition: TerminalAmbiguityPolicy,
+  })
+  .superRefine((f, ctx) => {
+    if (f.deadlineExtensionPermitted && f.maxDeadlineExtensionDays === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["maxDeadlineExtensionDays"],
+        message:
+          "maxDeadlineExtensionDays is required when deadline extension is permitted",
+      });
+    }
+  })
+  .describe(
+    "Force majeure provisions: what the exchange may and may not do when extraordinary events prevent normal operations (Core Principle 6)",
+  );
+
 export const Resolution = z
   .object({
     criterion: Criterion,
@@ -208,6 +251,8 @@ export const Resolution = z
       ),
     /** Post-resolution dispute/review window before settlement is final. */
     disputeWindowHours: z.number().int().min(0).max(168),
+    /** What happens when extraordinary events prevent normal publication, trading, or settlement. */
+    forceMajeure: ForceMajeure,
   })
   .describe(
     "Complete resolution mechanics: criterion, sources, fallbacks, deadline, edge cases",
@@ -277,4 +322,5 @@ export const Resolution = z
 
 export type CalculationMethodologyControlsT = z.infer<typeof CalculationMethodologyControls>;
 export type FallbackControlsT = z.infer<typeof FallbackControls>;
+export type ForceMajeureT = z.infer<typeof ForceMajeure>;
 export type ResolutionT = z.infer<typeof Resolution>;
