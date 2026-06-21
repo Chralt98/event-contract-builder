@@ -313,12 +313,16 @@ function makeRangeSpec(): EventContractSpecT {
     },
     trading: {
       quotation: "cents-0-100" as const,
-      minTick: 1,
+      minTickSize: 1,
       tradingHours: "08:00-22:00 America/New_York, Mon-Fri",
       lastTradingTime: "2027-01-15T16:00:00-05:00",
       positionLimits: { mode: "position-limit" as const, contracts: 25000 },
       settlementTiming:
         "Settlement occurs within two business days after final resolution is confirmed and the dispute window has closed.",
+      priceQuoteMinimum: 0,
+      priceQuoteMaximum: 100,
+      priceQuoteConvention:
+        "Price quoted in cents per USD 1.00 contract. Range: 0 to 100 cents.",
     },
     resolution: {
       criterion: makeRangeCriterion(validLadder),
@@ -379,10 +383,15 @@ function makeRangeSpec(): EventContractSpecT {
       type: "binary" as const,
       settlementType: "cash-settled" as const,
       currency: "USD",
+      settlementValue: 1,
       contractSize: 1,
       yesPays: 1,
       noPays: 0,
       notionalValue: 1,
+      finalSettlementFormula:
+        "YES pays 1.00 USD if the resolution criterion holds as stated in the canonical statement; NO pays 0.00 USD. If the criterion does not hold, YES pays 0.00 USD and NO pays 1.00 USD.",
+      finalSettlementMethod:
+        "Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.",
     },
     integrity: {
       outcomeInfluenceAnalysis:

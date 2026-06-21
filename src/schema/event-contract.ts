@@ -120,22 +120,63 @@ export const EventContractSpec = z
   .describe(
     "Draft event-contract specification (CNL DSL v0.1) for pre-DCM review",
   )
-  .transform((spec) => ({
-    ...spec,
-    resolution: {
-      ...spec.resolution,
-      maximumResolutionDelayHours:
-        (new Date(spec.resolution.resolutionDeadline).getTime() -
-          new Date(spec.resolution.scheduledResolutionTime).getTime()) /
-        (1000 * 60 * 60),
-    },
-    payout: {
-      ...spec.payout,
-      notionalValue:
-        spec.payout.type === "binary"
-          ? spec.payout.contractSize * spec.payout.yesPays
-          : spec.payout.contractSize,
-    },
-  }));
+  .transform((spec) => {
+    const ccy = spec.payout.currency;
+    const sv = spec.payout.settlementValue;
+    const { priceQuoteMinimum, priceQuoteMaximum, priceQuoteConvention }: {
+      priceQuoteMinimum: number;
+      priceQuoteMaximum: number;
+      priceQuoteConvention: string;
+    } =
+      spec.trading.quotation === "cents-0-100"
+        ? {
+            priceQuoteMinimum: 0,
+            priceQuoteMaximum: 100,
+            priceQuoteConvention:
+              `Price quoted in cents per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 100 cents.`,
+          }
+        : spec.trading.quotation === "probability-0-1"
+          ? {
+              priceQuoteMinimum: 0,
+              priceQuoteMaximum: 1,
+              priceQuoteConvention:
+                `Price quoted as probability per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 1.`,
+            }
+          : {
+              priceQuoteMinimum: 0,
+              priceQuoteMaximum: sv,
+              priceQuoteConvention:
+                `Price quoted in ${ccy} per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to ${sv.toFixed(2)} ${ccy}.`,
+            };
+    return {
+      ...spec,
+      resolution: {
+        ...spec.resolution,
+        maximumResolutionDelayHours:
+          (new Date(spec.resolution.resolutionDeadline).getTime() -
+            new Date(spec.resolution.scheduledResolutionTime).getTime()) /
+          (1000 * 60 * 60),
+      },
+      payout: {
+        ...spec.payout,
+        notionalValue:
+          spec.payout.type === "binary"
+            ? spec.payout.contractSize * spec.payout.yesPays
+            : spec.payout.contractSize,
+        finalSettlementFormula:
+          spec.payout.type === "binary"
+            ? `YES pays ${spec.payout.yesPays.toFixed(2)} ${ccy} if the resolution criterion holds as stated in the canonical statement; NO pays ${spec.payout.noPays.toFixed(2)} ${ccy}. If the criterion does not hold, YES pays ${spec.payout.noPays.toFixed(2)} ${ccy} and NO pays ${spec.payout.yesPays.toFixed(2)} ${ccy}.`
+            : `Settlement per payout schedule in ${ccy}.`,
+        finalSettlementMethod:
+          `Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.`,
+      },
+      trading: {
+        ...spec.trading,
+        priceQuoteMinimum,
+        priceQuoteMaximum,
+        priceQuoteConvention,
+      },
+    };
+  });
 
 export type EventContractSpecT = z.infer<typeof EventContractSpec>;

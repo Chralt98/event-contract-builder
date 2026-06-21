@@ -149,10 +149,13 @@ export function expandRangeContracts(
         type: "binary" as const,
         settlementType: "cash-settled" as const,
         currency: spec.payout.currency,
+        settlementValue: spec.payout.settlementValue,
         contractSize: spec.payout.contractSize,
         yesPays: spec.payout.contractSize,
         noPays: 0,
         notionalValue: spec.payout.contractSize * spec.payout.contractSize,
+        finalSettlementFormula: spec.payout.finalSettlementFormula,
+        finalSettlementMethod: spec.payout.finalSettlementMethod,
       },
     };
 

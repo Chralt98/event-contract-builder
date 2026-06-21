@@ -13,6 +13,11 @@ export const Currency = z
 const PayoutBase = z.object({
   settlementType: z.literal("cash-settled"),
   currency: Currency,
+  /** Face value of one contract in `currency` (e.g. 1.00 = $1 binary). */
+  settlementValue: z
+    .number()
+    .positive()
+    .describe("Par value of one contract in `currency`"),
   /** Notional paid per contract at full value (e.g. 1.00 = $1 binary). */
   contractSize: z
     .number()

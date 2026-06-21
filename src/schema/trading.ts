@@ -9,7 +9,8 @@ export const Trading = z
   .object({
     /** Price quotation convention. */
     quotation: z.enum(["cents-0-100", "probability-0-1", "currency-per-unit"]),
-    minTick: z.number().positive(),
+    /** Minimum price increment (tick size). Governs price ladder construction. */
+    minTickSize: z.number().positive(),
     tradingHours: z
       .string()
       .min(5)
