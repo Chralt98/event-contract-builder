@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { COMPARATOR_PHRASES } from "../cnl-resolution-statement";
-import { IsoDateTime, Slug, IanaTimezone, CnlSentence } from "./common";
+import { IsoDateTime, Slug, IanaTimezone, CnlSentence, checkTimezoneOffset } from "./common";
 import { ThresholdCriterion } from "./criterion-threshold";
 import { OccurrenceCriterion } from "./criterion-occurrence";
 import { RangeMembershipCriterion } from "./criterion-range-membership";
@@ -202,49 +202,14 @@ export const Resolution = z
         message: `canonicalStatement must contain the fixed CNL phrase "${phrase}"`,
       });
     }
-    // Validate that stated UTC offsets match the IANA timezone at each instant.
     const w = r.observationWindow;
     for (const field of ["start", "end"] as const) {
-      const iso = w[field];
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) continue;
-
-      const statedOffset = iso.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1];
-      if (!statedOffset) continue;
-
-      const statedMinutes =
-        statedOffset === "Z"
-          ? 0
-          : (() => {
-              const parts = statedOffset.split(":").map(Number);
-              const h = parts[0] ?? 0;
-              const m = parts[1] ?? 0;
-              return h * 60 + (h < 0 ? -m : m);
-            })();
-
-      const formatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: w.timezone,
-        timeZoneName: "shortOffset",
-      });
-      const fmtParts = formatter.formatToParts(date);
-      const tzPart = fmtParts.find((p) => p.type === "timeZoneName")?.value;
-      if (!tzPart) continue;
-
-      const expectedMinutes =
-        tzPart === "GMT"
-          ? 0
-          : (() => {
-              const match = tzPart.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
-              if (!match) return null;
-              const sign = match[1] === "+" ? 1 : -1;
-              return sign * (Number(match[2]) * 60 + Number(match[3] || 0));
-            })();
-
-      if (expectedMinutes !== null && statedMinutes !== expectedMinutes) {
+      const err = checkTimezoneOffset(w[field], w.timezone);
+      if (err) {
         ctx.addIssue({
           code: "custom",
           path: ["observationWindow", field],
-          message: `UTC offset does not match ${w.timezone} at this instant (stated ${statedOffset}, expected ${tzPart})`,
+          message: err,
         });
       }
     }

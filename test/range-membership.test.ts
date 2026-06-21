@@ -315,7 +315,14 @@ function makeRangeSpec(): EventContractSpecT {
       quotation: "cents-0-100" as const,
       minTickSize: 1,
       tradingHours: "08:00-22:00 America/New_York, Mon-Fri",
+      listingCycle:
+        "Single listing cycle for the June 2026 CPI year-over-year outcome.",
+      firstTradingTime: "2026-06-01T08:00:00-04:00",
       lastTradingTime: "2027-01-15T16:00:00-05:00",
+      expirationTime: "2027-01-15T16:00:00-05:00",
+      tradingTimezone: "America/New_York",
+      expirationValue:
+        "The Expiration Value is the CPI year-over-year rate as documented by the U.S. Bureau of Labor Statistics on the Expiration Date at the Expiration Time.",
       positionLimits: { mode: "position-limit" as const, contracts: 25000 },
       settlementTiming:
         "Settlement occurs within two business days after final resolution is confirmed and the dispute window has closed.",
@@ -323,6 +330,9 @@ function makeRangeSpec(): EventContractSpecT {
       priceQuoteMaximum: 100,
       priceQuoteConvention:
         "Price quoted in cents per USD 1.00 contract. Range: 0 to 100 cents.",
+      expirationDate: "2027-01-15",
+      expirationTimeLiteral:
+        "The Expiration Time of the Contract shall be 4 PM UTC-05:00.",
     },
     resolution: {
       criterion: makeRangeCriterion(validLadder),

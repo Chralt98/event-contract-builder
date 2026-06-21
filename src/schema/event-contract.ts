@@ -175,8 +175,23 @@ export const EventContractSpec = z
         priceQuoteMinimum,
         priceQuoteMaximum,
         priceQuoteConvention,
+        expirationDate: spec.trading.expirationTime.slice(0, 10),
+        expirationTimeLiteral: formatTimeLiteral(spec.trading.expirationTime),
       },
     };
   });
 
 export type EventContractSpecT = z.infer<typeof EventContractSpec>;
+
+function formatTimeLiteral(iso: string): string {
+  const timePart = iso.match(/T(\d{2}):(\d{2})/);
+  if (!timePart) return iso;
+  const hours = Number(timePart[1]);
+  const minutes = Number(timePart[2]);
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const h12 = hours % 12 || 12;
+  const mm = minutes === 0 ? "" : `:${String(minutes).padStart(2, "0")}`;
+  const offset = iso.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1] ?? "Z";
+  const tzLabel = offset === "Z" ? "UTC" : `UTC${offset}`;
+  return `The Expiration Time of the Contract shall be ${h12}${mm} ${ampm} ${tzLabel}.`;
+}
