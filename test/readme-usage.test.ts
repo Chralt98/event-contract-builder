@@ -93,7 +93,21 @@ function makeResolution() {
       start: "2026-01-01T00:00:00Z",
       end: "2026-12-31T23:59:59Z",
       timezone: "UTC",
+      boundaryRule: "between-inclusive" as const,
     },
+    authorities: [
+      {
+        id: "bls-administrator",
+        rank: 1,
+        name: "U.S. Bureau of Labor Statistics",
+        type: "administrator" as const,
+        accessMethod: "web" as const,
+        notes:
+          "The BLS publishes the CPI-U release on its website; the published value is the authoritative determination.",
+      },
+    ],
+    primaryAuthorityId: "bls-administrator",
+    fallbackAuthorities: [],
     sources: [
       {
         id: "bls-cpi",
@@ -111,7 +125,7 @@ function makeResolution() {
       },
     ],
     primarySourceId: "bls-cpi",
-    fallbacks: [
+    fallbackSources: [
       {
         trigger: "primary-not-published-by-deadline" as const,
         sourceId: "bls-cpi",
@@ -124,6 +138,8 @@ function makeResolution() {
     ],
     correctionOrRevisionPolicy:
       "Apply only official BLS corrections published before the resolution deadline; revisions published after the deadline are disregarded.",
+    conflictingEvidenceRule:
+      "Use primary sources in hierarchy order; if ranked sources remain contradictory after applying the full hierarchy, resolve indeterminate.",
     materiality: {
       minimumQualifyingThreshold:
         "Only an official BLS CPI-U all-items release covering the full reference period qualifies as the settlement value.",
@@ -151,7 +167,9 @@ function makeResolution() {
       unspecifiedFallbackDisposition: "void-and-refund" as const,
     },
     scheduledResolutionTime: "2027-01-15T12:00:00Z",
+    scheduledResolutionBoundaryRule: "at" as const,
     resolutionDeadline: "2027-01-31T23:59:59Z",
+    resolutionDeadlineBoundaryRule: "on-or-before" as const,
     maximumResolutionDelayHours:
       (new Date("2027-01-31T23:59:59Z").getTime() -
         new Date("2027-01-15T12:00:00Z").getTime()) /
@@ -227,6 +245,10 @@ function makePayout() {
     contractSize: 1,
     yesPays: 1,
     noPays: 0,
+    payoutVector: [
+      { condition: "Criterion holds", yesPays: 1, noPays: 0 },
+      { condition: "Criterion does not hold", yesPays: 0, noPays: 1 },
+    ],
     notionalValue: 1,
     finalSettlementFormula:
       "YES pays 1.00 USD if the resolution criterion holds as stated in the canonical statement; NO pays 0.00 USD. If the criterion does not hold, YES pays 0.00 USD and NO pays 1.00 USD.",
@@ -249,6 +271,18 @@ function makeIntegrity() {
     ],
     overallSusceptibility: "low" as const,
     mitigations: [],
+    marketIntegrityEdgeCases: {
+      selfFulfillingEventRisk:
+        "The CPI measures a broad basket of consumer prices; contract trading volume is negligible relative to aggregate consumer spending and cannot influence the index.",
+      participantInfluenceOverEvent:
+        "No market participant can meaningfully influence the CPI, which is derived from tens of thousands of sampled prices across the United States economy.",
+      sourceCaptureRisk:
+        "The BLS is an independent federal statistical agency; its data production is insulated from market participants by federal confidentiality and independence requirements.",
+      coordinatedInformationCampaignRisk:
+        "CPI is a quantitative official statistic, not a sentiment-driven measure; coordinated misinformation cannot alter the published value.",
+      privilegedInformationRisk:
+        "BLS pre-publication access is restricted to cleared employees under federal confidentiality statutes; no private party receives advance CPI data.",
+    },
   };
 }
 

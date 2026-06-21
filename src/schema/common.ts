@@ -76,6 +76,24 @@ export function checkTimezoneOffset(
   return null;
 }
 
+/**
+ * How an observation or resolution boundary is applied. Removes ambiguity
+ * about whether edge-of-window events count.
+ */
+export const BoundaryRule = z
+  .enum([
+    "before",
+    "on-or-before",
+    "at",
+    "on-or-after",
+    "after",
+    "between-inclusive",
+    "between-exclusive",
+    "left-inclusive-right-exclusive",
+    "left-exclusive-right-inclusive",
+  ])
+  .describe("How a datetime boundary is applied (inclusive/exclusive)");
+
 /** Stable machine identifier: lowercase kebab-case. */
 export const Slug = z
   .string()

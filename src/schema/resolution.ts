@@ -5,6 +5,7 @@ import {
   Slug,
   IanaTimezone,
   CnlSentence,
+  BoundaryRule,
   checkTimezoneOffset,
 } from "./common";
 import { ThresholdCriterion } from "./criterion-threshold";
@@ -90,7 +91,63 @@ export const DataSource = z.object({
     .describe("Publisher's independence from market participants"),
 });
 
-/** Ordered fallback with an enumerated trigger — no discretionary switching. */
+/** Type of resolution authority — who has the power to determine the outcome. */
+export const AuthorityType = z.enum([
+  "administrator",
+  "resolver",
+  "expert-committee",
+  "arbiter",
+  "algorithm",
+  "oracle-provider",
+  "data-steward",
+  "auditor",
+  "court",
+  "regulator",
+  "mutually-agreed-expert",
+]);
+
+/** How the authority's determination is accessed. */
+export const AuthorityAccessMethod = z.enum([
+  "web",
+  "api",
+  "subscription",
+  "private",
+  "private-report",
+  "specification",
+  "manual-request",
+  "public-record",
+]);
+
+/** A resolution authority — the entity that determines the outcome. */
+export const ResolutionAuthority = z.object({
+  id: Slug,
+  rank: z
+    .number()
+    .int()
+    .min(1)
+    .describe("Hierarchy rank; 1 = primary authority, must be unique"),
+  name: z.string().min(3),
+  type: AuthorityType,
+  accessMethod: AuthorityAccessMethod,
+  notes: CnlSentence.describe(
+    "How this authority determines the outcome and under what conditions",
+  ),
+});
+
+/** Ordered authority fallback with an enumerated trigger. */
+export const AuthorityFallback = z.object({
+  trigger: z.enum([
+    "primary-authority-unavailable",
+    "primary-authority-conflicted",
+    "primary-authority-determination-disputed",
+    "primary-authority-disbanded-or-replaced",
+    "higher-ranked-authorities-unavailable",
+  ]),
+  authorityId: Slug.describe("id of an authority in resolution.authorities"),
+  procedure: CnlSentence,
+});
+
+/** Ordered source fallback with an enumerated trigger — no discretionary switching. */
 export const Fallback = z.object({
   trigger: z.enum([
     "primary-not-published-by-deadline",
@@ -289,13 +346,23 @@ export const Resolution = z
       timezone: IanaTimezone.describe(
         "Governing timezone for any date words in CNL sentences",
       ),
+      boundaryRule: BoundaryRule.describe(
+        "How the observation window boundaries are applied (e.g. between-inclusive means both start and end instants count)",
+      ),
     }),
+    /** Who determines the outcome (distinct from where the data comes from). */
+    authorities: z
+      .array(ResolutionAuthority)
+      .min(1)
+      .describe("All authorities; rank-1 is the primary"),
+    primaryAuthorityId: Slug,
+    fallbackAuthorities: z.array(AuthorityFallback).max(5).default([]),
     sources: z
       .array(DataSource)
       .min(1)
       .describe("All sources; first usable one per fallback order governs"),
     primarySourceId: Slug,
-    fallbacks: z.array(Fallback).max(5).default([]),
+    fallbackSources: z.array(Fallback).max(5).default([]),
     /** Checklist of public evidence that must exist before the contract can resolve to a qualifying outcome. */
     requiredPublicEvidence: z
       .array(CnlSentence)
@@ -305,6 +372,10 @@ export const Resolution = z
     /** How official corrections, amendments, retractions, or revisions are treated relative to the deadline. */
     correctionOrRevisionPolicy: CnlSentence.describe(
       "How official corrections/revisions are handled relative to the deadline",
+    ),
+    /** How materially contradictory evidence across ranked sources is resolved. */
+    conflictingEvidenceRule: CnlSentence.describe(
+      "How contradictory evidence across ranked sources is resolved — typically hierarchy order, then indeterminate",
     ),
     /** How large/real the event must be to count (Appendix C materiality). */
     materiality: MaterialityThresholds,
@@ -316,8 +387,18 @@ export const Resolution = z
     fallbackControls: FallbackControls,
     /** Expected resolution time — when the outcome is planned to be determined. */
     scheduledResolutionTime: IsoDateTime,
+    /** How the scheduled resolution time boundary is applied. */
+    scheduledResolutionBoundaryRule: BoundaryRule.default("at").describe(
+      "How the scheduled resolution time is interpreted (typically 'at')",
+    ),
     /** Hard deadline by which the contract MUST be resolved. */
     resolutionDeadline: IsoDateTime,
+    /** How the resolution deadline boundary is applied. */
+    resolutionDeadlineBoundaryRule: BoundaryRule.default(
+      "on-or-before",
+    ).describe(
+      "How the resolution deadline is interpreted (typically 'on-or-before')",
+    ),
     /** May the contract resolve before the window ends if the outcome is locked? */
     earlyResolution: z.discriminatedUnion("allowed", [
       z.object({ allowed: z.literal(false) }),
@@ -391,12 +472,49 @@ export const Resolution = z
         message: "primarySourceId must be the rank-1 source",
       });
     }
-    for (const [i, f] of r.fallbacks.entries()) {
+    for (const [i, f] of r.fallbackSources.entries()) {
       if (!ids.has(f.sourceId)) {
         ctx.addIssue({
           code: "custom",
-          path: ["fallbacks", i, "sourceId"],
+          path: ["fallbackSources", i, "sourceId"],
           message: "fallback sourceId must match a source id",
+        });
+      }
+    }
+    // Authority ranks must be unique and contiguous from 1.
+    const authIds = new Set(r.authorities.map((a) => a.id));
+    if (!authIds.has(r.primaryAuthorityId)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["primaryAuthorityId"],
+        message: "primaryAuthorityId must match an authority id",
+      });
+    }
+    const authRanks = r.authorities.map((a) => a.rank).sort((a, b) => a - b);
+    const authRanksValid = authRanks.every((rank, i) => rank === i + 1);
+    if (!authRanksValid) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["authorities"],
+        message: `authority ranks must be unique and contiguous from 1 (got ${authRanks.join(", ")})`,
+      });
+    }
+    const primaryAuth = r.authorities.find(
+      (a) => a.id === r.primaryAuthorityId,
+    );
+    if (primaryAuth && primaryAuth.rank !== 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["primaryAuthorityId"],
+        message: "primaryAuthorityId must be the rank-1 authority",
+      });
+    }
+    for (const [i, f] of r.fallbackAuthorities.entries()) {
+      if (!authIds.has(f.authorityId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["fallbackAuthorities", i, "authorityId"],
+          message: "fallback authorityId must match an authority id",
         });
       }
     }
@@ -437,6 +555,7 @@ export const Resolution = z
     }
   });
 
+export type ResolutionAuthorityT = z.infer<typeof ResolutionAuthority>;
 export type CalculationMethodologyControlsT = z.infer<
   typeof CalculationMethodologyControls
 >;

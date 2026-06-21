@@ -153,14 +153,25 @@ export function expandRangeContracts(
         contractSize: spec.payout.contractSize,
         yesPays: spec.payout.contractSize,
         noPays: 0,
+        payoutVector: [
+          {
+            condition: `Value in ${range.interval}`,
+            yesPays: spec.payout.contractSize,
+            noPays: 0,
+          },
+          {
+            condition: `Value not in ${range.interval}`,
+            yesPays: 0,
+            noPays: spec.payout.contractSize,
+          },
+        ],
         notionalValue: spec.payout.contractSize * spec.payout.contractSize,
         finalSettlementFormula: spec.payout.finalSettlementFormula,
         finalSettlementMethod: spec.payout.finalSettlementMethod,
       },
     };
 
-    expanded.resolution.canonicalStatement =
-      renderCanonicalStatement(expanded);
+    expanded.resolution.canonicalStatement = renderCanonicalStatement(expanded);
 
     return expanded;
   });
