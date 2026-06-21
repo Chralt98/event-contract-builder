@@ -119,6 +119,16 @@ export const EventContractSpec = z
   })
   .describe(
     "Draft event-contract specification (CNL DSL v0.1) for pre-DCM review",
-  );
+  )
+  .transform((spec) => ({
+    ...spec,
+    resolution: {
+      ...spec.resolution,
+      maximumResolutionDelayHours:
+        (new Date(spec.resolution.resolutionDeadline).getTime() -
+          new Date(spec.resolution.scheduledResolutionTime).getTime()) /
+        (1000 * 60 * 60),
+    },
+  }));
 
 export type EventContractSpecT = z.infer<typeof EventContractSpec>;

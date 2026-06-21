@@ -71,6 +71,8 @@ export const Fallback = z.object({
     "primary-discontinued",
     "primary-methodology-materially-changed",
     "primary-retracted-or-corrected",
+    "primary-relocated-or-reorganized",
+    "higher-ranked-sources-unavailable",
   ]),
   sourceId: Slug.describe("id of a source in resolution.sources"),
   /** CNL sentence: how the value is read from the fallback. */
@@ -112,6 +114,8 @@ export const Resolution = z
       .describe("All sources; first usable one per fallback order governs"),
     primarySourceId: Slug,
     fallbacks: z.array(Fallback).max(5).default([]),
+    /** Expected resolution time — when the outcome is planned to be determined. */
+    scheduledResolutionTime: IsoDateTime,
     /** Hard deadline by which the contract MUST be resolved. */
     resolutionDeadline: IsoDateTime,
     /** May the contract resolve before the window ends if the outcome is locked? */
@@ -149,6 +153,14 @@ export const Resolution = z
     "Complete resolution mechanics: criterion, sources, fallbacks, deadline, edge cases",
   )
   .superRefine((r, ctx) => {
+    if (r.scheduledResolutionTime > r.resolutionDeadline) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["scheduledResolutionTime"],
+        message:
+          "scheduledResolutionTime must be at or before resolutionDeadline",
+      });
+    }
     const ids = new Set(r.sources.map((s) => s.id));
     if (!ids.has(r.primarySourceId)) {
       ctx.addIssue({

@@ -344,7 +344,12 @@ function makeRangeSpec(): EventContractSpecT {
       ],
       primarySourceId: "bls-cpi",
       fallbacks: [],
+      scheduledResolutionTime: "2027-01-15T12:00:00Z",
       resolutionDeadline: "2027-01-31T23:59:59Z",
+      maximumResolutionDelayHours:
+        (new Date("2027-01-31T23:59:59Z").getTime() -
+          new Date("2027-01-15T12:00:00Z").getTime()) /
+        (1000 * 60 * 60),
       earlyResolution: { allowed: false as const },
       terminalAmbiguityPolicy: "void-and-refund" as const,
       edgeCases: [

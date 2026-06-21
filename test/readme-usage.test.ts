@@ -42,6 +42,10 @@ function makeMeta(productName: {
     productName,
     title: "CPI Year-over-Year Rate >= 3.0% (June 2026)",
     shortTitle: "CPI YoY >= 3%",
+    contractType: "Event Contract" as const,
+    instrumentType: "Swap (Binary Option)" as const,
+    instrumentCategory: "Event" as const,
+    instrumentSubcategory: "Binary Option" as const,
     category: "economic-indicator" as const,
     tags: ["cpi", "inflation"],
     specVersion: "1.0.0",
@@ -93,7 +97,8 @@ function makeResolution() {
         publisher: "U.S. Bureau of Labor Statistics",
         url: "https://www.bls.gov/cpi/",
         datasetId: "CUSR0000SA0",
-        publicationSchedule: "Published monthly by the BLS, typically around the 10th-14th of the following month.",
+        publicationSchedule:
+          "Published monthly by the BLS, typically around the 10th-14th of the following month.",
         publiclyAccessible: true,
         independenceNote:
           "The BLS is a principal federal statistical agency; its data production is independent of market participants.",
@@ -108,7 +113,12 @@ function makeResolution() {
           "If the BLS has not published by the deadline, extend the resolution deadline by 30 calendar days and re-check.",
       },
     ],
+    scheduledResolutionTime: "2027-01-15T12:00:00Z",
     resolutionDeadline: "2027-01-31T23:59:59Z",
+    maximumResolutionDelayHours:
+      (new Date("2027-01-31T23:59:59Z").getTime() -
+        new Date("2027-01-15T12:00:00Z").getTime()) /
+      (1000 * 60 * 60),
     earlyResolution: { allowed: false as const },
     terminalAmbiguityPolicy: "void-and-refund" as const,
     edgeCases: [
@@ -186,10 +196,7 @@ function makeCompliance() {
     openQuestionsForCounsel: [
       "Confirm excluded-commodity classification applies to CPI-based binary event contracts under CEA section 1a(19)(iv).",
     ],
-    reviewedAgainst: [
-      "17 CFR Part 38 Appendix C",
-      "CEA 5c(c)(5)(C)",
-    ],
+    reviewedAgainst: ["17 CFR Part 38 Appendix C", "CEA 5c(c)(5)(C)"],
   };
 }
 
@@ -212,10 +219,16 @@ describe("README usage example", () => {
       dsl: "event-contract-cnl/0.1",
       meta: makeMeta({ structure: productNameStructure, displayName }),
       underlying: makeUnderlying(),
-      outcome: { type: "binary", values: ["Yes", "No"] },
+      outcome: {
+        type: "binary",
+        values: ["Yes", "No"],
+        yesDefinition:
+          "The resolution criterion holds as stated in the canonical statement.",
+        noDefinition: "The resolution criterion does not hold.",
+      },
       trading: makeTrading(),
       resolution: makeResolution(),
-      payout: makePayout(),
+      payout: { ...makePayout(), settlementType: "cash-settled" as const },
       integrity: makeIntegrity(),
       compliance: makeCompliance(),
     };
@@ -228,6 +241,11 @@ describe("README usage example", () => {
 
     expect(validatedSpec.resolution.canonicalStatement).toBe(
       "This contract resolves YES if US CPI year-over-year rate, as published by U.S. Bureau of Labor Statistics (Consumer Price Index), measured over the period from 2026-01-01T00:00:00Z to 2026-12-31T23:59:59Z (UTC), is greater than or equal to 3 percent, applying the first published value as of the resolution deadline; otherwise it resolves NO.",
+    );
+    expect(validatedSpec.resolution.maximumResolutionDelayHours).toBeCloseTo(
+      (new Date("2027-01-31T23:59:59Z").getTime() -
+        new Date("2027-01-15T12:00:00Z").getTime()) /
+        (1000 * 60 * 60),
     );
   });
 });
@@ -311,7 +329,8 @@ describe("Product name rendering", () => {
       label: "compound-event-set with events",
       structure: {
         template: "compound-event-set" as const,
-        outcomes: "all three of [Democrats win GA, Democrats win AZ, Democrats win NV]",
+        outcomes:
+          "all three of [Democrats win GA, Democrats win AZ, Democrats win NV]",
         events: "the 2026 US Senate elections",
       },
       expected:
@@ -391,7 +410,13 @@ describe("Full spec with contingency", () => {
           anyEnumeratedActivityInvolved: true,
         },
       },
-      outcome: { type: "binary" as const, values: ["Yes", "No"] as ["Yes", "No"] },
+      outcome: {
+        type: "binary" as const,
+        values: ["Yes", "No"] as ["Yes", "No"],
+        yesDefinition:
+          "The resolution criterion holds as stated in the canonical statement.",
+        noDefinition: "The resolution criterion does not hold.",
+      },
       trading: {
         ...makeTrading(),
         lastTradingTime: "2026-12-30T16:00:00-05:00",
@@ -406,9 +431,10 @@ describe("Full spec with contingency", () => {
           evidenceStandard:
             "The FOMC post-meeting statement published on the Federal Reserve website states a target rate at least 50 basis points below the January 1, 2026 level.",
         },
+        scheduledResolutionTime: "2027-01-15T12:00:00Z",
         resolutionDeadline: "2027-01-31T23:59:59Z",
       },
-      payout: makePayout(),
+      payout: { ...makePayout(), settlementType: "cash-settled" as const },
       integrity: makeIntegrity(),
       publicInterestAssessment: {
         economicPurposeAndInformationValue:
@@ -429,7 +455,9 @@ describe("Full spec with contingency", () => {
       },
     };
 
-    const canonicalStatement = renderCanonicalStatement(spec as EventContractSpecT);
+    const canonicalStatement = renderCanonicalStatement(
+      spec as EventContractSpecT,
+    );
     const fullSpec = {
       ...spec,
       resolution: { ...spec.resolution, canonicalStatement },
