@@ -152,6 +152,7 @@ export function expandRangeContracts(
         contractSize: spec.payout.contractSize,
         yesPays: spec.payout.contractSize,
         noPays: 0,
+        notionalValue: spec.payout.contractSize * spec.payout.contractSize,
       },
     };
 

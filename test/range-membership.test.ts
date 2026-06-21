@@ -382,6 +382,7 @@ function makeRangeSpec(): EventContractSpecT {
       contractSize: 1,
       yesPays: 1,
       noPays: 0,
+      notionalValue: 1,
     },
     integrity: {
       outcomeInfluenceAnalysis:

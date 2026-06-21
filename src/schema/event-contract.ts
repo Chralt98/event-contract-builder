@@ -129,6 +129,13 @@ export const EventContractSpec = z
           new Date(spec.resolution.scheduledResolutionTime).getTime()) /
         (1000 * 60 * 60),
     },
+    payout: {
+      ...spec.payout,
+      notionalValue:
+        spec.payout.type === "binary"
+          ? spec.payout.contractSize * spec.payout.yesPays
+          : spec.payout.contractSize,
+    },
   }));
 
 export type EventContractSpecT = z.infer<typeof EventContractSpec>;

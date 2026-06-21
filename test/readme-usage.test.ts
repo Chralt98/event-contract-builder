@@ -168,6 +168,7 @@ function makePayout() {
     contractSize: 1,
     yesPays: 1,
     noPays: 0,
+    notionalValue: 1,
   };
 }
 
@@ -248,6 +249,7 @@ describe("README usage example", () => {
         new Date("2027-01-15T12:00:00Z").getTime()) /
         (1000 * 60 * 60),
     );
+    expect(validatedSpec.payout.notionalValue).toBe(1);
   });
 });
 
