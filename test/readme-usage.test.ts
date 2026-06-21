@@ -80,6 +80,7 @@ function makeResolution() {
         extraction:
           "Read the annual percent change from the CPI-U all-items series (CUSR0000SA0) in the BLS CPI Summary table.",
         revisionPolicy: "first-published-value" as const,
+        precision: 1,
       },
       comparator: "greater-than-or-equal" as const,
       threshold: 3,
@@ -240,7 +241,7 @@ describe("README usage example", () => {
     });
 
     expect(validatedSpec.resolution.canonicalStatement).toBe(
-      "This contract resolves YES if US CPI year-over-year rate, as published by U.S. Bureau of Labor Statistics (Consumer Price Index), measured over the period from 2026-01-01T00:00:00Z to 2026-12-31T23:59:59Z (UTC), is greater than or equal to 3 percent, applying the first published value as of the resolution deadline; otherwise it resolves NO.",
+      "This contract resolves YES if US CPI year-over-year rate, as published by U.S. Bureau of Labor Statistics (Consumer Price Index), measured over the period from 2026-01-01T00:00:00Z to 2026-12-31T23:59:59Z (UTC), is greater than or equal to 3 percent (rounded to 1 decimal places), applying the first published value as of the resolution deadline; otherwise it resolves NO.",
     );
     expect(validatedSpec.resolution.maximumResolutionDelayHours).toBeCloseTo(
       (new Date("2027-01-31T23:59:59Z").getTime() -

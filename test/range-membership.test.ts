@@ -118,6 +118,7 @@ const validMetric = {
   extraction:
     "Read the annual percent change from the CPI-U all-items series in the BLS CPI Summary table.",
   revisionPolicy: "first-published-value" as const,
+  precision: 1,
 };
 
 function makeRangeCriterion(

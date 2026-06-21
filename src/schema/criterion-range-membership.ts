@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Slug } from "./common";
 import { Metric } from "./metric";
+import { decimalPlaces } from "./precision";
 
 /* ---- Interval notation ---- */
 
@@ -102,6 +103,20 @@ export const RangeMembershipCriterion = z
         path: ["ranges", intervals.length - 1, "interval"],
         message: "Last range must end at +inf",
       });
+    }
+
+    for (const [i, iv] of intervals.entries()) {
+      for (const bound of [iv.lowerBound, iv.upperBound]) {
+        if (bound === null) continue;
+        const decimals = decimalPlaces(bound);
+        if (decimals > c.metric.precision) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["ranges", i, "interval"],
+            message: `Boundary ${bound} has ${decimals} decimal places but metric precision is ${c.metric.precision}`,
+          });
+        }
+      }
     }
 
     for (let i = 0; i < intervals.length - 1; i++) {

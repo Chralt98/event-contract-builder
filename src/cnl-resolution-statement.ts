@@ -39,7 +39,7 @@ export const COMPARATOR_PHRASES: Record<string, string> = {
 /** Sentence templates (placeholders in braces). */
 export const TEMPLATES = {
   binaryThreshold:
-    "This contract resolves YES if {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, {COMPARATOR_PHRASE} {THRESHOLD} {UNIT}, applying the {REVISION_POLICY} as of the resolution deadline; otherwise it resolves NO.",
+    "This contract resolves YES if {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, {COMPARATOR_PHRASE} {THRESHOLD} {UNIT} (rounded to {PRECISION} decimal places), applying the {REVISION_POLICY} as of the resolution deadline; otherwise it resolves NO.",
   binaryOccurrence:
     "This contract resolves YES if the following event {COMPARATOR_PHRASE} within {WINDOW}: {EVENT_CLAUSE} Otherwise it resolves NO.",
   contingencyAllOf:
@@ -140,6 +140,7 @@ export function renderCanonicalStatement(spec: EventContractSpecT): string {
         )
         .replace("{THRESHOLD}", threshold)
         .replace("{UNIT}", c.metric.unit)
+        .replace("{PRECISION}", String(c.metric.precision))
         .replace(
           "{REVISION_POLICY}",
           phraseFor(

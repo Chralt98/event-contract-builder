@@ -21,6 +21,18 @@ export const Metric = z.object({
     "value-as-of-observation-time",
     "final-revised-value",
   ]),
+  /**
+   * Number of decimal places the source publishes. Governs rounding for
+   * threshold comparisons and fallback calculations.
+   */
+  precision: z
+    .number()
+    .int()
+    .min(0)
+    .max(10)
+    .describe(
+      "Decimal places published by the source; comparisons and fallback calculations round to this",
+    ),
 });
 
 export type MetricT = z.infer<typeof Metric>;
