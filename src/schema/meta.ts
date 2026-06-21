@@ -40,7 +40,7 @@ export const Meta = z
     /** Contract type. */
     contractType: z.literal("Event Contract"),
     /** Exchange instrument type. */
-    type: z.literal("Swap (Binary Option)"),
+    instrumentType: z.literal("Swap (Binary Option)"),
     /** Exchange product category. */
     instrumentCategory: z.literal("Event"),
     /** Exchange product subcategory. */

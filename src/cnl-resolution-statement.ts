@@ -26,6 +26,12 @@ export const COMPARATOR_PHRASES: Record<string, string> = {
   "equal-to": "is exactly equal to",
   "between-inclusive":
     "is greater than or equal to the lower bound and less than or equal to the upper bound of",
+  "between-inclusive-exclusive":
+    "is greater than or equal to the lower bound and strictly less than the upper bound of",
+  "between-exclusive-inclusive":
+    "is strictly greater than the lower bound and less than or equal to the upper bound of",
+  "between-exclusive":
+    "is strictly greater than the lower bound and strictly less than the upper bound of",
   occurs: "occurs",
   "does-not-occur": "does not occur",
 };
@@ -36,8 +42,6 @@ export const TEMPLATES = {
     "This contract resolves YES if {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, {COMPARATOR_PHRASE} {THRESHOLD} {UNIT}, applying the {REVISION_POLICY} as of the resolution deadline; otherwise it resolves NO.",
   binaryOccurrence:
     "This contract resolves YES if the following event {COMPARATOR_PHRASE} within {WINDOW}: {EVENT_CLAUSE} Otherwise it resolves NO.",
-  rangeMembership:
-    "This contract resolves to the single range outcome listed in section payout whose range contains the value of {METRIC}, as published by {PUBLISHER} ({SOURCE}), measured over {WINDOW}, applying the {REVISION_POLICY}; range lower bounds are inclusive and upper bounds are exclusive.",
   contingencyAllOf:
     "This contract's primary criterion applies only if all of the conditions listed in section contingency hold by their stated evaluation deadlines; otherwise the contract {DISPOSITION}.",
   contingencyAnyOf:
@@ -111,10 +115,20 @@ export function renderCanonicalStatement(spec: EventContractSpecT): string {
 
   switch (c.kind) {
     case "threshold": {
-      const threshold =
-        c.comparator === "between-inclusive"
-          ? `the range [${c.threshold}, ${c.thresholdUpper}]`
-          : String(c.threshold);
+      const isBetween = c.comparator.startsWith("between-");
+      const bracketL =
+        c.comparator === "between-exclusive" ||
+        c.comparator === "between-exclusive-inclusive"
+          ? "("
+          : "[";
+      const bracketR =
+        c.comparator === "between-exclusive" ||
+        c.comparator === "between-inclusive-exclusive"
+          ? ")"
+          : "]";
+      const threshold = isBetween
+        ? `the range ${bracketL}${c.threshold}, ${c.thresholdUpper}${bracketR}`
+        : String(c.threshold);
       return TEMPLATES.binaryThreshold
         .replace("{METRIC}", c.metric.name)
         .replace("{PUBLISHER}", primary.publisher)
@@ -144,18 +158,8 @@ export function renderCanonicalStatement(spec: EventContractSpecT): string {
         .replace("{WINDOW}", W)
         .replace("{EVENT_CLAUSE}", c.eventClause);
     case "range-membership":
-      return TEMPLATES.rangeMembership
-        .replace("{METRIC}", c.metric.name)
-        .replace("{PUBLISHER}", primary.publisher)
-        .replace("{SOURCE}", primary.name)
-        .replace("{WINDOW}", W)
-        .replace(
-          "{REVISION_POLICY}",
-          phraseFor(
-            REVISION_POLICY_PHRASES,
-            c.metric.revisionPolicy,
-            "revision policy",
-          ),
-        );
+      throw new Error(
+        "range-membership criteria must be expanded into binary contracts via expandRangeContracts() before rendering",
+      );
   }
 }

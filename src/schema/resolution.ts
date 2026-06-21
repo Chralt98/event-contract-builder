@@ -1,77 +1,24 @@
 import { z } from "zod";
 import { COMPARATOR_PHRASES } from "../cnl-resolution-statement";
 import { IsoDateTime, Slug, IanaTimezone, CnlSentence } from "./common";
+import { ThresholdCriterion } from "./criterion-threshold";
+import { OccurrenceCriterion } from "./criterion-occurrence";
+import { RangeMembershipCriterion } from "./criterion-range-membership";
+export { Metric } from "./metric";
+export type { MetricT } from "./metric";
+export { ThresholdCriterion } from "./criterion-threshold";
+export { OccurrenceCriterion } from "./criterion-occurrence";
+export {
+  RangeMembershipCriterion,
+  RangeDefinition,
+  parseInterval,
+  type ParsedInterval,
+  type RangeDefinitionT,
+} from "./criterion-range-membership";
 
 /* -------------------------------------------------------------------------- */
 /* §4 Resolution                                                              */
 /* -------------------------------------------------------------------------- */
-
-/** A measured quantity with its unit and exact measurement method. */
-export const Metric = z.object({
-  name: z
-    .string()
-    .min(3)
-    .describe("Exact name of the data point as the source publishes it"),
-  unit: z.string().min(1),
-  /** CNL sentence: where in the publication the number is read from. */
-  extraction: CnlSentence.describe(
-    "Exactly which table/field/series ID the value is read from",
-  ),
-  /**
-   * Revision policy — the #1 cause of econ-data disputes. Pin whether the
-   * first print, a snapshot at a stated time, or a final revision governs.
-   */
-  revisionPolicy: z.enum([
-    "first-published-value",
-    "value-as-of-observation-time",
-    "final-revised-value",
-  ]),
-});
-
-/**
- * Threshold criterion: resolves by comparing a single measured `metric`
- * against `threshold` (and `thresholdUpper` for `between-inclusive`) using
- * `comparator`. The result is the YES/NO (or winning-side) decision for
- * payout types that settle on a numeric comparison, e.g. "CPI YoY is greater
- * than or equal to 3.0%".
- */
-const ThresholdCriterion = z.object({
-  kind: z.literal("threshold"),
-  metric: Metric,
-  comparator: z.enum([
-    "greater-than",
-    "greater-than-or-equal",
-    "less-than",
-    "less-than-or-equal",
-    "equal-to",
-    "between-inclusive",
-  ]),
-  threshold: z.number(),
-  /** Required iff comparator is between-inclusive. */
-  thresholdUpper: z.number().optional(),
-});
-
-/** Occurrence criterion: a discrete event happens (or not) within the window. */
-const OccurrenceCriterion = z.object({
-  kind: z.literal("occurrence"),
-  comparator: z.enum(["occurs", "does-not-occur"]),
-  /** CNL sentence defining the occurrence with zero discretion. */
-  eventClause: CnlSentence,
-  /** CNL sentence stating what observable evidence counts as the occurrence. */
-  evidenceStandard: CnlSentence,
-});
-
-/**
- * Range-membership criterion: resolves by locating the measured `metric`
- * value within a ladder of contiguous ranges (defined on the payout); the
- * range containing the value wins. Used for threshold-range payouts where
- * the outcome is "which range did the value fall into" rather than a single
- * true/false comparison.
- */
-const RangeMembershipCriterion = z.object({
-  kind: z.literal("range-membership"),
-  metric: Metric,
-});
 
 /**
  * Structured resolution criterion: the single decision rule that determines
@@ -130,11 +77,11 @@ export const Fallback = z.object({
   procedure: CnlSentence,
 });
 
-/** What happens if even the fallbacks fail or the outcome is undefined. */
+/** What happens if even the fallbacks fail or the outcome is undefined (invalid, ambigious). */
 export const TerminalAmbiguityPolicy = z
   .enum([
+    "resolve-yes",
     "resolve-no",
-    "resolve-to-floor",
     "void-and-refund",
     "exchange-determination-per-rulebook",
   ])
@@ -177,6 +124,7 @@ export const Resolution = z
         ),
       }),
     ]),
+    /** Contract Outcome Review Process */
     terminalAmbiguityPolicy: TerminalAmbiguityPolicy,
     /**
      * Pre-adjudicated edge cases. Listing them up front is the single most
@@ -220,7 +168,7 @@ export const Resolution = z
     }
     if (r.criterion.kind === "threshold") {
       const hasUpper = r.criterion.thresholdUpper !== undefined;
-      const needsUpper = r.criterion.comparator === "between-inclusive";
+      const needsUpper = r.criterion.comparator.startsWith("between-");
       if (needsUpper !== hasUpper) {
         ctx.addIssue({
           code: "custom",
@@ -241,6 +189,52 @@ export const Resolution = z
         path: ["canonicalStatement"],
         message: `canonicalStatement must contain the fixed CNL phrase "${phrase}"`,
       });
+    }
+    // Validate that stated UTC offsets match the IANA timezone at each instant.
+    const w = r.observationWindow;
+    for (const field of ["start", "end"] as const) {
+      const iso = w[field];
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) continue;
+
+      const statedOffset = iso.match(/(Z|[+-]\d{2}:\d{2})$/)?.[1];
+      if (!statedOffset) continue;
+
+      const statedMinutes =
+        statedOffset === "Z"
+          ? 0
+          : (() => {
+              const parts = statedOffset.split(":").map(Number);
+              const h = parts[0] ?? 0;
+              const m = parts[1] ?? 0;
+              return h * 60 + (h < 0 ? -m : m);
+            })();
+
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: w.timezone,
+        timeZoneName: "shortOffset",
+      });
+      const fmtParts = formatter.formatToParts(date);
+      const tzPart = fmtParts.find((p) => p.type === "timeZoneName")?.value;
+      if (!tzPart) continue;
+
+      const expectedMinutes =
+        tzPart === "GMT"
+          ? 0
+          : (() => {
+              const match = tzPart.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+              if (!match) return null;
+              const sign = match[1] === "+" ? 1 : -1;
+              return sign * (Number(match[2]) * 60 + Number(match[3] || 0));
+            })();
+
+      if (expectedMinutes !== null && statedMinutes !== expectedMinutes) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["observationWindow", field],
+          message: `UTC offset does not match ${w.timezone} at this instant (stated ${statedOffset}, expected ${tzPart})`,
+        });
+      }
     }
   });
 
