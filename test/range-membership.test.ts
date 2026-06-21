@@ -346,6 +346,8 @@ function makeRangeSpec(): EventContractSpecT {
       sources: [
         {
           id: "bls-cpi",
+          rank: 1,
+          controlsFor: ["headline value", "publication timing"],
           name: "Consumer Price Index",
           publisher: "U.S. Bureau of Labor Statistics",
           url: "https://www.bls.gov/cpi/",
@@ -359,6 +361,26 @@ function makeRangeSpec(): EventContractSpecT {
       ],
       primarySourceId: "bls-cpi",
       fallbacks: [],
+      requiredPublicEvidence: [
+        "The official BLS CPI Summary table for the reference month is published and publicly accessible.",
+      ],
+      correctionOrRevisionPolicy:
+        "Apply only official BLS corrections published before the resolution deadline; revisions published after the deadline are disregarded.",
+      materiality: {
+        minimumQualifyingThreshold:
+          "Only an official BLS CPI-U all-items release covering the full reference period qualifies as the settlement value.",
+        deMinimisExclusions: [
+          "Preliminary, flash, or unofficial CPI estimates from non-BLS aggregators do not qualify.",
+        ],
+      },
+      exclusions: {
+        prohibitedFeatures: [],
+        nonQualifyingCases: [
+          "A CPI value published by any source other than the BLS does not qualify.",
+        ],
+        antiRebrandingRule:
+          "Classify the series by its published methodology and identifier, not by any renamed or successor label.",
+      },
       calculationMethodologyControls: {
         settlementCalculationProcedure:
           "Use the CPI-U All Items year-over-year percent change as published in the BLS CPI Summary for the reference month, rounded to one decimal place.",
@@ -506,6 +528,20 @@ function makeRangeSpec(): EventContractSpecT {
         "Resolution source concentration is moderate: the primary metric is produced solely by BLS, but BLS data is archived by multiple federal repositories and independently verifiable from microdata.",
       benchmarkOrReferenceGovernance:
         "BLS methodology is governed by federal statistical-agency standards with public documentation of any methodological changes.",
+    },
+    changeControl: {
+      immutableAfterLaunch: [
+        "resolution.criterion",
+        "resolution.sources",
+        "resolution.materiality",
+        "resolution.exclusions",
+        "payout",
+      ],
+      clarificationAllowedAfterLaunch: true,
+      clarificationRule:
+        "Only non-material clarifications that do not alter the criterion, sources, materiality thresholds, exclusions, deadline, or payout are permitted after launch.",
+      amendmentRule:
+        "Any material change requires a new contract version or ticker and does not affect already-listed terms.",
     },
   } as EventContractSpecT;
 }

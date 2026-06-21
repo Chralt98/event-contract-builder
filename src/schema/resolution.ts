@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { COMPARATOR_PHRASES } from "../cnl-resolution-statement";
-import { IsoDateTime, Slug, IanaTimezone, CnlSentence, checkTimezoneOffset } from "./common";
+import {
+  IsoDateTime,
+  Slug,
+  IanaTimezone,
+  CnlSentence,
+  checkTimezoneOffset,
+} from "./common";
 import { ThresholdCriterion } from "./criterion-threshold";
 import { OccurrenceCriterion } from "./criterion-occurrence";
 import { RangeMembershipCriterion } from "./criterion-range-membership";
@@ -46,6 +52,26 @@ export const Criterion = z
 /** A resolution data source with availability characteristics. */
 export const DataSource = z.object({
   id: Slug,
+  /**
+   * Explicit hierarchy rank; lower binds first. Ranks across all sources must
+   * be unique and contiguous starting at 1 (see Resolution.superRefine), so the
+   * source order is fixed pre-launch and never discretionary at settlement.
+   */
+  rank: z
+    .number()
+    .int()
+    .min(1)
+    .describe("Hierarchy rank; 1 = highest-priority source, must be unique"),
+  /**
+   * Which facts or features this source authoritatively establishes (e.g.
+   * "legal enactment", "funding", "national scope"). Makes it explicit which
+   * source governs which part of the resolution, not just the headline value.
+   */
+  controlsFor: z
+    .array(z.string().min(3))
+    .min(1)
+    .max(12)
+    .describe("Facts/features this source authoritatively establishes"),
   name: z.string().min(3),
   publisher: z.string().min(2).describe("Organization that produces the data"),
   url: z.url(),
@@ -177,7 +203,10 @@ export const ForceMajeure = z
     ultimateDisposition: TerminalAmbiguityPolicy,
   })
   .superRefine((f, ctx) => {
-    if (f.deadlineExtensionPermitted && f.maxDeadlineExtensionDays === undefined) {
+    if (
+      f.deadlineExtensionPermitted &&
+      f.maxDeadlineExtensionDays === undefined
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["maxDeadlineExtensionDays"],
@@ -188,6 +217,60 @@ export const ForceMajeure = z
   })
   .describe(
     "Force majeure provisions: what the exchange may and may not do when extraordinary events prevent normal operations (Core Principle 6)",
+  );
+
+export const MaterialityThresholds = z
+  .object({
+    /** CNL sentence: the minimum magnitude, scope, or quality an event must reach to count. */
+    minimumQualifyingThreshold: CnlSentence.describe(
+      "Minimum magnitude/scope an observed event must reach to qualify",
+    ),
+    /** Optional CNL sentence: how long a qualifying state must persist to count. */
+    minimumDuration: CnlSentence.optional().describe(
+      "Minimum duration a qualifying state must persist, if any",
+    ),
+    /**
+     * Explicit floors that never qualify. Listing them up front converts
+     * "was the event big/real enough?" disputes into lookups — the highest-value
+     * resolution hardening for occurrence-style events.
+     */
+    deMinimisExclusions: z
+      .array(CnlSentence)
+      .min(1)
+      .max(20)
+      .describe("Events below these explicit floors never qualify"),
+  })
+  .describe(
+    "How large/real an event must be to count, plus explicit de-minimis floors",
+  );
+
+export const Exclusions = z
+  .object({
+    /** Features whose presence disqualifies an action, regardless of anything else. */
+    prohibitedFeatures: z
+      .array(CnlSentence)
+      .max(20)
+      .default([])
+      .describe(
+        "Features whose presence disqualifies an otherwise-matching event",
+      ),
+    /** Concrete cases pre-decided as not qualifying. */
+    nonQualifyingCases: z
+      .array(CnlSentence)
+      .min(1)
+      .max(30)
+      .describe("Concrete cases pre-decided as not qualifying"),
+    /**
+     * Substance-over-form rule: classify by actual legal/economic features, not
+     * official name or label, so a qualifying outcome can't be manufactured by
+     * relabeling (or dodged by renaming).
+     */
+    antiRebrandingRule: CnlSentence.describe(
+      "Classify by substance, not official name or label",
+    ),
+  })
+  .describe(
+    "What never qualifies and the substance-over-form rule preventing relabeling",
   );
 
 export const Resolution = z
@@ -213,6 +296,20 @@ export const Resolution = z
       .describe("All sources; first usable one per fallback order governs"),
     primarySourceId: Slug,
     fallbacks: z.array(Fallback).max(5).default([]),
+    /** Checklist of public evidence that must exist before the contract can resolve to a qualifying outcome. */
+    requiredPublicEvidence: z
+      .array(CnlSentence)
+      .min(1)
+      .max(20)
+      .describe("Public evidence that must exist for a qualifying resolution"),
+    /** How official corrections, amendments, retractions, or revisions are treated relative to the deadline. */
+    correctionOrRevisionPolicy: CnlSentence.describe(
+      "How official corrections/revisions are handled relative to the deadline",
+    ),
+    /** How large/real the event must be to count (Appendix C materiality). */
+    materiality: MaterialityThresholds,
+    /** What never qualifies and the anti-rebranding (substance-over-form) rule. */
+    exclusions: Exclusions,
     /** How the settlement value is computed and controls ensuring methodology is locked. */
     calculationMethodologyControls: CalculationMethodologyControls,
     /** Controls on fallback source ordering and methodology immutability. */
@@ -274,6 +371,26 @@ export const Resolution = z
         message: "primarySourceId must match a source id",
       });
     }
+    // Source hierarchy ranks must be unique and contiguous from 1, so the
+    // fallback order is fully determined pre-launch.
+    const ranks = r.sources.map((s) => s.rank).sort((a, b) => a - b);
+    const ranksValid = ranks.every((rank, i) => rank === i + 1);
+    if (!ranksValid) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["sources"],
+        message: `source ranks must be unique and contiguous from 1 (got ${ranks.join(", ")})`,
+      });
+    }
+    // The primary source should be rank 1, so the headline source is unambiguous.
+    const primary = r.sources.find((s) => s.id === r.primarySourceId);
+    if (primary && primary.rank !== 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["primarySourceId"],
+        message: "primarySourceId must be the rank-1 source",
+      });
+    }
     for (const [i, f] of r.fallbacks.entries()) {
       if (!ids.has(f.sourceId)) {
         ctx.addIssue({
@@ -320,7 +437,11 @@ export const Resolution = z
     }
   });
 
-export type CalculationMethodologyControlsT = z.infer<typeof CalculationMethodologyControls>;
+export type CalculationMethodologyControlsT = z.infer<
+  typeof CalculationMethodologyControls
+>;
 export type FallbackControlsT = z.infer<typeof FallbackControls>;
 export type ForceMajeureT = z.infer<typeof ForceMajeure>;
+export type MaterialityThresholdsT = z.infer<typeof MaterialityThresholds>;
+export type ExclusionsT = z.infer<typeof Exclusions>;
 export type ResolutionT = z.infer<typeof Resolution>;

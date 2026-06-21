@@ -55,6 +55,8 @@ Available templates:
 
 A complete spec includes meta (with product name), underlying event, outcome, trading parameters, resolution, payout, integrity assessment, and compliance posture. The `canonicalStatement` is rendered from structured resolution fields — hand-written statements that drift from the structured terms fail validation.
 
+The example below is **condensed for readability**: a few required blocks (`scheduledResolutionTime`, `calculationMethodologyControls`, `fallbackControls`, `forceMajeure`) are omitted where marked. See the schema for the full set of required fields.
+
 ```ts
 import {
   EventContractSpec,
@@ -142,6 +144,8 @@ const spec: EventContractSpecT = {
     sources: [
       {
         id: "bls-cpi",
+        rank: 1, // unique, contiguous from 1; the rank-1 source must be primarySourceId
+        controlsFor: ["headline value", "publication timing"],
         name: "Consumer Price Index",
         publisher: "U.S. Bureau of Labor Statistics",
         url: "https://www.bls.gov/cpi/",
@@ -154,6 +158,26 @@ const spec: EventContractSpecT = {
     ],
     primarySourceId: "bls-cpi",
     fallbacks: [],
+    requiredPublicEvidence: [
+      "The official BLS CPI Summary table for the reference month is published and publicly accessible.",
+    ],
+    correctionOrRevisionPolicy:
+      "Apply only official BLS corrections published before the resolution deadline; revisions published after the deadline are disregarded.",
+    materiality: {
+      minimumQualifyingThreshold:
+        "Only an official BLS CPI-U all-items release covering the full reference period qualifies as the settlement value.",
+      deMinimisExclusions: [
+        "Preliminary, flash, or unofficial CPI estimates from non-BLS aggregators do not qualify.",
+      ],
+    },
+    exclusions: {
+      prohibitedFeatures: [],
+      nonQualifyingCases: [
+        "A CPI value published by any source other than the BLS does not qualify.",
+      ],
+      antiRebrandingRule:
+        "Classify the series by its published methodology and identifier, not by any renamed or successor label.",
+    },
     resolutionDeadline: "2027-01-31T23:59:59Z",
     earlyResolution: { allowed: false },
     terminalAmbiguityPolicy: "void-and-refund",
@@ -172,6 +196,8 @@ const spec: EventContractSpecT = {
       },
     ],
     disputeWindowHours: 24,
+    // Omitted for brevity: scheduledResolutionTime, calculationMethodologyControls,
+    // fallbackControls, forceMajeure — all required by the schema.
   },
   payout: {
     type: "binary",
@@ -206,7 +232,8 @@ const spec: EventContractSpecT = {
   },
 };
 
-// Render the canonical statement and validate the full spec
+// Render the canonical statement, then validate (once the omitted required
+// blocks above are supplied, EventContractSpec.parse returns the typed spec).
 const canonicalStatement = renderCanonicalStatement(spec);
 const validated = EventContractSpec.parse({
   ...spec,

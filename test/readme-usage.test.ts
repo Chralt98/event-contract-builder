@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
+// Import live source (not the built package) so `bun test` exercises current
+// code; importing from "event-contract-builder" would resolve to a possibly
+// stale dist/ and silently test old behavior.
 import {
   EventContractSpec,
   renderCanonicalStatement,
   renderContingencyStatement,
   renderProductName,
   type EventContractSpecT,
-} from "event-contract-builder";
+} from "../src";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers: reusable fixture fragments                                        */
@@ -94,6 +97,8 @@ function makeResolution() {
     sources: [
       {
         id: "bls-cpi",
+        rank: 1,
+        controlsFor: ["headline value", "publication timing"],
         name: "Consumer Price Index",
         publisher: "U.S. Bureau of Labor Statistics",
         url: "https://www.bls.gov/cpi/",
@@ -114,6 +119,26 @@ function makeResolution() {
           "If the BLS has not published by the deadline, extend the resolution deadline by 30 calendar days and re-check.",
       },
     ],
+    requiredPublicEvidence: [
+      "The official BLS CPI Summary table for the reference month is published and publicly accessible.",
+    ],
+    correctionOrRevisionPolicy:
+      "Apply only official BLS corrections published before the resolution deadline; revisions published after the deadline are disregarded.",
+    materiality: {
+      minimumQualifyingThreshold:
+        "Only an official BLS CPI-U all-items release covering the full reference period qualifies as the settlement value.",
+      deMinimisExclusions: [
+        "Preliminary, flash, or unofficial CPI estimates from non-BLS aggregators do not qualify.",
+      ],
+    },
+    exclusions: {
+      prohibitedFeatures: [],
+      nonQualifyingCases: [
+        "A CPI value published by any source other than the BLS does not qualify.",
+      ],
+      antiRebrandingRule:
+        "Classify the series by its published methodology and identifier, not by any renamed or successor label.",
+    },
     calculationMethodologyControls: {
       settlementCalculationProcedure:
         "Use the CPI-U All Items year-over-year percent change as published in the BLS CPI Summary for the reference month, rounded to one decimal place.",
@@ -310,6 +335,23 @@ function makeReferenceMarketAnalysis() {
   };
 }
 
+function makeChangeControl() {
+  return {
+    immutableAfterLaunch: [
+      "resolution.criterion" as const,
+      "resolution.sources" as const,
+      "resolution.materiality" as const,
+      "resolution.exclusions" as const,
+      "payout" as const,
+    ],
+    clarificationAllowedAfterLaunch: true,
+    clarificationRule:
+      "Only non-material clarifications that do not alter the criterion, sources, materiality thresholds, exclusions, deadline, or payout are permitted after launch.",
+    amendmentRule:
+      "Any material change requires a new contract version or ticker and does not affect already-listed terms.",
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Tests                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -344,6 +386,7 @@ describe("README usage example", () => {
       accessRestrictions: makeAccessRestrictions(),
       economicsAndUtility: makeEconomicsAndUtility(),
       referenceMarketAnalysis: makeReferenceMarketAnalysis(),
+      changeControl: makeChangeControl(),
     };
 
     const canonicalStatement = renderCanonicalStatement(spec);
@@ -366,8 +409,12 @@ describe("README usage example", () => {
     expect(validatedSpec.trading.priceQuoteConvention).toBe(
       "Price quoted in cents per USD 1.00 contract. Range: 0 to 100 cents.",
     );
-    expect(validatedSpec.payout.finalSettlementFormula).toContain("YES pays 1.00 USD");
-    expect(validatedSpec.payout.finalSettlementMethod).toContain("Cash settled by exchange ledger entry");
+    expect(validatedSpec.payout.finalSettlementFormula).toContain(
+      "YES pays 1.00 USD",
+    );
+    expect(validatedSpec.payout.finalSettlementMethod).toContain(
+      "Cash settled by exchange ledger entry",
+    );
   });
 });
 
@@ -594,6 +641,7 @@ describe("Full spec with contingency", () => {
       accessRestrictions: makeAccessRestrictions(),
       economicsAndUtility: makeEconomicsAndUtility(),
       referenceMarketAnalysis: makeReferenceMarketAnalysis(),
+      changeControl: makeChangeControl(),
       contingency: {
         ...contingencyFields,
         canonicalStatement: contingencyStatement,

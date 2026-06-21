@@ -12,6 +12,7 @@ import { AccessRestrictions } from "./access-restrictions";
 import { EconomicsAndUtility } from "./economics-and-utility";
 import { ReferenceMarketAnalysis } from "./reference-market-analysis";
 import { Contingency } from "./contingency";
+import { ChangeControl } from "./change-control";
 import { renderContingencyStatement } from "../cnl-resolution-statement";
 
 /**
@@ -34,6 +35,8 @@ export const EventContractSpec = z
     accessRestrictions: AccessRestrictions,
     economicsAndUtility: EconomicsAndUtility,
     referenceMarketAnalysis: ReferenceMarketAnalysis,
+    /** Post-launch governance: immutable terms plus clarification/amendment rules. */
+    changeControl: ChangeControl,
     /** Optional: makes this a conditional market (see Contingency). */
     contingency: Contingency.optional(),
   })
@@ -168,7 +171,11 @@ export const EventContractSpec = z
   .transform((spec) => {
     const ccy = spec.payout.currency;
     const sv = spec.payout.settlementValue;
-    const { priceQuoteMinimum, priceQuoteMaximum, priceQuoteConvention }: {
+    const {
+      priceQuoteMinimum,
+      priceQuoteMaximum,
+      priceQuoteConvention,
+    }: {
       priceQuoteMinimum: number;
       priceQuoteMaximum: number;
       priceQuoteConvention: string;
@@ -177,21 +184,18 @@ export const EventContractSpec = z
         ? {
             priceQuoteMinimum: 0,
             priceQuoteMaximum: 100,
-            priceQuoteConvention:
-              `Price quoted in cents per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 100 cents.`,
+            priceQuoteConvention: `Price quoted in cents per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 100 cents.`,
           }
         : spec.trading.quotation === "probability-0-1"
           ? {
               priceQuoteMinimum: 0,
               priceQuoteMaximum: 1,
-              priceQuoteConvention:
-                `Price quoted as probability per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 1.`,
+              priceQuoteConvention: `Price quoted as probability per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to 1.`,
             }
           : {
               priceQuoteMinimum: 0,
               priceQuoteMaximum: sv,
-              priceQuoteConvention:
-                `Price quoted in ${ccy} per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to ${sv.toFixed(2)} ${ccy}.`,
+              priceQuoteConvention: `Price quoted in ${ccy} per ${ccy} ${sv.toFixed(2)} contract. Range: 0 to ${sv.toFixed(2)} ${ccy}.`,
             };
     return {
       ...spec,
@@ -212,8 +216,7 @@ export const EventContractSpec = z
           spec.payout.type === "binary"
             ? `YES pays ${spec.payout.yesPays.toFixed(2)} ${ccy} if the resolution criterion holds as stated in the canonical statement; NO pays ${spec.payout.noPays.toFixed(2)} ${ccy}. If the criterion does not hold, YES pays ${spec.payout.noPays.toFixed(2)} ${ccy} and NO pays ${spec.payout.yesPays.toFixed(2)} ${ccy}.`
             : `Settlement per payout schedule in ${ccy}.`,
-        finalSettlementMethod:
-          `Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.`,
+        finalSettlementMethod: `Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.`,
       },
       trading: {
         ...spec.trading,
