@@ -427,6 +427,67 @@ function makeRangeSpec(): EventContractSpecT {
       ],
       reviewedAgainst: ["17 CFR Part 38 Appendix C", "CEA 5c(c)(5)(C)"],
     },
+    accessRestrictions: {
+      participantEligibility: {
+        retailAccessPermitted: true,
+        jurisdictionalRestrictions: [],
+        additionalCriteria: [],
+      },
+      restrictedGroups: [
+        {
+          category: "material-nonpublic-info-holders" as const,
+          rationale:
+            "Persons with advance knowledge of the metric value could profit from foreknowledge of the resolution outcome.",
+          restrictionType: "full-prohibition" as const,
+          authority: "CEA §6(c)(1) / 17 CFR §180.1",
+        },
+        {
+          category: "exchange-insiders" as const,
+          rationale:
+            "DCM employees, officers, and board members must not trade contracts listed on their own exchange.",
+          restrictionType: "full-prohibition" as const,
+          authority: "CEA §9(b) / DCM Core Principle 16",
+        },
+      ],
+      sourceAffiliationControls: {
+        sourceAffiliatedPersonsRestricted: false,
+        affiliationDefinition:
+          "Current employees and contractors of the data publisher with access to pre-release data.",
+        enforcementMechanism:
+          "Self-attestation at onboarding plus ongoing surveillance.",
+      },
+    },
+    economicsAndUtility: {
+      economicPurpose:
+        "To estimate the market-implied probability that a specified economic indicator falls within a given range.",
+      intendedMarketParticipants: [
+        "Researchers and analysts evaluating economic policy hypotheses.",
+        "Institutions with exposure to inflation or monetary-policy uncertainty.",
+      ],
+      hedgingOrRiskManagementUtility:
+        "The contract may support risk-transfer use cases for entities exposed to inflation uncertainty.",
+      priceDiscoveryUtility:
+        "Contract prices estimate the market-implied probability that the underlying metric falls within the stated range.",
+      relationshipToExistingReferenceMarkets:
+        "No standardized futures or swaps market provides direct binary exposure to this specific range on this indicator.",
+    },
+    referenceMarketAnalysis: {
+      referenceMarketDescription:
+        "The reference is a national public-statistics measure published by the U.S. Bureau of Labor Statistics as part of the Consumer Price Index program.",
+      sourceMethodology:
+        "CPI is computed from a statistically sampled basket of prices collected across the United States, weighted by consumer expenditure patterns.",
+      dataAvailability:
+        "CPI data is publicly available on the BLS website on the scheduled release date each month.",
+      historicalDataAvailable: true,
+      historicalDataDescription:
+        "Monthly CPI data has been published continuously since 1913, providing over 100 years of historical data accessible via the BLS public data API and archived reports.",
+      liquidityOrMarketSizeAnalysis:
+        "CPI is widely referenced in financial markets, including TIPS, inflation swaps, and CPI futures. The information environment is deep and liquid.",
+      concentrationRiskAnalysis:
+        "Resolution source concentration is moderate: the primary metric is produced solely by BLS, but BLS data is archived by multiple federal repositories and independently verifiable from microdata.",
+      benchmarkOrReferenceGovernance:
+        "BLS methodology is governed by federal statistical-agency standards with public documentation of any methodological changes.",
+    },
   } as EventContractSpecT;
 }
 

@@ -221,6 +221,76 @@ function makeCompliance() {
   };
 }
 
+function makeAccessRestrictions() {
+  return {
+    participantEligibility: {
+      retailAccessPermitted: true,
+      jurisdictionalRestrictions: [],
+      additionalCriteria: [],
+    },
+    restrictedGroups: [
+      {
+        category: "material-nonpublic-info-holders" as const,
+        rationale:
+          "Persons with advance knowledge of the metric value could profit from foreknowledge of the resolution outcome.",
+        restrictionType: "full-prohibition" as const,
+        authority: "CEA §6(c)(1) / 17 CFR §180.1",
+      },
+      {
+        category: "exchange-insiders" as const,
+        rationale:
+          "DCM employees, officers, and board members must not trade contracts listed on their own exchange.",
+        restrictionType: "full-prohibition" as const,
+        authority: "CEA §9(b) / DCM Core Principle 16",
+      },
+    ],
+    sourceAffiliationControls: {
+      sourceAffiliatedPersonsRestricted: false,
+      affiliationDefinition:
+        "Current employees and contractors of the data publisher with access to pre-release data.",
+      enforcementMechanism:
+        "Self-attestation at onboarding plus ongoing surveillance.",
+    },
+  };
+}
+
+function makeEconomicsAndUtility() {
+  return {
+    economicPurpose:
+      "To estimate the market-implied probability that a specified economic indicator exceeds a given threshold.",
+    intendedMarketParticipants: [
+      "Researchers and analysts evaluating economic policy hypotheses.",
+      "Institutions with exposure to inflation or monetary-policy uncertainty.",
+    ],
+    hedgingOrRiskManagementUtility:
+      "The contract may support risk-transfer use cases for entities exposed to inflation uncertainty.",
+    priceDiscoveryUtility:
+      "Contract prices estimate the market-implied probability that the underlying metric exceeds the stated threshold.",
+    relationshipToExistingReferenceMarkets:
+      "No standardized futures or swaps market provides direct binary exposure to this specific threshold on this indicator.",
+  };
+}
+
+function makeReferenceMarketAnalysis() {
+  return {
+    referenceMarketDescription:
+      "The reference is a national public-statistics measure published by the U.S. Bureau of Labor Statistics as part of the Consumer Price Index program.",
+    sourceMethodology:
+      "CPI is computed from a statistically sampled basket of prices collected across the United States, weighted by consumer expenditure patterns.",
+    dataAvailability:
+      "CPI data is publicly available on the BLS website on the scheduled release date each month.",
+    historicalDataAvailable: true,
+    historicalDataDescription:
+      "Monthly CPI data has been published continuously since 1913, providing over 100 years of historical data accessible via the BLS public data API and archived reports.",
+    liquidityOrMarketSizeAnalysis:
+      "CPI is widely referenced in financial markets, including TIPS, inflation swaps, and CPI futures. The information environment is deep and liquid.",
+    concentrationRiskAnalysis:
+      "Resolution source concentration is moderate: the primary metric is produced solely by BLS, but BLS data is archived by multiple federal repositories and independently verifiable from microdata.",
+    benchmarkOrReferenceGovernance:
+      "BLS methodology is governed by federal statistical-agency standards with public documentation of any methodological changes.",
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Tests                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -252,6 +322,9 @@ describe("README usage example", () => {
       payout: { ...makePayout(), settlementType: "cash-settled" as const },
       integrity: makeIntegrity(),
       compliance: makeCompliance(),
+      accessRestrictions: makeAccessRestrictions(),
+      economicsAndUtility: makeEconomicsAndUtility(),
+      referenceMarketAnalysis: makeReferenceMarketAnalysis(),
     };
 
     const canonicalStatement = renderCanonicalStatement(spec);
@@ -469,16 +542,39 @@ describe("Full spec with contingency", () => {
       publicInterestAssessment: {
         economicPurposeAndInformationValue:
           "This contract provides price discovery on market expectations for Federal Reserve monetary policy actions, offering hedging utility for interest-rate-sensitive businesses and information value for policymakers and market participants tracking the trajectory of U.S. monetary policy.",
-        integrityAndLeakageRisk:
-          "FOMC decisions are made by a small committee with strict pre-meeting blackout periods. While insider leakage is a theoretical risk, the Federal Reserve's institutional controls, inspector general oversight, and criminal penalties for unauthorized disclosure provide substantial safeguards against information asymmetry.",
+        informationLeakageAssessment: {
+          sensitivityOfUnderlyingInformation:
+            "FOMC decisions are made by a small committee with strict pre-meeting blackout periods and embargoed until the post-meeting statement is released.",
+          concentrationOfInsight:
+            "Outcome knowledge is concentrated among FOMC voting members and senior Fed staff with access to deliberations.",
+          discreteDecisionRisk:
+            "Settlement depends on a discrete committee vote by identifiable individuals, but the multi-member structure and institutional controls reduce single-actor risk.",
+          safeguardAdequacy:
+            "Federal Reserve institutional controls, inspector general oversight, and criminal penalties for unauthorized disclosure provide substantial safeguards against information asymmetry.",
+        },
         selfRegulatoryBurden:
           "Standard surveillance tools can monitor for unusual pre-FOMC positioning patterns and cross-venue correlation.",
-        activitySpecificFactors: [
-          "Gaming activity is assessed as involved due to the sports-aggregate nature of the underlying; however, the contract settles on aggregate league-level outcomes rather than individual game results, reducing manipulation incentives.",
-        ],
+        gamingFactors: {
+          outcomeGranularity: "aggregate-outcome" as const,
+          outcomeGranularityAnalysis:
+            "The contract settles on aggregate league-level outcomes rather than individual game results, reducing manipulation incentives.",
+          leagueIntegrityInfrastructure:
+            "Professional leagues maintain integrity offices with investigative authority and cooperation agreements with regulated gambling operators.",
+          governingBodyInformationSharing:
+            "DCM has established an information-sharing framework with the relevant league integrity office for surveillance and investigation purposes.",
+          prohibitedSettlementBases: {
+            playerInjury: false,
+            officiatingDecisions: false,
+            physicalAltercations: false,
+            preCollegiateSports: false,
+          },
+        },
         draftSelfAssessment: "uncertain-needs-counsel" as const,
       },
       compliance: makeCompliance(),
+      accessRestrictions: makeAccessRestrictions(),
+      economicsAndUtility: makeEconomicsAndUtility(),
+      referenceMarketAnalysis: makeReferenceMarketAnalysis(),
       contingency: {
         ...contingencyFields,
         canonicalStatement: contingencyStatement,

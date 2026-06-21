@@ -33,4 +33,7 @@ export * from "./cnl";
 export * from "./schema/event-contract";
 export * from "./schema/outcome";
 export * from "./schema/resolution";
+export * from "./schema/access-restrictions";
+export * from "./schema/economics-and-utility";
+export * from "./schema/reference-market-analysis";
 export * from "./lib/expand-range-contracts";

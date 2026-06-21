@@ -8,6 +8,9 @@ import { Payout } from "./payout";
 import { IntegrityAssessment as Integrity } from "./integrity-assessment";
 import { PublicInterestAssessment } from "./public-interest-assessment";
 import { Compliance } from "./compliance";
+import { AccessRestrictions } from "./access-restrictions";
+import { EconomicsAndUtility } from "./economics-and-utility";
+import { ReferenceMarketAnalysis } from "./reference-market-analysis";
 import { Contingency } from "./contingency";
 import { renderContingencyStatement } from "../cnl-resolution-statement";
 
@@ -28,6 +31,9 @@ export const EventContractSpec = z
     /** Required when the enumerated-activity screen flags involvement. */
     publicInterestAssessment: PublicInterestAssessment.optional(),
     compliance: Compliance,
+    accessRestrictions: AccessRestrictions,
+    economicsAndUtility: EconomicsAndUtility,
+    referenceMarketAnalysis: ReferenceMarketAnalysis,
     /** Optional: makes this a conditional market (see Contingency). */
     contingency: Contingency.optional(),
   })
