@@ -1,167 +1,279 @@
-# event-contract-builder: Library + CLI + MCP Server
+# event-contract-builder: ChatGPT App + Library + CLI
 
-## Roadmap
+## Goal
 
-This project is built in phases. Each phase ships a working library + CLI +
-MCP server; later phases extend the schema and surfaces rather than
-rewriting them.
+Turn `event-contract-builder` into a ChatGPT App while preserving the existing
+TypeScript implementation as the domain library.
 
-- **Phase 1 (this plan): Binary-outcome MVP.** `OutcomeSchema` supports only
-  binary (yes/no) outcomes. Full schema layer, library layer, CLI, MCP
-  server, tests, and docs for binary contracts.
-- **Phase 2 (future): Categorical outcomes.** Reintroduce
-  `CategoricalOptionSchema`/`CategoricalOutcomeSchema`, turn `OutcomeSchema`
-  into `z.discriminatedUnion("type", [...])` over binary + categorical, add
-  `createCategoricalContractDefaults()`, extend the CLI `generate --type`
-  flag and the MCP `outcomeType` input.
-- **Phase 3 (future): Scalar outcomes.** Add `ScalarOutcomeSchema`
-  (unit/minValue/maxValue/tickSize + `.refine(maxValue > minValue)`), extend
-  the discriminated union, add `createScalarContractDefaults()`, extend CLI
-  and MCP accordingly.
-- **Phase 4+ (future, unscoped ideas):** additional resolver types, contract
-  templates/presets, multi-outcome categorical winner sets, schema
-  versioning/migrations between `specVersion`s.
+The product has four boundaries:
 
-Everything below this point describes **Phase 1** in detail. Later phases
-will get their own design pass when they're picked up.
+- **`src/`** — the public npm library: framework-independent event-contract
+  schemas and business logic.
+- **`cli/`** — terminal adapter over the library.
+- **`server/`** — HTTP MCP server, Apps SDK tool handlers, and widget resource.
+- **`web/`** — React + Vite + TypeScript widget rendered inside ChatGPT.
 
-## Context (Phase 1)
+The repository remains one package with one root `package.json`; these folders
+are architectural boundaries, not independently published workspace packages.
 
-The goal is to build out the actual product described in the README: tooling for generating YAML/JSON **event contract specifications for prediction markets**.
+## Current state
 
-- **Schema**: a generic, exchange-agnostic event contract spec covering event metadata, outcome type, resolution info, schedule, optional contract terms, and status.
-- **Layout**: single package, multiple entry points — no monorepo.
-- **Scope**: library + CLI + MCP server, each supporting **generate**, **validate**, and **convert** (YAML ⇄ JSON).
-- **Outcome type**: binary (yes/no) only for Phase 1. Categorical and scalar outcomes are on the roadmap above.
-- **Type strategy**: Zod v4 schemas are the runtime source of truth; TS types come via `z.infer`. Thin hand-written interfaces (`extends` the inferred type) carry the public-facing JSDoc.
+Most schema work already exists under `src/schema/`, together with CNL and
+range-contract helpers under `src/`.
 
-Verified during research (using the installed `zod@4.4.3` and `@modelcontextprotocol/sdk@1.29.0`):
+The current scope does **not** redesign the event-contract schema or move it
+out of `src/`. Existing schema behavior and public exports should be preserved.
+Any future schema changes require a separate plan update.
 
-- `.refine()` on a member schema works fine inside `z.discriminatedUnion()` — confirmed with a live test (relevant once Phase 2 introduces the union).
-- `z.iso.datetime({ offset: true })` exists and validates ISO 8601 datetimes correctly.
-- `McpServer.registerTool(name, config, cb)` accepts `inputSchema` as a **raw Zod shape object** (`Record<string, ZodType>`), not a `z.object(...)` — the SDK builds the JSON schema and validates internally.
+## Target directory structure
 
-## Directory structure to create
-
-```
+```text
 event-contract-builder/
-├── index.ts                  # barrel: re-export src/schema + src/lib (package "." entry)
-├── package.json               # add bin, exports, scripts
-├── src/
-│   ├── schema/
-│   │   ├── outcome.ts          # BinaryOutcomeSchema; OutcomeSchema = BinaryOutcomeSchema (Phase 1)
-│   │   ├── resolution.ts        # ResolutionSource, ResolutionAuthority, ResolutionInfo
-│   │   ├── schedule.ts          # Schedule (open/close/expiration/settlement, ISO 8601)
-│   │   ├── contract-terms.ts    # Optional ContractTerms (tickSize, currency, limits...)
-│   │   ├── event-contract.ts    # Top-level EventContractSpecSchema + ContractStatus
-│   │   ├── types.ts             # Hand-written JSDoc interfaces extending z.infer types
-│   │   └── index.ts             # barrel re-export
-│   ├── lib/
-│   │   ├── builder.ts           # createEventContract(), createBinaryContractDefaults()
-│   │   ├── serialize.ts         # toYaml/toJson/parseYaml/parseJson/detectFormatFromPath
-│   │   ├── validate.ts          # validateEventContract(), formatValidationIssues()
-│   │   ├── convert.ts           # convertContract() YAML<->JSON with validation
-│   │   └── index.ts             # barrel re-export
-│   ├── cli/
-│   │   ├── args.ts               # parseArgs wrapper (node:util)
-│   │   ├── io.ts                  # Bun.file/Bun.write + stdin/stdout helpers
+├── src/                          # Public npm library
+│   ├── schema/                   # Existing schemas; no redesign in this plan
+│   ├── lib/                      # Generation, validation, conversion, expansion
+│   ├── cnl.ts                    # Existing CNL public entry point
+│   ├── cnl-product-name.ts
+│   ├── cnl-resolution-statement.ts
+│   └── index.ts                  # Public library API
+├── test/                         # Library tests
+├── cli/
+│   ├── src/
 │   │   ├── commands/
 │   │   │   ├── generate.ts
 │   │   │   ├── validate.ts
 │   │   │   └── convert.ts
-│   │   └── main.ts                # subcommand router + shebang
-│   └── mcp/
-│       ├── server.ts              # createServer(): McpServer with tools registered
-│       ├── main.ts                 # stdio bootstrap + shebang
-│       └── tools/
-│           ├── generate.ts
-│           ├── validate.ts
-│           └── convert.ts
-└── test/
-    ├── schema/{outcome,event-contract}.test.ts
-    ├── lib/{builder,validate,convert}.test.ts
-    ├── cli/commands.test.ts
-    ├── mcp/tools.test.ts
-    └── fixtures/{valid-binary.yaml, invalid-missing-fields.yaml}
+│   │   └── index.ts
+│   └── test/
+├── server/
+│   ├── src/
+│   │   ├── tools/
+│   │   │   ├── generate.ts
+│   │   │   ├── validate.ts
+│   │   │   └── convert.ts
+│   │   ├── widget.ts            # Registers and serves the UI resource
+│   │   └── index.ts             # HTTP MCP server + tool registration
+│   └── test/
+├── web/
+│   ├── src/
+│   │   ├── component.tsx        # React widget and mount point
+│   │   ├── mcp-app.ts           # MCP Apps bridge helpers
+│   │   └── app.css
+│   ├── dist/
+│   │   ├── app.js               # Vite bundle read by the server
+│   │   └── app.css
+│   ├── index.html
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── index.ts                     # Package re-export from src
+├── package.json
+└── README.md
 ```
 
-## Schema design (`src/schema/`)
+`web/dist/` is generated output. It is included in deployment artifacts but is
+not edited by hand.
 
-All fields get `.describe(...)` for JSON-schema/MCP/IDE hints. Top-level type is `EventContractSpec`.
+## Architecture
 
-- **`outcome.ts`**: `BinaryOutcomeSchema` (`type: "binary"`, `yesLabel`/`noLabel` defaults "Yes"/"No"). `OutcomeSchema = BinaryOutcomeSchema` for Phase 1 — it keeps the `type: "binary"` discriminator field so it can become `z.discriminatedUnion("type", [...])` in Phase 2 without breaking existing data.
-- **`resolution.ts`**: `PrimaryResolutionSourceSchema` (id, name, owner, type enum, accessMethod enum, required semi-structured document reference with a constrained `identifier` slot and optional named qualifiers, optional url/notes), `FallbackResolutionSourceSchema` (hierarchyRank, id, name, owner, type enum, accessMethod enum, required document reference, required triggerCondition, optional url/notes), `PrimaryResolutionAuthoritySchema` (id, name, authority-specific type enum, authority-specific accessMethod enum, optional notes), `FallbackResolutionAuthoritySchema` (hierarchyRank, id, name, authority-specific type/accessMethod enums, optional notes), `ResolutionInfoSchema` (criteria, primaryResolutionSource, fallbackResolutionSources default `[]`, primaryResolutionAuthority, fallbackResolutionAuthorities default `[]`). The old resolver type concept is now modeled as resolution authority.
-- **`schedule.ts`**: `ScheduleSchema` with `timezone` (default "UTC"), `openDate`/`closeDate`/`expirationDate`/`settlementDate` all `z.iso.datetime({ offset: true })`, `.refine(closeDate > openDate)`.
-- **`contract-terms.ts`**: `ContractTermsSchema` — all-optional (`.partial()`): `tickSize`, `contractUnit`, `settlementCurrency` (3-char), `minOrderSize`, `maxOrderSize`, `positionLimit`.
-- **`event-contract.ts`**: `ContractStatusSchema = z.enum(["draft","proposed","active","closed","settled","cancelled"])`. `EventContractSpecSchema`: `specVersion` (literal `"1.0"`, default), `id`, `slug` (lowercase-hyphen regex), `title`, `description`, `category`, `tags` (default `[]`), `outcome` (OutcomeSchema), `resolution`, `schedule`, `contractTerms` (optional), `status` (default "draft"), `metadata` (optional `z.record(z.string(), z.unknown())`).
-- **`types.ts`**: For `EventContractSpec`, `Outcome`, `ResolutionInfo`, `Schedule` — `export interface X extends InferredX {}` with rich JSDoc (`@remarks`, `@example`) for editor hover docs. Zod schema remains the runtime source of truth; this is purely a documentation layer and stays structurally guaranteed compatible.
-- **`index.ts`**: barrel `export *` of all of the above.
+1. ChatGPT calls an MCP tool exposed by `server/`.
+2. The tool handler delegates all event-contract behavior to `src/`.
+3. The handler returns concise `content` plus typed `structuredContent`.
+4. The tool descriptor points to a versioned widget resource URI.
+5. The server registers that resource as `text/html;profile=mcp-app`, inlining
+   `web/dist/app.js` and `web/dist/app.css`.
+6. ChatGPT renders the resource in an iframe and sends tool inputs/results to
+   the React widget through the MCP Apps JSON-RPC bridge.
+7. Widget actions call MCP tools through `tools/call`; the widget does not
+   duplicate validation or conversion logic.
 
-## Library API (`src/lib/`)
+The MCP server is HTTP-first and exposes `/mcp`. Stdio is not the primary
+ChatGPT App transport. Local development may use an HTTPS tunnel; production
+must expose a public HTTPS MCP endpoint.
 
-- **`serialize.ts`**: `toYaml(spec)`, `toJson(spec, pretty?)`, `parseYaml(text): unknown`, `parseJson(text): unknown`, `detectFormatFromPath(path): "yaml"|"json"|undefined`. Use the `yaml` package for YAML.
-- **`validate.ts`**: `validateEventContract(data: unknown): ValidationResult` (`{success:true,data}` or `{success:false,errors: ValidationIssue[]}`) using `EventContractSpecSchema.safeParse`, mapping `result.error.issues` to `{path, message}` (path joined with `.`/`[n]`). `formatValidationIssues(issues)` → multi-line string.
-- **`builder.ts`**: `createEventContract(input: DeepPartial<EventContractSpec>): EventContractSpec` — deep-merges nested objects (outcome/schedule/resolution) so partial input doesn't clobber siblings, then `EventContractSpecSchema.parse()` (lets Zod defaults fill in `specVersion`/`status`/`tags`/outcome labels/etc.); throws a clear error listing missing required fields otherwise. Plus `createBinaryContractDefaults()` returning a minimal valid scaffold (placeholder id/slug/title/description/category/resolution/schedule + binary outcome shape).
-- **`convert.ts`**: `convertContract(input: string, to: "yaml"|"json", options?: {from?, pretty?}): ConvertResult` — parses (auto-detects YAML vs JSON if `from` omitted), validates via `validateEventContract`, and on success serializes to `to` format.
-- **`index.ts`**: barrel re-export.
+## Library (`src/`)
 
-## CLI (`src/cli/`)
+The library is the only layer that knows how event contracts are represented,
+generated, validated, converted, or expanded.
 
-Use **`node:util`'s `parseArgs`** (built into Bun, zero new deps) wrapped in `src/cli/args.ts`.
+Required public capabilities:
 
-```
+- Export the existing schemas and inferred TypeScript types.
+- Export the existing CNL helpers.
+- Generate an event-contract document from structured input.
+- Validate unknown input and return structured issues.
+- Parse and serialize YAML and JSON.
+- Convert valid contracts between YAML and JSON.
+- Preserve the existing range-contract expansion behavior.
+
+The library must not import React, Vite, MCP, HTTP, terminal I/O, or ChatGPT
+runtime APIs.
+
+## CLI (`cli/`)
+
+The CLI is a thin adapter over the public API in `src/`.
+
+```text
 event-contract-builder generate [-i input] [-o output] [-f yaml|json]
 event-contract-builder validate <file> [-f yaml|json]
-event-contract-builder convert <file> -t yaml|json [-o output] [-f from-format] [--pretty]
+event-contract-builder convert <file> -t yaml|json [-o output] [-f yaml|json]
 ```
 
-`generate` has no `--type` flag in Phase 1 (binary is the only outcome type); it will be added in Phase 2.
+CLI responsibilities are limited to argument parsing, file/stdin I/O,
+stdout/stderr formatting, and exit codes. It must not contain independent
+schema or conversion logic.
 
-- `src/cli/io.ts`: `readInput(path?)` via `Bun.file(path).text()` or `Bun.stdin.text()`; `writeOutput(path?, content)` via `Bun.write` or `process.stdout.write`.
-- `src/cli/commands/{generate,validate,convert}.ts`: thin wrappers calling `src/lib` functions; `validate` exits 1 with issues on stderr if invalid.
-- `src/cli/main.ts`: routes `process.argv[2]` to the right command, handles `-h/--help`, `-v/--version`. Starts with `#!/usr/bin/env bun` shebang.
+## ChatGPT App server (`server/`)
 
-## MCP server (`src/mcp/`)
+`server/src/index.ts` creates the MCP server, registers the widget resource,
+registers tools, and exposes the HTTP `/mcp` endpoint.
 
-- `src/mcp/server.ts`: `createServer()` builds `new McpServer({name:"event-contract-builder", version:"0.1.0"})` and calls `registerGenerateTool`/`registerValidateTool`/`registerConvertTool`.
-- `src/mcp/main.ts`: connects `createServer()` to `StdioServerTransport`. Shebang `#!/usr/bin/env bun`.
-- Each `src/mcp/tools/*.ts` exports `register*Tool(server)` using `server.registerTool(name, {description, inputSchema: <raw zod shape>}, handler)`, delegating to `src/lib`:
-  - `generate_event_contract`: input `{ input?: string, inputFormat?: "yaml"|"json", outputFormat: "yaml"|"json" (default "yaml") }` → returns generated spec text; `isError` + formatted issues on failure. No `outcomeType` input in Phase 1 (binary only); will be added in Phase 2.
-  - `validate_event_contract`: input `{ document: string, format?: "yaml"|"json" }` → success summary or `isError` + issues.
-  - `convert_event_contract`: input `{ document: string, from?: "yaml"|"json", to: "yaml"|"json", pretty?: boolean (default true) }` → converted text or `isError` + issues.
+Use `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, and Zod.
 
-## package.json changes
+### Widget resource
 
-- Add `"types": "./index.ts"`.
-- `"bin"`: `{ "event-contract-builder": "./src/cli/main.ts", "ecb-mcp-server": "./src/mcp/main.ts" }`.
-- `"exports"`: `"."` → `index.ts`; `"./schema"` → `src/schema/index.ts`; `"./lib"` → `src/lib/index.ts`; `"./mcp-server"` → `src/mcp/server.ts`.
-- `"scripts"`: `"cli": "bun run src/cli/main.ts"`, `"mcp": "bun run src/mcp/main.ts"`, `"test": "bun test"` (done), `"typecheck": "tsc --noEmit"`.
-- No new dependencies required.
-- Update root `index.ts` to be a barrel re-exporting `src/schema/index.ts` and `src/lib/index.ts` (replacing the "Hello via Bun!" placeholder).
+- Register a versioned URI such as
+  `ui://event-contract-builder/editor-v1.html`.
+- Return `RESOURCE_MIME_TYPE` (`text/html;profile=mcp-app`).
+- Inline `web/dist/app.js` and `web/dist/app.css` into the HTML template.
+- Set a unique `_meta.ui.domain` before app submission.
+- Keep CSP metadata restricted to domains the widget actually uses.
+- Change the resource URI when a breaking widget bundle change requires cache
+  invalidation.
 
-## Tests (`bun test`)
+### Tools
 
-- `test/schema/outcome.test.ts`: `BinaryOutcomeSchema` defaults and custom labels; `OutcomeSchema` accepts a binary outcome. (done)
-- `test/schema/event-contract.test.ts`: full valid spec parses with defaults filled; invalid slug rejected; `closeDate <= openDate` rejected.
-- `test/lib/builder.test.ts`: `createBinaryContractDefaults()` → `createEventContract` produces a valid spec; missing-required-fields error is clear; deep-merge doesn't clobber sibling sections.
-- `test/lib/validate.test.ts` & `test/lib/convert.test.ts`: round-trip YAML↔JSON on fixtures, error reporting on `invalid-missing-fields.yaml`.
-- `test/cli/commands.test.ts`: call command functions directly for generate/validate/convert; one `Bun.spawn` smoke test of `src/cli/main.ts`.
-- `test/mcp/tools.test.ts`: `createServer()` + SDK `InMemoryTransport` to call each tool with valid/invalid input, asserting `content`/`isError`.
-- Fixtures under `test/fixtures/`: `valid-binary.yaml`, `invalid-missing-fields.yaml`.
+Implement one file and one focused test per tool:
+
+- **`generate_event_contract`** — accepts structured or serialized input,
+  returns the generated document and a widget-ready contract summary.
+- **`validate_event_contract`** — accepts a document and optional format,
+  returns validity plus structured validation issues.
+- **`convert_event_contract`** — accepts a document, source format, and target
+  format, returning the converted document.
+
+Each tool:
+
+- delegates to `src/`;
+- defines input and output schemas;
+- returns stable, minimal `structuredContent`;
+- includes useful text `content` for model narration;
+- points `_meta.ui.resourceUri` to the widget where rendering is useful;
+- uses accurate read-only/destructive annotations;
+- is idempotent because ChatGPT may retry calls.
+
+No authentication, persistence, billing, or external data source is included
+in the first ChatGPT App increment.
+
+## React widget (`web/`)
+
+Use React, Vite, and TypeScript.
+
+The first widget is an event-contract result/editor surface that:
+
+- renders the latest tool result from `structuredContent`;
+- displays the generated YAML or JSON document;
+- displays validation status and field-level issues;
+- lets the user request validation or format conversion through `tools/call`;
+- handles missing initial tool input and loading/error states;
+- treats all tool inputs and results as untrusted data;
+- remains usable in ChatGPT's inline iframe layout.
+
+Use the open MCP Apps bridge for baseline communication. ChatGPT-specific
+`window.openai` extensions are optional and should only be added when needed.
+
+Vite must emit stable server-consumed filenames:
+
+```text
+web/dist/app.js
+web/dist/app.css
+```
+
+## Package and build changes
+
+Update the root `package.json` to:
+
+- keep the published library entry point compatible;
+- point the CLI bin to the built `cli/` entry;
+- add React, React DOM, Vite, and the React Vite plugin;
+- add `@modelcontextprotocol/ext-apps`;
+- add focused scripts for `build:lib`, `build:web`, `build:cli`, and
+  `build:server`;
+- make the root `build` run those scripts in dependency order;
+- add `dev:web` and `dev:server` scripts;
+- include the compiled server, CLI, library, and `web/dist/` in deployment and
+  publication artifacts.
+
+The server build depends on the web build because it reads the generated widget
+assets. Both the CLI and server depend on the `src/` library build.
+
+## Tests
+
+- **Library tests:** preserve all current schema, CNL, README usage, and
+  range-expansion coverage while the new application surfaces are added.
+- **CLI tests:** argument parsing, stdin/file input, stdout/file output, and
+  non-zero exit status for invalid contracts.
+- **Server tests:** tool schemas, valid and invalid tool calls,
+  `structuredContent`, annotations, widget resource URI, and resource MIME
+  type.
+- **Web tests:** render generated output and validation issues from simulated
+  MCP Apps bridge messages; verify a widget action sends the expected
+  `tools/call` request.
+- **Integration test:** build `web/dist`, start the HTTP MCP server, list tools
+  and resources through an MCP client, call one tool, and retrieve its widget
+  resource.
 
 ## Implementation order
 
-1. Schema layer (`src/schema/*`) + schema tests. _(in progress: `outcome.ts` done, binary-only)_
-2. Library layer (`src/lib/*`) + library tests.
-3. Root `index.ts` barrel + `package.json` exports/types.
-4. CLI (`src/cli/*`) + bin entry + tests.
-5. MCP server (`src/mcp/*`) + bin entry + tests.
-6. Update `README.md` with CLI/MCP usage examples.
+Each item below is a separate reviewable step. Complete only one item per turn.
+
+1. Add the smallest library serialization module under `src/lib/`: YAML/JSON
+   parsing and serialization, with direct tests.
+2. Add the library validation result wrapper around the existing top-level
+   schema, with direct tests.
+3. Add the library conversion function, with direct tests.
+4. Create `cli/src/index.ts` with help/version routing only.
+5. Add the CLI `validate` command and direct tests.
+6. Add the CLI `convert` command and direct tests.
+7. Add the CLI `generate` command and direct tests.
+8. Add `web/` Vite scaffolding that builds an empty React mount to
+    `web/dist/app.js` and `web/dist/app.css`.
+9. Add `web/src/mcp-app.ts` to receive tool-result bridge messages, with a
+    focused test.
+10. Render one read-only event-contract document view in
+    `web/src/component.tsx`, with a focused test.
+11. Render validation status and issues in the widget, with a focused test.
+12. Add one widget action that sends a `tools/call` validation request, with a
+    focused test.
+13. Create `server/src/index.ts` with an HTTP `/mcp` endpoint and a server
+    construction test.
+14. Register the versioned widget resource from `web/dist`, with a resource
+    retrieval test.
+15. Register `validate_event_contract`, including output schema, annotations,
+    and widget metadata, with direct tests.
+16. Register `convert_event_contract`, with direct tests.
+17. Register `generate_event_contract`, with direct tests.
+18. Add one end-to-end build and MCP integration test.
+19. Update `README.md` with library, CLI, local ChatGPT App, HTTPS tunnel, and
+    production connection instructions.
 
 ## Verification
 
-- `bun test` — all schema/lib/cli/mcp tests pass.
-- `bun run typecheck` (`tsc --noEmit`) — clean under the existing strict tsconfig.
-- `bun run src/cli/main.ts generate` — prints a valid binary YAML spec to stdout; pipe through `bun run src/cli/main.ts validate /dev/stdin` (or a temp file) to confirm round trip.
-- `bun run src/cli/main.ts generate -o /tmp/c.json -f json` then `bun run src/cli/main.ts convert /tmp/c.json --to yaml` — confirms convert path.
-- Optional manual MCP check: `bunx @modelcontextprotocol/inspector bun run src/mcp/main.ts` to exercise the three tools interactively.
+- `bun test`
+- `bun run build`
+- `bun run typecheck`
+- `bun run cli -- --help`
+- `bun run cli -- validate <fixture>`
+- Start the server and verify `http://localhost:<port>/mcp` with MCP Inspector.
+- Retrieve the widget resource and confirm its MIME type is
+  `text/html;profile=mcp-app`.
+- Connect the HTTPS endpoint from ChatGPT developer mode and verify tool
+  invocation, widget rendering, validation, and conversion.
+
+## Deferred
+
+- Schema redesign or new outcome types.
+- Authentication and user accounts.
+- Persistent contract storage.
+- External market or resolution-source integrations.
+- App monetization and app-directory submission work beyond the metadata
+  required to keep the implementation submission-ready.
