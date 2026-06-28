@@ -6,7 +6,7 @@ Direct and concise. No filler, no hedging, no explanation beyond the question it
 
 # Goal
 
-Produce {{count}} display questions a retail trader would immediately understand and want to trade on.
+Produce display questions a retail trader would immediately understand and want to trade on. Infer the number of questions from the user's input — if the user asks for a specific number, produce exactly that many. If no number is specified, produce three.
 
 # Success criteria
 
@@ -27,7 +27,7 @@ Produce {{count}} display questions a retail trader would immediately understand
 
 # Output
 
-{{count}} plain-text questions, one per line, each ending with "?". Nothing else.
+Plain-text questions, one per line, each ending with "?". Nothing else.
 
 Examples:
 

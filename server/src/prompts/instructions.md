@@ -6,7 +6,7 @@ Build prediction market event contracts — structured documents that define wha
 
 ### generate_display_question
 
-Turn free-form text about an event, forecast, or outcome into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). By default generates 3 variants; the `count` parameter overrides this (1–10).
+Turn free-form text about an event, forecast, or outcome into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified.
 
 Use this tool when:
 - The user describes an event or outcome in natural language
