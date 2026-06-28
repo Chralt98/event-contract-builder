@@ -27,7 +27,7 @@ Produce display questions a retail trader would immediately understand and want 
 
 # Output
 
-Plain-text questions, one per line, each ending with "?". Nothing else.
+Plain-text questions, one per line, each ending with "?".
 
 Examples:
 
@@ -43,6 +43,15 @@ least 50 basis points before December 31, 2026"
 -> Will Nvidia surpass Apple in market cap by end of 2026?
 -> Will Nvidia become the most valuable public company by mid-2026?
 -> Will Nvidia's market cap exceed $4T before January 2027?
+
+After listing the questions, ask the user:
+"Would you like to select any of these questions for further specification, or how should they be revised?"
+
+# Selection guard
+
+The input below may be the user **selecting or confirming questions that already exist** (e.g. "I'll take all three", "let's go with the second one", or a list of finished questions) rather than a new event to draft.
+
+If so, do NOT generate or restate questions. The questions are already chosen. Instead, respond only with: "Defining the selected question(s) now." and call `define_question_terms` for each selected question. Defining the selected questions is the required next step.
 
 # Stop rules
 

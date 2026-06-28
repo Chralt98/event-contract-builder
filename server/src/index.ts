@@ -36,6 +36,72 @@ export function createServer() {
     },
   );
 
+  server.registerTool(
+    "draft_display_questions",
+    {
+      title: "Draft Display Questions",
+      description:
+        "Draft new prediction market display questions from a free-form " +
+        "event description. Use only when the user is describing a new event " +
+        "to turn into questions — not when they are selecting among questions " +
+        "that already exist.",
+      inputSchema: {
+        event_description: z
+          .string()
+          .describe(
+            "Free-form text describing the event, outcome, or forecast to " +
+              "turn into display questions",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    (args) => ({
+      content: [
+        {
+          type: "text" as const,
+          text: loadPrompt("generate-display-question", {
+            text: args.event_description,
+          }),
+        },
+      ],
+    }),
+  );
+
+  server.registerTool(
+    "define_question_terms",
+    {
+      title: "Define Question Terms",
+      description:
+        "Identify ambiguous terms in a display question the user has selected " +
+        "and propose precise definitions for each. Use whenever the user " +
+        "selects, confirms, or chooses a display question.",
+      inputSchema: {
+        selected_question: z
+          .string()
+          .describe(
+            "The display question the user selected, to analyze for ambiguous terms",
+          ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    (args) => ({
+      content: [
+        {
+          type: "text" as const,
+          text: loadPrompt("generate-definitions", {
+            text: args.selected_question,
+          }),
+        },
+      ],
+    }),
+  );
+
   server.registerPrompt(
     "generate-display-question",
     {
@@ -65,32 +131,26 @@ export function createServer() {
     }),
   );
 
-  server.registerTool(
-    "generate_display_question",
+  server.registerPrompt(
+    "generate-definitions",
     {
-      title: "Generate Display Question",
+      title: "Generate Definitions",
       description:
-        "Generate a prediction market display question from free-form text. " +
-        "Returns prompt guidance for crafting a short, trader-facing question.",
-      inputSchema: {
+        "Identify ambiguous terms in a prediction market display question and propose precise definitions for each.",
+      argsSchema: {
         text: z
           .string()
-          .describe(
-            "Free-form text describing the event, outcome, or forecast",
-          ),
-      },
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
+          .describe("The prediction market display question to analyze"),
       },
     },
     (args) => ({
-      content: [
+      messages: [
         {
-          type: "text" as const,
-          text: loadPrompt("generate-display-question", {
-            text: args.text,
-          }),
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: loadPrompt("generate-definitions", { text: args.text }),
+          },
         },
       ],
     }),

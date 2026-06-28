@@ -4,32 +4,35 @@ Build prediction market event contracts — structured documents that define wha
 
 ## Available tools
 
-### generate_display_question
+### draft_display_questions
 
-Turn free-form text about an event, forecast, or outcome into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified.
+Turn a free-form event description into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified. Each question must describe a specific future occurrence and include a time reference for when the market observation period ends.
 
-Use this tool when:
-- The user describes an event or outcome in natural language
-- You need to produce scannable, tradeable questions from a verbose description
-- The input contains formal or regulatory language that needs simplifying
+Use only when the user is describing a **new event** to turn into questions.
 
-Every generated question must describe a specific future occurrence and include a time reference for when the market observation period ends.
+### define_question_terms
 
-The tool returns prompt guidance — follow it to produce the final questions.
+Identify ambiguous words and phrases in a display question and propose precise definitions for each, tight enough that traders and resolution authorities agree on what the question means.
 
-## Workflow: Arriving at a good display question
+Use whenever the user **selects, confirms, or chooses** a display question — even if the message repeats the question text. Never re-run `draft_display_questions` for a selection.
+
+## Workflow: Building an event contract
 
 1. **Gather the event details** — identify the core event, measurable threshold, and time boundary from the user's input. If any of these are missing, ask the user to clarify before proceeding.
-2. **Call `generate_display_question`** with the raw text — the tool returns guidance for crafting the question.
-3. **Draft the question** following the returned guidance. Keep it between 10 and 200 characters, ending with a question mark.
-4. **Review with the user** — present the draft and ask if it captures their intent. A good display question passes three checks:
+2. **Call `draft_display_questions`** with the event description — draft questions following the returned guidance. Keep each between 10 and 200 characters, ending with a question mark.
+3. **Review with the user** — present the drafts and ask which one captures their intent. A good display question passes three checks:
    - A trader reading only this question knows exactly what they are betting on
    - The core meaning (event, threshold, time period) is preserved
    - It reads as conversational and scannable, not formal or legalistic
-5. **Iterate** — if the user wants changes, revise and re-check against the criteria above.
+4. **Call `define_question_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions. Present them to the user for review. Do not wait for an additional prompt.
+5. **Iterate** — if the user wants changes to the question or definitions, revise and re-check against the criteria above.
 
 ## Available prompts
 
 ### generate-display-question
 
 The same display question guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
+
+### generate-definitions
+
+The same definitions guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
