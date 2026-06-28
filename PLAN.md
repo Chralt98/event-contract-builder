@@ -25,6 +25,30 @@ The current scope does **not** redesign the event-contract schema or move it
 out of `src/`. Existing schema behavior and public exports should be preserved.
 Any future schema changes require a separate plan update.
 
+## Approved scope change: product-name simplification
+
+The `meta.productName` field is being de-structured. Rather than a CNL template
+union with a deterministic renderer and lexical guards, the product name becomes
+a **free-form question string**, because names are authored by agents/LLMs via
+prompt guidance (MCP) rather than assembled from fixed slots.
+
+Target shape: `meta.productName` is a plain string with only two structural
+constraints retained — bounded length (10–200) and a trailing `?`. Removed: the
+`Will|Which|What` opener regex, the hedging-term denylist, the
+`ProductNameStructure` discriminated union, and the render-and-compare against
+`renderProductName`.
+
+The `cnl-product-name.ts` module and the `expand-range-contracts.ts` helper
+have been removed entirely. Range expansion is deferred.
+
+Steps (all done):
+
+1. Convert `ProductName` to a bare question string and update `meta.ts` and
+   tests.
+2. Remove the CNL product-name module and its public re-export; update
+   README and `src/index.ts` prose.
+3. Remove `expand-range-contracts.ts` and its tests.
+
 ## Target directory structure
 
 ```text
@@ -33,7 +57,6 @@ event-contract-builder/
 │   ├── schema/                   # Existing schemas; no redesign in this plan
 │   ├── lib/                      # Generation, validation, conversion, expansion
 │   ├── cnl.ts                    # Existing CNL public entry point
-│   ├── cnl-product-name.ts
 │   ├── cnl-resolution-statement.ts
 │   └── index.ts                  # Public library API
 ├── test/                         # Library tests
@@ -236,9 +259,9 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 6. Add the CLI `convert` command and direct tests.
 7. Add the CLI `generate` command and direct tests.
 8. Add `web/` Vite scaffolding that builds an empty React mount to
-    `web/dist/app.js` and `web/dist/app.css`.
+   `web/dist/app.js` and `web/dist/app.css`.
 9. Add `web/src/mcp-app.ts` to receive tool-result bridge messages, with a
-    focused test.
+   focused test.
 10. Render one read-only event-contract document view in
     `web/src/component.tsx`, with a focused test.
 11. Render validation status and issues in the widget, with a focused test.
@@ -271,7 +294,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 
 ## Deferred
 
-- Schema redesign or new outcome types.
+- Schema redesign or new outcome types (except the approved product-name
+  simplification described above).
 - Authentication and user accounts.
 - Persistent contract storage.
 - External market or resolution-source integrations.

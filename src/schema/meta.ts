@@ -31,7 +31,7 @@ export const Meta = z
       .regex(/^[A-Z0-9\-]{2,20}$/)
       .optional()
       .describe("Recurring series code, if any"),
-    /** Structured trader-facing question; displayName is rendered from template slots. */
+    /** Free-form trader-facing question string (bounded length, ends with `?`). */
     productName: ProductName,
     /** Full human title shown to traders. */
     title: z.string().min(10).max(160),

@@ -10,18 +10,10 @@ import {
 } from "./common";
 import { ThresholdCriterion } from "./criterion-threshold";
 import { OccurrenceCriterion } from "./criterion-occurrence";
-import { RangeMembershipCriterion } from "./criterion-range-membership";
 export { Metric } from "./metric";
 export type { MetricT } from "./metric";
 export { ThresholdCriterion } from "./criterion-threshold";
 export { OccurrenceCriterion } from "./criterion-occurrence";
-export {
-  RangeMembershipCriterion,
-  RangeDefinition,
-  parseInterval,
-  type ParsedInterval,
-  type RangeDefinitionT,
-} from "./criterion-range-membership";
 
 /* -------------------------------------------------------------------------- */
 /* §4 Resolution                                                              */
@@ -34,7 +26,6 @@ export {
  *
  * - `threshold` — numeric comparison against one or two bounds.
  * - `occurrence` — whether a discrete event did or did not occur.
- * - `range-membership` — which contiguous range the metric falls into.
  *
  * `Resolution.canonicalStatement` is deterministically rendered from this
  * value (see `COMPARATOR_PHRASES` and the CNL renderer), so the criterion
@@ -44,7 +35,6 @@ export const Criterion = z
   .discriminatedUnion("kind", [
     ThresholdCriterion,
     OccurrenceCriterion,
-    RangeMembershipCriterion,
   ])
   .describe(
     "Structured resolution criterion; canonicalStatement is rendered from this",

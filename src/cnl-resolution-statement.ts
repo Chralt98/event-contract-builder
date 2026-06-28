@@ -158,9 +158,5 @@ export function renderCanonicalStatement(spec: EventContractSpecT): string {
         )
         .replace("{WINDOW}", W)
         .replace("{EVENT_CLAUSE}", c.eventClause);
-    case "range-membership":
-      throw new Error(
-        "range-membership criteria must be expanded into binary contracts via expandRangeContracts() before rendering",
-      );
   }
 }

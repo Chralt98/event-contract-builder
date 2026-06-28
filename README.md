@@ -20,36 +20,16 @@ npm install event-contract-builder
 
 ## Quick usage
 
-### 1. Render a product name from structured template slots
+### 1. Product name
 
-Every contract has a trader-facing product name rendered deterministically from a template. The structured fields are the source of truth; the `displayName` string must match the render output.
+Every contract has a trader-facing product name — a free-form question string
+(10–200 characters, ending with `?`). Names are typically authored by
+agents/LLMs via prompt guidance rather than assembled from fixed slots, so the
+schema imposes only length and punctuation constraints.
 
 ```ts
-import { renderProductName } from "event-contract-builder";
-
-const structure = {
-  template: "numeric-threshold" as const,
-  metric: "CPI YoY",
-  comparator: "at-least" as const,
-  value: 3,
-  unit: "percent",
-};
-
-const displayName = renderProductName(structure);
-// → "Will CPI YoY be at least 3 percent?"
+const productName = "Will CPI YoY be at least 3 percent?";
 ```
-
-Available templates:
-
-| Template                  | Example output                                                        |
-| ------------------------- | --------------------------------------------------------------------- |
-| `binary-event`            | Will Kansas City Chiefs win the 2027 Super Bowl?                      |
-| `binary-event-with-date`  | Will Elon Musk join the Federal Reserve Board before January 20, 2027?|
-| `numeric-threshold`       | Will GDP growth be above 3 percent?                                   |
-| `numeric-range`           | Will CPI YoY be between 2.5 and 3 percent?                           |
-| `selection-winner`        | Which team will win the 2027 Super Bowl?                              |
-| `open-numeric`            | What will the price of Bitcoin be on January 1, 2027?                 |
-| `compound-event-set`      | Will all three of [A, B, C] occur in the 2026 elections?              |
 
 ### 2. Build and validate a full contract spec
 
@@ -61,26 +41,14 @@ The example below is **condensed for readability**: a few required blocks (`sche
 import {
   EventContractSpec,
   renderCanonicalStatement,
-  renderProductName,
   type EventContractSpecT,
 } from "event-contract-builder";
-
-const productNameStructure = {
-  template: "numeric-threshold" as const,
-  metric: "CPI YoY",
-  comparator: "at-least" as const,
-  value: 3,
-  unit: "percent",
-};
 
 const spec: EventContractSpecT = {
   dsl: "event-contract-cnl/0.1",
   meta: {
     ticker: "CPI-26JUN-T3.0",
-    productName: {
-      structure: productNameStructure,
-      displayName: renderProductName(productNameStructure),
-    },
+    productName: "Will CPI YoY be at least 3 percent?",
     title: "CPI Year-over-Year Rate >= 3.0% (June 2026)",
     category: "economic-indicator",
     specVersion: "1.0.0",
@@ -100,12 +68,18 @@ const spec: EventContractSpecT = {
       "The CPI is published monthly by the U.S. Bureau of Labor Statistics. It measures the average change over time in prices paid by urban consumers for a market basket of consumer goods and services. It is widely followed as the primary gauge of U.S. consumer inflation.",
     enumeratedActivityScreen: {
       activities: {
-        unlawfulUnderFederalOrStateLaw: { settlementDeterminedByActivity: false, note: "" },
-        terrorism:     { settlementDeterminedByActivity: false, note: "" },
+        unlawfulUnderFederalOrStateLaw: {
+          settlementDeterminedByActivity: false,
+          note: "",
+        },
+        terrorism: { settlementDeterminedByActivity: false, note: "" },
         assassination: { settlementDeterminedByActivity: false, note: "" },
-        war:           { settlementDeterminedByActivity: false, note: "" },
-        gaming:        { settlementDeterminedByActivity: false, note: "" },
-        commissionDesignatedSimilarActivity: { settlementDeterminedByActivity: false, note: "" },
+        war: { settlementDeterminedByActivity: false, note: "" },
+        gaming: { settlementDeterminedByActivity: false, note: "" },
+        commissionDesignatedSimilarActivity: {
+          settlementDeterminedByActivity: false,
+          note: "",
+        },
       },
       settlementOccurrenceAnalysis:
         "Settlement is determined by the value of a government-published economic indicator, which is a lawful measurement activity.",
@@ -150,7 +124,8 @@ const spec: EventContractSpecT = {
         publisher: "U.S. Bureau of Labor Statistics",
         url: "https://www.bls.gov/cpi/",
         datasetId: "CUSR0000SA0",
-        publicationSchedule: "Published monthly, typically around the 10th-14th of the following month.",
+        publicationSchedule:
+          "Published monthly, typically around the 10th-14th of the following month.",
         publiclyAccessible: true,
         independenceNote:
           "The BLS is a principal federal statistical agency independent of market participants.",
@@ -183,16 +158,22 @@ const spec: EventContractSpecT = {
     terminalAmbiguityPolicy: "void-and-refund",
     edgeCases: [
       {
-        scenario: "If the BLS retracts the first published value before the resolution deadline.",
-        disposition: "Use the corrected value published before the resolution deadline.",
+        scenario:
+          "If the BLS retracts the first published value before the resolution deadline.",
+        disposition:
+          "Use the corrected value published before the resolution deadline.",
       },
       {
-        scenario: "If no CPI value is published before the resolution deadline.",
-        disposition: "Apply the terminal ambiguity policy and void the contract.",
+        scenario:
+          "If no CPI value is published before the resolution deadline.",
+        disposition:
+          "Apply the terminal ambiguity policy and void the contract.",
       },
       {
-        scenario: "If the BLS renames the CPI series without changing methodology.",
-        disposition: "Use the renamed successor series as the primary data source.",
+        scenario:
+          "If the BLS renames the CPI series without changing methodology.",
+        disposition:
+          "Use the renamed successor series as the primary data source.",
       },
     ],
     disputeWindowHours: 24,
@@ -240,7 +221,7 @@ const validated = EventContractSpec.parse({
   resolution: { ...spec.resolution, canonicalStatement },
 });
 
-console.log(validated.meta.productName.displayName);
+console.log(validated.meta.productName);
 // → "Will CPI YoY be at least 3 percent?"
 
 console.log(validated.resolution.canonicalStatement);

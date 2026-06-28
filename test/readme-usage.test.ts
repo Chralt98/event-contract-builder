@@ -6,7 +6,6 @@ import {
   EventContractSpec,
   renderCanonicalStatement,
   renderContingencyStatement,
-  renderProductName,
   type EventContractSpecT,
 } from "../src";
 
@@ -35,10 +34,7 @@ function makeEnumeratedActivityScreen() {
   };
 }
 
-function makeMeta(productName: {
-  structure: Parameters<typeof renderProductName>[0];
-  displayName: string;
-}) {
+function makeMeta(productName: string) {
   return {
     ticker: "CPI-26JUN-T3.0",
     seriesCode: "CPI-YOY",
@@ -392,18 +388,9 @@ function makeChangeControl() {
 
 describe("README usage example", () => {
   test("renders and validates the canonical statement from structured resolution fields", () => {
-    const productNameStructure = {
-      template: "numeric-threshold" as const,
-      metric: "CPI YoY",
-      comparator: "at-least" as const,
-      value: 3,
-      unit: "percent",
-    };
-    const displayName = renderProductName(productNameStructure);
-
     const spec: EventContractSpecT = {
       dsl: "event-contract-cnl/0.1",
-      meta: makeMeta({ structure: productNameStructure, displayName }),
+      meta: makeMeta("Will CPI YoY be at least 3 percent?"),
       underlying: makeUnderlying(),
       outcome: {
         type: "binary",
@@ -452,115 +439,10 @@ describe("README usage example", () => {
   });
 });
 
-describe("Product name rendering", () => {
-  test.each([
-    {
-      label: "binary-event",
-      structure: {
-        template: "binary-event" as const,
-        subject: "Kansas City Chiefs",
-        verbPhrase: "win the 2027 Super Bowl",
-      },
-      expected: "Will Kansas City Chiefs win the 2027 Super Bowl?",
-    },
-    {
-      label: "binary-event-with-date",
-      structure: {
-        template: "binary-event-with-date" as const,
-        subject: "Elon Musk",
-        verbPhrase: "join the Federal Reserve Board",
-        preposition: "before" as const,
-        date: "January 20, 2027",
-      },
-      expected:
-        "Will Elon Musk join the Federal Reserve Board before January 20, 2027?",
-    },
-    {
-      label: "numeric-threshold",
-      structure: {
-        template: "numeric-threshold" as const,
-        metric: "GDP growth",
-        comparator: "above" as const,
-        value: 3,
-        unit: "percent",
-      },
-      expected: "Will GDP growth be above 3 percent?",
-    },
-    {
-      label: "numeric-range",
-      structure: {
-        template: "numeric-range" as const,
-        metric: "CPI YoY",
-        lower: 2.5,
-        upper: 3.0,
-        unit: "percent",
-      },
-      expected: "Will CPI YoY be between 2.5 and 3 percent?",
-    },
-    {
-      label: "selection-winner with context",
-      structure: {
-        template: "selection-winner" as const,
-        entityType: "candidate",
-        winCondition: "have the largest margin of victory",
-        context: "the 2026 US Senate elections",
-      },
-      expected:
-        "Which candidate will have the largest margin of victory in the 2026 US Senate elections?",
-    },
-    {
-      label: "selection-winner without context",
-      structure: {
-        template: "selection-winner" as const,
-        entityType: "team",
-        winCondition: "win the 2027 Super Bowl",
-      },
-      expected: "Which team will win the 2027 Super Bowl?",
-    },
-    {
-      label: "open-numeric",
-      structure: {
-        template: "open-numeric" as const,
-        metric: "the price of Bitcoin",
-        preposition: "on" as const,
-        date: "January 1, 2027",
-      },
-      expected: "What will the price of Bitcoin be on January 1, 2027?",
-    },
-    {
-      label: "compound-event-set with events",
-      structure: {
-        template: "compound-event-set" as const,
-        outcomes:
-          "all three of [Democrats win GA, Democrats win AZ, Democrats win NV]",
-        events: "the 2026 US Senate elections",
-      },
-      expected:
-        "Will all three of [Democrats win GA, Democrats win AZ, Democrats win NV] occur in the 2026 US Senate elections?",
-    },
-    {
-      label: "compound-event-set without events",
-      structure: {
-        template: "compound-event-set" as const,
-        outcomes: "both Fed rate cuts and CPI above 3 percent",
-      },
-      expected: "Will both Fed rate cuts and CPI above 3 percent occur?",
-    },
-  ])("renders $label template", ({ structure, expected }) => {
-    expect(renderProductName(structure)).toBe(expected);
-  });
-});
-
 describe("Full spec with contingency", () => {
   test("validates a complete spec including optional contingency and public-interest assessment", () => {
-    const productNameStructure = {
-      template: "binary-event-with-date" as const,
-      subject: "the Fed",
-      verbPhrase: "cut rates by at least 50 basis points",
-      preposition: "before" as const,
-      date: "December 31, 2026",
-    };
-    const displayName = renderProductName(productNameStructure);
+    const displayName =
+      "Will the Fed cut rates by at least 50 basis points before December 31, 2026?";
 
     const contingencyFields = {
       mode: "all-of" as const,
@@ -593,7 +475,7 @@ describe("Full spec with contingency", () => {
     const spec = {
       dsl: "event-contract-cnl/0.1" as const,
       meta: {
-        ...makeMeta({ structure: productNameStructure, displayName }),
+        ...makeMeta(displayName),
         ticker: "FED-RATE-26",
         title: "Fed Rate Cut >= 50bps Before End of 2026",
         category: "monetary-policy" as const,
@@ -692,7 +574,7 @@ describe("Full spec with contingency", () => {
 
     const validated = EventContractSpec.parse(fullSpec);
 
-    expect(validated.meta.productName.displayName).toBe(
+    expect(validated.meta.productName).toBe(
       "Will the Fed cut rates by at least 50 basis points before December 31, 2026?",
     );
     expect(validated.contingency!.canonicalStatement).toBe(

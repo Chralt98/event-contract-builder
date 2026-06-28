@@ -15,8 +15,10 @@
  * 2. **Controlled Natural Language.** Resolution criteria are built from
  *    enumerated comparators, fixed clause templates, and a closed vocabulary
  *    (see `src/cnl.ts` and `docs/cnl-grammar.md`). The human-readable
- *    `canonicalStatement`, `productName` is *rendered deterministically* from structured
+ *    `canonicalStatement` is *rendered deterministically* from structured
  *    fields, so prose and machine-readable terms can never diverge.
+ *    `productName` is a free-form question string authored by agents/LLMs
+ *    via prompt guidance.
  * 3. **DCM-review readiness.** Field groups map onto CEA section 5(d)
  *    Core Principle 3 ("not readily susceptible to manipulation") and the
  *    17 C.F.R. Part 38 Appendix C guidance, plus the documentation a DCM
@@ -36,4 +38,3 @@ export * from "./schema/resolution";
 export * from "./schema/access-restrictions";
 export * from "./schema/economics-and-utility";
 export * from "./schema/reference-market-analysis";
-export * from "./lib/expand-range-contracts";
