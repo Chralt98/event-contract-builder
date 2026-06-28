@@ -33,6 +33,19 @@ export const Meta = z
       .describe("Recurring series code, if any"),
     /** Free-form trader-facing question string (bounded length, ends with `?`). */
     productName: ProductName,
+    /**
+     * A concrete example of how a consumer platform
+     * would phrase this product name for display to retail traders.
+     */
+    specificDisplayQuestionExample: z
+      .string()
+      .min(10)
+      .max(200)
+      .regex(/\?$/s, "Must end with ?")
+      .optional()
+      .describe(
+        "Platform-style display question example, e.g. how prediction market platforms would phrase it",
+      ),
     /** Full human title shown to traders. */
     title: z.string().min(10).max(160),
     /** Short title for tickets/mobile, ≤ 50 chars. */
@@ -68,6 +81,10 @@ export const Meta = z
     /** ISO date the draft was last materially edited. */
     lastUpdated: IsoDate,
     authors: z.array(z.string().min(2)).min(1),
+    definitions: z
+      .record(z.string().min(1), z.string().min(1))
+      .optional()
+      .describe("Glossary of key terms used in the contract: word → definition"),
   })
   .describe("Identification and lifecycle metadata");
 

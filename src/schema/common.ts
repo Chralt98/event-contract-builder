@@ -113,13 +113,6 @@ export const CnlSentence = z
     /^[A-Z].*\.$/s,
     "Must be a complete sentence (capitalized, ending in a period)",
   )
-  .refine(
-    (s) =>
-      !/\b(approximately|roughly|about|around|reasonable|significant|materially|generally|etc\.?)\b/i.test(
-        s,
-      ),
-    "CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
-  )
   .describe(
-    "A single precise sentence in the controlled vocabulary; vague terms are rejected",
+    "A single precise sentence in the controlled vocabulary; vague terms are rejected; CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
   );

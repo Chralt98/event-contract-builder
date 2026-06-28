@@ -34,6 +34,9 @@
   "scripts": {
     "build": "bun build ./index.ts ./src/index.ts ./src/cnl.ts ./src/schema/event-contract.ts --outdir ./dist --target node --format esm --external zod && tsc -p tsconfig.build.json",
     "test": "bun run build && bun test",
+    "dev:server": "bun run server/src/index.ts",
+    "dev:server:inspect": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
+    "dev:server:tunnel": "ngrok http 8787",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },
