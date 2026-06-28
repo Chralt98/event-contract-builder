@@ -22,14 +22,14 @@ describe("generate-display-question prompt", () => {
     expect(names).toContain("generate-display-question");
   });
 
-  test("prompt accepts a single text argument", async () => {
+  test("prompt accepts text and count arguments", async () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
     const prompt = prompts.find(
       (p) => p.name === "generate-display-question",
     )!;
     const argNames = prompt.arguments!.map((a) => a.name);
-    expect(argNames).toEqual(["text"]);
+    expect(argNames).toEqual(["text", "count"]);
   });
 
   test("returns a user message containing the input text and instructions", async () => {

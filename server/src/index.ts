@@ -8,11 +8,11 @@ import { z } from "zod";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function loadPrompt(
-  name: string,
-  vars: Record<string, string>,
-): string {
-  let template = readFileSync(join(__dirname, "prompts", `${name}.md`), "utf-8");
+function loadPrompt(name: string, vars: Record<string, string>): string {
+  let template = readFileSync(
+    join(__dirname, "prompts", `${name}.md`),
+    "utf-8",
+  );
   for (const [key, value] of Object.entries(vars)) {
     template = template.replaceAll(`{{${key}}}`, value);
   }
@@ -20,12 +20,18 @@ function loadPrompt(
 }
 
 export function createServer() {
+  const instructions = readFileSync(
+    join(__dirname, "prompts", "instructions.md"),
+    "utf-8",
+  );
+
   const server = new McpServer(
     {
       name: "event-contract-builder",
       version: "0.1.0",
     },
     {
+      instructions,
       capabilities: { prompts: {}, tools: {} },
     },
   );
@@ -42,6 +48,12 @@ export function createServer() {
           .describe(
             "Free-form text describing the event, outcome, or forecast to turn into a display question",
           ),
+        count: z
+          .string()
+          .default("3")
+          .describe(
+            "Number of display question variants to generate (default: 3)",
+          ),
       },
     },
     (args) => ({
@@ -50,7 +62,10 @@ export function createServer() {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: loadPrompt("generate-display-question", { text: args.text }),
+            text: loadPrompt("generate-display-question", {
+              text: args.text,
+              count: args.count ?? "3",
+            }),
           },
         },
       ],
@@ -70,6 +85,15 @@ export function createServer() {
           .describe(
             "Free-form text describing the event, outcome, or forecast",
           ),
+        count: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .default(3)
+          .describe(
+            "Number of display question variants to generate (default: 3)",
+          ),
       },
       annotations: {
         readOnlyHint: true,
@@ -80,7 +104,10 @@ export function createServer() {
       content: [
         {
           type: "text" as const,
-          text: loadPrompt("generate-display-question", { text: args.text }),
+          text: loadPrompt("generate-display-question", {
+            text: args.text,
+            count: String(args.count ?? 3),
+          }),
         },
       ],
     }),
@@ -131,8 +158,7 @@ async function main() {
   });
 }
 
-const isMain =
-  fileURLToPath(import.meta.url) === (globalThis.Bun?.main ?? "");
+const isMain = fileURLToPath(import.meta.url) === (globalThis.Bun?.main ?? "");
 if (isMain) {
   main().catch(console.error);
 }
