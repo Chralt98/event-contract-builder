@@ -135,15 +135,22 @@ export function createServer() {
       },
     },
     (args) => {
-      const lines = args.units.flatMap((unit) =>
-        unit.type === "binary" ? [unit.question] : unit.questions,
-      );
+      const sections = args.units.map((unit, index) => {
+        const n = index + 1;
+        if (unit.type === "binary") {
+          return `**Unit ${n}: Binary market**\n- ${unit.question}`;
+        }
+        const label =
+          unit.type === "scalar" ? "Scalar market" : "Categorical market";
+        const bullets = unit.questions.map((q) => `- ${q}`).join("\n");
+        return `**Unit ${n}: ${label}**\n${bullets}`;
+      });
 
       return {
         content: [
           {
             type: "text" as const,
-            text: [...lines, "", args.followUp].join("\n"),
+            text: [...sections, "---", args.followUp].join("\n\n"),
           },
         ],
         structuredContent: args,

@@ -95,6 +95,59 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain(draft.followUp);
   });
 
+  test("submit_drafted_questions numbers every unit sequentially with its type, including each binary separately", async () => {
+    const draft = {
+      units: [
+        {
+          type: "binary",
+          question: "Will the Fed hold rates flat through 2026?",
+        },
+        {
+          type: "categorical",
+          questions: [
+            "Will the Fed cut rates 25bps in 2026?",
+            "Will the Fed cut rates 50bps in 2026?",
+          ],
+        },
+        {
+          type: "scalar",
+          questions: [
+            "Will Bitcoin close 2026 below $50k?",
+            "Will Bitcoin close 2026 above $50k?",
+          ],
+        },
+        {
+          type: "binary",
+          question: "Will the Fed raise rates in 2026?",
+        },
+      ],
+      followUp: "Which unit number should we use for further specification?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+
+    expect(text).toContain(
+      "**Unit 1: Binary market**\n- Will the Fed hold rates flat through 2026?",
+    );
+    expect(text).toContain(
+      "**Unit 2: Categorical market**\n- Will the Fed cut rates 25bps in 2026?",
+    );
+    expect(text).toContain(
+      "**Unit 3: Scalar market**\n- Will Bitcoin close 2026 below $50k?",
+    );
+    expect(text).toContain(
+      "**Unit 4: Binary market**\n- Will the Fed raise rates in 2026?",
+    );
+    expect(text).toContain("---\n\n" + draft.followUp);
+  });
+
   test("submit_drafted_questions rejects a unit missing its discriminated fields", async () => {
     const client = await connectClient();
 
