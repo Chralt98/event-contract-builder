@@ -54,6 +54,11 @@ Examples:
 2. Then, on a new line after the list, always close with one follow-up line. This line is required — never omit it. Match it to the number of selectable units (see Selection granularity), not the raw number of questions:
    - **One unit** — ask whether to use it for further specification, or how it should be revised.
    - **Multiple units** — ask which one to use for further specification, or how they should be revised.
+3. After presenting the questions, call `submit_drafted_questions` once to register the structured draft, organizing the same questions into `units` and reusing the same `followUp` line:
+   - Each standalone **binary** question becomes its own unit: `{ "type": "binary", "question": "<question>" }`.
+   - Each **scalar** market's range questions become one unit: `{ "type": "scalar", "questions": [...] }`.
+   - Each **categorical** market's option questions become one unit: `{ "type": "categorical", "questions": [...] }`.
+   Skip this call if Stop rules applied and no questions were drafted.
 
 # Selection granularity
 
@@ -69,11 +74,11 @@ A scalar or categorical market is selected as a whole — its range/option quest
 
 The input below may be the user **selecting or confirming questions that already exist** (e.g. "I'll take the categorical set", "let's go with the second one", or a list of finished questions) rather than a new event to draft.
 
-If so, do NOT generate or restate questions. The questions are already chosen. Apply Selection granularity: a selection resolves to exactly one unit — one binary question, or the full group of questions for one scalar or categorical market. If the user names only part of a scalar/categorical group, treat it as selecting that whole market. Respond only with: "Defining the selected question(s) now." and call `define_question_terms` for each question in the selected unit. Defining the selected questions is the required next step.
+If so, do NOT generate or restate questions, and do NOT call `submit_drafted_questions` — the questions are already chosen, not newly drafted. Apply Selection granularity: a selection resolves to exactly one unit — one binary question, or the full group of questions for one scalar or categorical market. If the user names only part of a scalar/categorical group, treat it as selecting that whole market. Respond only with: "Defining the selected question(s) now." and call `define_question_terms` for each question in the selected unit. Defining the selected questions is the required next step.
 
 # Stop rules
 
-If the input is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing.
+If the input is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing. Do not call `submit_drafted_questions` in that case — there is no draft to register.
 
 <input>
 {{text}}

@@ -19,14 +19,14 @@ describe("draft-display-question prompt", () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
     const names = prompts.map((p) => p.name);
-    expect(names).toContain("draft-display-question");
+    expect(names).toContain("draft-display-questions");
   });
 
   test("prompt accepts a single text argument", async () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
     const prompt = prompts.find(
-      (p) => p.name === "draft-display-question",
+      (p) => p.name === "draft-display-questions",
     )!;
     const argNames = prompt.arguments!.map((a) => a.name);
     expect(argNames).toEqual(["text"]);
@@ -38,7 +38,7 @@ describe("draft-display-question prompt", () => {
       "CPI year-over-year inflation might exceed 3 percent in June 2026";
 
     const result = await client.getPrompt({
-      name: "draft-display-question",
+      name: "draft-display-questions",
       arguments: { text: input },
     });
 

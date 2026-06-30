@@ -8,6 +8,53 @@ import { z } from "zod";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * A selectable draft unit. A scalar or categorical market is selected as a
+ * whole, so it carries several question strings; a binary market is one
+ * standalone question.
+ */
+const draftUnitSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("binary"),
+    question: z
+      .string()
+      .describe("The single Yes/No display question, ending in '?'."),
+  }),
+  z.object({
+    type: z.literal("scalar"),
+    questions: z
+      .array(z.string())
+      .describe(
+        "One binary question per numeric range. Ranges must not overlap and " +
+          "should cover the plausible space so exactly one resolves Yes.",
+      ),
+  }),
+  z.object({
+    type: z.literal("categorical"),
+    questions: z
+      .array(z.string())
+      .describe(
+        "One binary question per mutually exclusive option; each asks whether " +
+          "that option occurs.",
+      ),
+  }),
+]);
+
+const draftDisplayQuestionsOutputShape = {
+  units: z
+    .array(draftUnitSchema)
+    .describe(
+      "The drafted markets, each a single selectable unit: a binary question, " +
+        "or the complete set of questions for one scalar or categorical market.",
+    ),
+  followUp: z
+    .string()
+    .describe(
+      "The required follow-up line asking which unit to use for further " +
+        "specification, or how the draft should be revised.",
+    ),
+};
+
 function loadPrompt(name: string, vars: Record<string, string>): string {
   let template = readFileSync(
     join(__dirname, "prompts", `${name}.md`),
@@ -68,6 +115,40 @@ export function createServer() {
         },
       ],
     }),
+  );
+
+  server.registerTool(
+    "submit_drafted_questions",
+    {
+      title: "Submit Drafted Questions",
+      description:
+        "Validate and register a drafted set of display questions, " +
+        "organized into binary/scalar/categorical units per " +
+        "draft_display_questions guidance. Call this once after drafting " +
+        "questions for a new event, passing the same draft as structured " +
+        "units.",
+      inputSchema: draftDisplayQuestionsOutputShape,
+      outputSchema: draftDisplayQuestionsOutputShape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    (args) => {
+      const lines = args.units.flatMap((unit) =>
+        unit.type === "binary" ? [unit.question] : unit.questions,
+      );
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [...lines, "", args.followUp].join("\n"),
+          },
+        ],
+        structuredContent: args,
+      };
+    },
   );
 
   server.registerTool(
@@ -136,11 +217,11 @@ export function createServer() {
     {
       title: "Generate Definitions",
       description:
-        "Identify ambiguous terms in prediction market display questions and propose precise definitions for each.",
+        "Identify ambiguous terms in a prediction market display question and propose precise definitions for each.",
       argsSchema: {
         text: z
           .string()
-          .describe("The prediction market display questions to analyze"),
+          .describe("The prediction market display question to analyze"),
       },
     },
     (args) => ({

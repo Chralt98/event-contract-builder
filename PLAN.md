@@ -49,6 +49,61 @@ Steps (all done):
    README and `src/index.ts` prose.
 3. Remove `expand-range-contracts.ts` and its tests.
 
+## Approved scope change: structured draft output
+
+A structured shape for drafted display questions was added, split across two
+tools rather than folded into `draft_display_questions` directly.
+
+Output/draft shape: an array of selectable **units**, each a discriminated
+union on `type`:
+
+- `binary` — a single standalone Yes/No market: `{ type, question }` (one
+  question string).
+- `scalar` — a numeric outcome split into non-overlapping ranges:
+  `{ type, questions[] }`.
+- `categorical` — a set of mutually exclusive options: `{ type, questions[] }`.
+
+Plus a required `followUp` string (the existing follow-up line). Each `binary`
+unit and each `scalar`/`categorical` group is one selectable unit, matching the
+existing Selection granularity rule.
+
+**Rejected approach: MCP sampling.** An earlier version of this change made
+`draft_display_questions` itself a generating tool with a declared
+`outputSchema`, drawing the draft via `server.createMessage` (MCP sampling) so
+the connected host's own model produced the structured JSON. This was reverted
+after manual testing showed the call hanging until the SDK's 60s default
+request timeout.
+`sampling/createMessage` requests. Any tool needing host intelligence must stay
+prompt-returning; it cannot block on a sampling round trip.
+
+**Approach taken: two tools, prompt-returning + deterministic.**
+
+- `draft_display_questions` is unchanged in shape from before this scope
+  change — it has no `outputSchema` and returns the `draft-display-questions.md`
+  prompt as text for the host's own model to act on in its next turn, the same
+  way `define_question_terms` does.
+- A new tool, `submit_drafted_questions`, has both `inputSchema` and
+  `outputSchema` set to the units/`followUp` shape. It performs no generation:
+  it is purely deterministic, validating the host-drafted input and echoing it
+  back as `structuredContent`.
+- The prompt's Output section instructs the host model to present the
+  plain-text questions as before, then call `submit_drafted_questions` once
+  with the same draft organized into `units`, after it has finished drafting
+  (not during drafting, and not when the Selection guard or Stop rules apply).
+
+Steps (all done):
+
+1. Define the Zod unit/output schema (`draftUnitSchema`,
+   `draftDisplayQuestionsOutputShape`) shared by input and output.
+2. Revert `draft_display_questions` to a plain prompt-returning tool (no
+   `outputSchema`, synchronous handler).
+3. Add `submit_drafted_questions` with `inputSchema = outputSchema` set to the
+   shared shape; handler validates via the registered schema and echoes
+   `structuredContent`.
+4. Update the prompt's Output section to add the `submit_drafted_questions`
+   call as a final step, without changing the plain-text question format.
+5. Update server tool/prompt tests for the two-tool shape.
+
 ## Target directory structure
 
 ```text
