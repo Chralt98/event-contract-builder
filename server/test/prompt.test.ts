@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/index.ts";
 
-describe("generate-display-question prompt", () => {
+describe("draft-display-question prompt", () => {
   async function connectClient() {
     const server = createServer();
     const [clientTransport, serverTransport] =
@@ -19,14 +19,14 @@ describe("generate-display-question prompt", () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
     const names = prompts.map((p) => p.name);
-    expect(names).toContain("generate-display-question");
+    expect(names).toContain("draft-display-question");
   });
 
   test("prompt accepts a single text argument", async () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
     const prompt = prompts.find(
-      (p) => p.name === "generate-display-question",
+      (p) => p.name === "draft-display-question",
     )!;
     const argNames = prompt.arguments!.map((a) => a.name);
     expect(argNames).toEqual(["text"]);
@@ -38,7 +38,7 @@ describe("generate-display-question prompt", () => {
       "CPI year-over-year inflation might exceed 3 percent in June 2026";
 
     const result = await client.getPrompt({
-      name: "generate-display-question",
+      name: "draft-display-question",
       arguments: { text: input },
     });
 

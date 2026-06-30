@@ -62,7 +62,7 @@ export function createServer() {
       content: [
         {
           type: "text" as const,
-          text: loadPrompt("generate-display-question", {
+          text: loadPrompt("draft-display-question", {
             text: args.event_description,
           }),
         },
@@ -103,11 +103,11 @@ export function createServer() {
   );
 
   server.registerPrompt(
-    "generate-display-question",
+    "draft-display-question",
     {
-      title: "Generate Display Question",
+      title: "Draft Display Question",
       description:
-        "Generate a prediction market display question from free-form text input.",
+        "Draft a prediction market display question from free-form text input.",
       argsSchema: {
         text: z
           .string()
@@ -122,7 +122,7 @@ export function createServer() {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: loadPrompt("generate-display-question", {
+            text: loadPrompt("draft-display-question", {
               text: args.text,
             }),
           },

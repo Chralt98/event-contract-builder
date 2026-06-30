@@ -6,7 +6,7 @@ Build prediction market event contracts — structured documents that define wha
 
 ### draft_display_questions
 
-Turn a free-form event description into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified. Each question must describe a specific future occurrence and include a time reference for when the market observation period ends.
+Turn a free-form event description into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified. Each question must describe a specific future occurrence. Scalar outcomes (numeric ranges) and categorical outcomes (mutually exclusive options like election candidates) are decomposed into one binary Yes/No question per range or option, so they can be modeled as multiple binary markets.
 
 Use only when the user is describing a **new event** to turn into questions.
 
@@ -29,7 +29,7 @@ Use whenever the user **selects, confirms, or chooses** a display question — e
 
 ## Available prompts
 
-### generate-display-question
+### draft-display-question
 
 The same display question guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
 
