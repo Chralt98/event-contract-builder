@@ -62,7 +62,7 @@ export function createServer() {
       content: [
         {
           type: "text" as const,
-          text: loadPrompt("draft-display-question", {
+          text: loadPrompt("draft-display-questions", {
             text: args.event_description,
           }),
         },
@@ -103,16 +103,16 @@ export function createServer() {
   );
 
   server.registerPrompt(
-    "draft-display-question",
+    "draft-display-questions",
     {
-      title: "Draft Display Question",
+      title: "Draft Display Questions",
       description:
-        "Draft a prediction market display question from free-form text input.",
+        "Draft prediction market display questions from free-form text input.",
       argsSchema: {
         text: z
           .string()
           .describe(
-            "Free-form text describing the event, outcome, or forecast to turn into a display question",
+            "Free-form text describing the event, outcome, or forecast to turn into display questions",
           ),
       },
     },
@@ -122,7 +122,7 @@ export function createServer() {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: loadPrompt("draft-display-question", {
+            text: loadPrompt("draft-display-questions", {
               text: args.text,
             }),
           },
@@ -136,11 +136,11 @@ export function createServer() {
     {
       title: "Generate Definitions",
       description:
-        "Identify ambiguous terms in a prediction market display question and propose precise definitions for each.",
+        "Identify ambiguous terms in prediction market display questions and propose precise definitions for each.",
       argsSchema: {
         text: z
           .string()
-          .describe("The prediction market display question to analyze"),
+          .describe("The prediction market display questions to analyze"),
       },
     },
     (args) => ({
