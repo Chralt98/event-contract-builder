@@ -24,20 +24,42 @@ export function loadPrompt(name: string, vars: Record<string, string>): string {
   return template;
 }
 
+/** Human label for a draft unit's market type. */
+function unitLabel(unit: DraftUnitT): string {
+  return unit.type === "binary"
+    ? "Binary market"
+    : unit.type === "scalar"
+      ? "Scalar market"
+      : "Categorical market";
+}
+
+/** A unit's question(s) rendered as `- ` bullets, one per line. */
+function unitBullets(unit: DraftUnitT): string {
+  const questions = unit.type === "binary" ? [unit.question] : unit.questions;
+  return questions.map((q) => `- ${q}`).join("\n");
+}
+
 /**
  * Renders a selected unit as a numbered, typed header followed by its
  * question bullets, e.g. "**Selected Unit 2: Categorical market**\n- ...".
  */
 export function renderUnitHeader(unit: DraftUnitT, unitNumber: number): string {
-  const label =
-    unit.type === "binary"
-      ? "Binary market"
-      : unit.type === "scalar"
-        ? "Scalar market"
-        : "Categorical market";
-  const questions = unit.type === "binary" ? [unit.question] : unit.questions;
-  const bullets = questions.map((q) => `- ${q}`).join("\n");
-  return `**Selected Unit ${unitNumber}: ${label}**\n${bullets}`;
+  return `**Selected Unit ${unitNumber}: ${unitLabel(unit)}**\n${unitBullets(unit)}`;
+}
+
+/**
+ * Renders a drafted set of selectable units as 1-based `**Unit N: <type>
+ * market**` headings — in array order — each followed by its question bullets,
+ * blocks separated by a blank line. This is the draft list the user picks a
+ * unit from, distinct from the singular "Selected Unit" header above.
+ */
+export function renderDraftUnits(units: DraftUnitT[]): string {
+  return units
+    .map(
+      (unit, i) =>
+        `**Unit ${i + 1}: ${unitLabel(unit)}**\n${unitBullets(unit)}`,
+    )
+    .join("\n\n");
 }
 
 /**

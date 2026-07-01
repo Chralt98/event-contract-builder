@@ -134,10 +134,20 @@ The same "format lives in code, template says echo verbatim" convention was then
 applied back to `define_terms`: its `submit_defined_terms` handler now renders
 the reply via the shared `renderDefinitions` helper, and `define-terms.md` was
 slimmed from a six-step layout spec to "call the tool, present its Markdown
-verbatim." `draft_display_questions` still formats its reply from prompt prose,
-because there `submit_drafted_questions` is a silent validator rather than the
-render source — aligning it would require flipping that flow to echo the tool's
-output, and is deferred.
+verbatim."
+
+`draft_display_questions` was then aligned too. Previously `submit_drafted_questions`
+was a silent validator ("do not show its result") and the model formatted the
+draft from prompt prose. That flow was flipped: `submit_drafted_questions` is now
+the render source — its handler renders the numbered `**Unit N**` list via a new
+`renderDraftUnits` helper (which shares `unitLabel`/`unitBullets` with
+`renderUnitHeader`), and the model calls it first, then echoes the returned
+Markdown verbatim. `draft-display-questions.md` keeps only the semantic guidance
+(decomposition, unit organization, follow-up wording, Selection/Stop guards); the
+layout spec is gone. All three prompt-driven steps now own their visible format
+in `server/src/render.ts` rather than in template prose. Hard enforcement of the
+rendered output (a widget from `structuredContent`) remains the deferred robust
+fix noted above.
 
 It mirrors the `define_terms` two-tool + prompt shape:
 

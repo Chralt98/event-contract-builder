@@ -8,13 +8,13 @@ Build prediction market event contracts — structured documents that define wha
 
 Turn a free-form event description into short, trader-facing display questions (e.g. "Will U.S. CPI hit 3% in June 2026?"). The number of questions is inferred from the user's input; defaults to three if unspecified. Each question must describe a specific future occurrence. Scalar outcomes (numeric ranges) and categorical outcomes (mutually exclusive options like election candidates) are decomposed into one binary Yes/No question per range or option, so they can be modeled as multiple binary markets.
 
-Its returned guidance has you compose your reply to the user as Markdown: standalone binary questions as plain lines, but each scalar or categorical market's range/option questions grouped under a bold `**Scalar market**` / `**Categorical market**` heading. **Reply with that grouped Markdown, exactly as the guidance specifies** — never collapse a scalar/categorical group into an unlabeled flat list of lines; that hides which questions belong to the same market and makes the required follow-up line ("use this market...") ambiguous.
+Its returned guidance has you work out the questions, decompose scalar/categorical outcomes into ranges/options, and organize everything into selectable binary/scalar/categorical units — but it does not have you format the reply. The visible Markdown is rendered by `submit_drafted_questions`; call that, then present its returned text verbatim.
 
 Use only when the user is describing a **new event** to turn into questions.
 
 ### submit_drafted_questions
 
-Validate and register the same drafted set of display questions, organized into binary/scalar/categorical units, after you have already presented them to the user. Pass the same draft as structured `units` plus the `followUp` line — each standalone binary question is its own unit, and each scalar/categorical market's range/option questions form one unit together. This call is for registration only; do not show its raw JSON result to the user or restate its text — the user already saw the grouped Markdown from `draft_display_questions`.
+Validate, register, **and render** the drafted set of display questions. Pass the draft as structured `units` plus the `followUp` line — each standalone binary question is its own unit, and each scalar/categorical market's range/option questions form one unit together. It returns the trader-facing reply already formatted as Markdown: numbered `**Unit N: … market**` headings, question bullets, a `---` rule, and the follow-up line. Reproduce that returned Markdown **verbatim** for the user — this call is what produces the reply the user sees. Do not restate it in your own words or show its raw JSON `structuredContent`.
 
 Skip this call when selecting an existing question (see `define_terms` below) or when the input was too vague to draft anything.
 
@@ -43,8 +43,8 @@ Validate and register the ranked resolution source hierarchy for a unit, after t
 ## Workflow: Building an event contract
 
 1. **Gather the event details** — identify the core event, measurable threshold, and time boundary from the user's input. If any of these are missing, ask the user to clarify before proceeding.
-2. **Call `draft_display_questions`** with the event description, then reply to the user with the grouped Markdown draft per its guidance (see above) — keep each question between 10 and 200 characters, ending with a question mark.
-3. **Call `submit_drafted_questions`** with the same draft organized into binary/scalar/categorical units, to validate and register the structured draft. Do not show its result to the user.
+2. **Call `draft_display_questions`** with the event description and work out the questions per its guidance (see above) — keep each question between 10 and 200 characters, ending with a question mark. Do not format the reply yourself.
+3. **Call `submit_drafted_questions`** with the draft organized into binary/scalar/categorical units, then present its returned Markdown to the user verbatim — this call renders the reply the user sees.
 4. **Review with the user** — ask which unit captures their intent. A good display question passes three checks:
    - A trader reading only this question knows exactly what they are betting on
    - The core meaning (event, threshold, time period) is preserved

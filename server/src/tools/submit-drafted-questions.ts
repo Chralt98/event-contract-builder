@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DraftUnit } from "../../../src/schema/display-question";
+import { renderDraftUnits } from "../render";
 
 const draftDisplayQuestionsOutputShape = {
   units: z
@@ -35,27 +36,16 @@ export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
         idempotentHint: true,
       },
     },
-    (args) => {
-      const sections = args.units.map((unit, index) => {
-        const n = index + 1;
-        if (unit.type === "binary") {
-          return `**Unit ${n}: Binary market**\n- ${unit.question}`;
-        }
-        const label =
-          unit.type === "scalar" ? "Scalar market" : "Categorical market";
-        const bullets = unit.questions.map((q) => `- ${q}`).join("\n");
-        return `**Unit ${n}: ${label}**\n${bullets}`;
-      });
-
-      return {
-        content: [
-          {
-            type: "text" as const,
-            text: [...sections, "---", args.followUp].join("\n\n"),
-          },
-        ],
-        structuredContent: args,
-      };
-    },
+    (args) => ({
+      content: [
+        {
+          type: "text" as const,
+          text: [renderDraftUnits(args.units), "---", args.followUp].join(
+            "\n\n",
+          ),
+        },
+      ],
+      structuredContent: args,
+    }),
   );
 }
