@@ -113,15 +113,22 @@ deadline and observation window are anchored to a source's publication
 schedule, and because naming the source is the natural continuation of
 disambiguating the terms it measures.
 
-The step is presented to the user in **two turns**, driven entirely by the
-prompt (no extra tools): Turn 1 reveals only the ranked source **names**
-(with publishers) and asks whether the hierarchy is right; Turn 2, only after
-the user approves, calls `submit_resolution_source` with the full `DataSource`
-records and presents the detail + link checks. This keeps the user from being
-buried in per-source detail for sources they may not want. A second tool/prompt
-pair for the names phase was considered and rejected — the names list is a
-transient proposal carried in conversation context, not a registered artifact,
-so staging the single prompt is sufficient.
+The step is presented to the user in **two turns**, each backed by a tool that
+renders the exact Markdown so the visible format lives in code, not in prompt
+prose: Turn 1 calls `propose_resolution_sources` to reveal only the ranked
+source **names** (with publishers) and asks whether the hierarchy is right;
+Turn 2, only after the user approves, calls `submit_resolution_source` with the
+full `DataSource` records and presents the detail + link checks. This keeps the
+user from being buried in per-source detail for sources they may not want.
+
+(An earlier revision drove Turn 1 from the prompt alone, on the reasoning that
+the names list is a transient proposal rather than a registered artifact. That
+was reversed: keeping the Turn 1 format as prose in `define-resolution-source.md`
+duplicated the `submit_resolution_source` layout in English and drifted from it.
+Moving it into `renderSourceProposal` in `server/src/render.ts` makes the format
+single-sourced and unit-testable, and shrinks the template to "call the tool,
+echo verbatim." The proposal tool still echoes `structuredContent` for parity
+with the other steps, even though the names list is not persisted downstream.)
 
 It mirrors the `define_terms` two-tool + prompt shape:
 
@@ -129,6 +136,11 @@ It mirrors the `define_terms` two-tool + prompt shape:
   `unit_number`, `selected_unit`, and the agreed `definitions` (so sources
   resolve against the definitions, not the raw wording). Returns the
   `define-resolution-source.md` prompt for the host model to act on.
+- `propose_resolution_sources` — deterministic, read-only, `inputSchema =
+outputSchema` with `unit_number`, `selected_unit`, `sources` (a names-only
+  ranked array of `rank`/`name`/`publisher`, `min(1)`), and `followUp`. Renders
+  the Turn 1 names-only hierarchy via `renderSourceProposal` and echoes
+  `structuredContent`.
 - `submit_resolution_source` — deterministic, `inputSchema = outputSchema`
   with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
   existing `DataSource` schema, `min(1)`), and `followUp`. Validates and echoes
@@ -151,6 +163,17 @@ stays equal to the input (reachability is transient and text-only, so it does
 not pollute the registered `outputSchema`). Semantic "correct in this context"
 remains the model/user's responsibility.
 
+**Known limitation — host reformatting.** The submit tool returns fully
+formatted Markdown (name as a plain bold header, each attribute as a `- `
+bullet), but the ChatGPT host model composes its own reply from that output and
+has been observed paraphrasing it — flattening the bullets into plain lines,
+dropping the bold name, and renaming fields (e.g. `URL` → "API URL"). The
+current mitigation is prompt-level only: `define-resolution-source.md` (Turn 2)
+and `instructions.md` instruct the model to reproduce the returned Markdown
+verbatim. This makes faithful rendering likely but cannot guarantee it. The
+robust fix is deferred (see Deferred): render the hierarchy in the `web/` React
+widget from `structuredContent` instead of relying on the model to echo text.
+
 Steps (all done):
 
 1. Add `define-resolution-source.md` template and `renderDefinitions` /
@@ -162,6 +185,9 @@ Steps (all done):
 4. Register all three in `server/src/index.ts` and document the step in
    `instructions.md`.
 5. Add server tool/prompt tests for the new step.
+6. Move the Turn 1 names-only format out of the prompt into a
+   `propose_resolution_sources` tool backed by `renderSourceProposal`; slim
+   `define-resolution-source.md` to "call the tool, echo verbatim."
 
 ## Target directory structure
 
@@ -415,3 +441,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 - External market or resolution-source integrations.
 - App monetization and app-directory submission work beyond the metadata
   required to keep the implementation submission-ready.
+- Guaranteed-fidelity rendering of the resolution-source hierarchy via the
+  `web/` React widget (driven by `submit_resolution_source`'s
+  `structuredContent`), replacing the current reliance on the host model to
+  echo the tool's Markdown verbatim. See the "Known limitation — host
+  reformatting" note under the resolution-source step.

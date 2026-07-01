@@ -37,32 +37,34 @@ Prefer a single primary source. Add a lower-ranked fallback only for a concrete 
 # Output
 
 This step runs in **two turns**. Work out the full source records internally,
-but reveal the hierarchy first as a short list and only expand to full detail
-once the user approves it — so the user is never buried in details for sources
-they may not even want.
+but reveal the hierarchy first as names only and expand to full detail only once
+the user approves it — so the user is never buried in details for sources they
+may not even want.
+
+In both turns a tool renders the exact Markdown for you. Your job is to call the
+tool and present its returned text to the user **verbatim** — do not paraphrase,
+reformat, rename fields, reorder, or add or drop anything. The output format is
+owned by the tool, not by you.
 
 ## Turn 1 — propose the hierarchy (names only)
 
-Present your reply in exactly this order, and nothing else:
+Once you have worked out the ranked hierarchy, call `propose_resolution_sources` with:
 
-1. The selected unit's header line and its market question(s) as bullet points, exactly as provided above.
-2. A `---` separator line on its own.
-3. A `### Resolution Source Hierarchy` section header on its own line.
-4. The ranked sources as a short numbered list — one `**N. Name** (Publisher)` line per source, in rank order (1 = primary). **Names and publishers only.** Do not show URLs, dataset ids, publication schedules, accessibility, independence notes, or link checks yet.
-5. A `---` separator line on its own.
-6. A follow-up question asking whether this hierarchy is right — for example, "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
+- `unit_number`: the 1-based number of the selected unit, as shown in the prior draft
+- `selected_unit`: the exact market unit provided as input
+- `sources`: the ranked hierarchy as **names only** — each with `rank` (1 = primary), `name`, and `publisher`. Do not include URLs, dataset ids, schedules, accessibility, or independence notes at this stage.
+- `followUp`: a single sentence asking whether the hierarchy is right — for example, "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
 
-Then **stop**. Do **not** call `submit_resolution_source` in this turn, and do not reveal any further per-source detail.
+Present the tool's returned Markdown verbatim, then **stop**. Do **not** call `submit_resolution_source` in this turn.
 
 ## Turn 2 — detail and register (only after the user approves)
 
 Once the user approves the hierarchy (or after you revise it to their liking and they approve the revision), call `submit_resolution_source` with the full records for the agreed sources:
 
-- `unit_number`: the 1-based number of the selected unit, as shown in the prior draft
-- `selected_unit`: the exact market unit provided as input
+- `unit_number`, `selected_unit`: as in Turn 1
 - `sources`: an array of resolution sources, each with `rank` (1 = primary), `name`, `publisher`, `url`, optional `datasetId`, `publicationSchedule`, `controlsFor` (the facts it authoritatively establishes), `publiclyAccessible`, and `independenceNote`
 - `followUp`: a single sentence asking the user whether the detailed sources are correct or should change
 
-`submit_resolution_source` renders the full per-source detail and runs an automated reachability check on every URL. Present that detailed output to the user, and if any link is flagged unreachable or errored, surface it and correct the URL before locking in the hierarchy.
+`submit_resolution_source` runs an automated reachability check on every URL and returns the full per-source detail already formatted as Markdown. Present that returned detail to the user verbatim, exactly as the two turns above require. If any link is flagged unreachable or errored, surface it to the user and correct the URL before locking in the hierarchy.
 
-If the user instead asks to change the hierarchy, revise the names-only list (Turn 1) and wait for approval again — do not jump to `submit_resolution_source` until the set of sources is agreed.
+If the user instead asks to change the hierarchy, revise the names-only proposal (Turn 1) and wait for approval again — do not jump to `submit_resolution_source` until the set of sources is agreed.

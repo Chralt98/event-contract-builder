@@ -45,6 +45,7 @@ describe("event-contract tools", () => {
     expect(names).toContain("define_terms");
     expect(names).toContain("submit_defined_terms");
     expect(names).toContain("define_resolution_source");
+    expect(names).toContain("propose_resolution_sources");
     expect(names).toContain("submit_resolution_source");
   });
 
@@ -57,6 +58,7 @@ describe("event-contract tools", () => {
       "define_terms",
       "submit_defined_terms",
       "define_resolution_source",
+      "propose_resolution_sources",
       "submit_resolution_source",
     ]) {
       const tool = tools.find((t) => t.name === name)!;
@@ -318,6 +320,86 @@ describe("event-contract tools", () => {
     );
     expect(text[0]!.text).toContain("**CPI** — The CPI-U all-items index");
     expect(text[0]!.text).toContain("prediction market resolution designer");
+  });
+
+  test("propose_resolution_sources advertises an output schema", async () => {
+    const client = await connectClient();
+    const { tools } = await client.listTools();
+    const tool = tools.find((t) => t.name === "propose_resolution_sources")!;
+    expect(tool.outputSchema).toBeDefined();
+    expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
+    expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
+    expect(tool.outputSchema?.properties).toHaveProperty("sources");
+    expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+  });
+
+  test("propose_resolution_sources renders names-only sources in rank order and echoes structured content", async () => {
+    const input = {
+      unit_number: 1,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+      },
+      sources: [
+        {
+          rank: 2,
+          name: "FRED CPI series",
+          publisher: "Federal Reserve Bank of St. Louis",
+        },
+        {
+          rank: 1,
+          name: "BLS Consumer Price Index",
+          publisher: "U.S. Bureau of Labor Statistics",
+        },
+      ],
+      followUp:
+        "Does this source hierarchy look right, or should we add, remove, or reorder any source?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: input,
+    });
+
+    expect(result.structuredContent).toEqual(input);
+
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+    expect(text).toContain(
+      "**Selected Unit 1: Binary market**\n- Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+    );
+    expect(text).toContain(
+      "---\n\n### Resolution Source Hierarchy\n\n**1. BLS Consumer Price Index** (U.S. Bureau of Labor Statistics)",
+    );
+    // Rank 1 renders before rank 2 regardless of input order.
+    const primaryIdx = text.indexOf("**1. BLS Consumer Price Index**");
+    const fallbackIdx = text.indexOf("**2. FRED CPI series**");
+    expect(primaryIdx).toBeGreaterThanOrEqual(0);
+    expect(fallbackIdx).toBeGreaterThan(primaryIdx);
+    // Names only: no per-source attribute detail leaks into the proposal.
+    expect(text).not.toContain("- URL:");
+    expect(text).not.toContain("- Establishes:");
+    expect(text).toContain("---\n\n" + input.followUp);
+  });
+
+  test("propose_resolution_sources rejects an empty source list", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [],
+        followUp: "Which source?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
   });
 
   test("submit_resolution_source advertises an output schema", async () => {

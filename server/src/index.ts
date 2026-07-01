@@ -9,6 +9,7 @@ import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-quest
 import { registerDefineTermsTool } from "./tools/define-terms";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
 import { registerDefineResolutionSourceTool } from "./tools/define-resolution-source";
+import { registerProposeResolutionSourcesTool } from "./tools/propose-resolution-sources";
 import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
 import { registerDraftDisplayQuestionsPrompt } from "./prompts/draft-display-questions";
 import { registerDefineTermsPrompt } from "./prompts/define-terms";
@@ -38,6 +39,7 @@ export function createServer() {
   registerDefineTermsTool(server);
   registerSubmitDefinedTermsTool(server);
   registerDefineResolutionSourceTool(server);
+  registerProposeResolutionSourcesTool(server);
   registerSubmitResolutionSourceTool(server);
   registerDraftDisplayQuestionsPrompt(server);
   registerDefineTermsPrompt(server);

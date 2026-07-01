@@ -51,6 +51,21 @@ export function renderDefinitions(definitions: DefinitionsT): string {
 }
 
 /**
+ * Renders a names-only source hierarchy proposal (Turn 1): one
+ * `**N. Name** (Publisher)` line per source in rank order, with no attribute
+ * bullets. The detailed per-attribute view is produced later by `renderSources`,
+ * so the two stages stay format-consistent while living in one place.
+ */
+export function renderSourceProposal(
+  sources: { rank: number; name: string; publisher: string }[],
+): string {
+  return [...sources]
+    .sort((a, b) => a.rank - b.rank)
+    .map((s) => `**${s.rank}. ${s.name}** (${s.publisher})`)
+    .join("\n");
+}
+
+/**
  * Renders resolution sources in rank order as one block per source:
  * a `**N. Name** (Publisher)` heading followed by its attribute bullets. When a
  * `reachability` map (URL → advisory link-check label) is supplied, a

@@ -34,7 +34,7 @@ This is the step that follows `define_terms`. Do not specify settlement calculat
 
 ### submit_resolution_source
 
-Validate and register the ranked resolution source hierarchy for a unit, after you have presented the sources to the user. This call also runs an advisory reachability check on each source URL and annotates the rendered output with a per-source link-check status; if any link is flagged unreachable or errored, surface that to the user and fix the URL before locking in the hierarchy. This call is for registration only; do not show its raw JSON result to the user or restate its text.
+Validate and register the ranked resolution source hierarchy for a unit, after the user has approved the hierarchy names (Turn 2 of `define_resolution_source`). This call runs an advisory reachability check on each source URL and returns the full per-source detail already formatted as Markdown — each source's `**N. Name** (Publisher)` line is a plain header and every attribute below it is its own `- ` bullet, plus a per-source link-check status. Reproduce that returned Markdown **verbatim** for the user: do not paraphrase it, flatten the bullets into plain lines, drop the bold name, or rename fields. If any link is flagged unreachable or errored, surface that and fix the URL before locking in the hierarchy. Do not show its raw JSON `structuredContent`.
 
 ## Workflow: Building an event contract
 
