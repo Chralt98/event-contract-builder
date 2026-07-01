@@ -25,9 +25,7 @@ describe("draft-display-question prompt", () => {
   test("prompt accepts a single text argument", async () => {
     const client = await connectClient();
     const { prompts } = await client.listPrompts();
-    const prompt = prompts.find(
-      (p) => p.name === "draft-display-questions",
-    )!;
+    const prompt = prompts.find((p) => p.name === "draft-display-questions")!;
     const argNames = prompt.arguments!.map((a) => a.name);
     expect(argNames).toEqual(["text"]);
   });
@@ -52,5 +50,37 @@ describe("draft-display-question prompt", () => {
     expect(text).toContain(input);
     expect(text).toContain("prediction market product copywriter");
     expect(text).toContain("prediction market platforms");
+  });
+
+  test("define-resolution-source prompt is listed and renders its inputs", async () => {
+    const client = await connectClient();
+    const { prompts } = await client.listPrompts();
+    const prompt = prompts.find((p) => p.name === "define-resolution-source")!;
+    expect(prompt).toBeDefined();
+    const argNames = prompt.arguments!.map((a) => a.name);
+    expect(argNames).toContain("text");
+    expect(argNames).toContain("definitions");
+
+    const result = await client.getPrompt({
+      name: "define-resolution-source",
+      arguments: {
+        text: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        definitions: "**CPI** — The CPI-U all-items index, NSA, from the BLS.",
+      },
+    });
+
+    const text =
+      result.messages[0]!.content.type === "text"
+        ? result.messages[0]!.content.text
+        : "";
+    expect(text).toContain(
+      "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+    );
+    expect(text).toContain("**CPI** — The CPI-U all-items index");
+    expect(text).toContain("prediction market resolution designer");
+    // Two-turn staging: names-only first, submit only after approval.
+    expect(text).toContain("Turn 1 — propose the hierarchy (names only)");
+    expect(text).toContain("Turn 2 — detail and register");
+    expect(text).toMatch(/Do \*\*not\*\* call `submit_resolution_source`/);
   });
 });

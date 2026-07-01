@@ -8,8 +8,11 @@ import { registerDraftDisplayQuestionsTool } from "./tools/draft-display-questio
 import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-questions";
 import { registerDefineTermsTool } from "./tools/define-terms";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
+import { registerDefineResolutionSourceTool } from "./tools/define-resolution-source";
+import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
 import { registerDraftDisplayQuestionsPrompt } from "./prompts/draft-display-questions";
 import { registerDefineTermsPrompt } from "./prompts/define-terms";
+import { registerDefineResolutionSourcePrompt } from "./prompts/define-resolution-source";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,8 +37,11 @@ export function createServer() {
   registerSubmitDraftedQuestionsTool(server);
   registerDefineTermsTool(server);
   registerSubmitDefinedTermsTool(server);
+  registerDefineResolutionSourceTool(server);
+  registerSubmitResolutionSourceTool(server);
   registerDraftDisplayQuestionsPrompt(server);
   registerDefineTermsPrompt(server);
+  registerDefineResolutionSourcePrompt(server);
 
   return server;
 }

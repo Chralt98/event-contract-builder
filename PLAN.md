@@ -104,6 +104,65 @@ Steps (all done):
    call as a final step, without changing the plain-text question format.
 5. Update server tool/prompt tests for the two-tool shape.
 
+## Approved scope change: resolution-source step
+
+The specification flow gains a step after `define_terms`: identify the
+authoritative data source(s) that will settle a selected unit and rank them
+into a fixed fallback hierarchy. It comes before timing because the resolution
+deadline and observation window are anchored to a source's publication
+schedule, and because naming the source is the natural continuation of
+disambiguating the terms it measures.
+
+The step is presented to the user in **two turns**, driven entirely by the
+prompt (no extra tools): Turn 1 reveals only the ranked source **names**
+(with publishers) and asks whether the hierarchy is right; Turn 2, only after
+the user approves, calls `submit_resolution_source` with the full `DataSource`
+records and presents the detail + link checks. This keeps the user from being
+buried in per-source detail for sources they may not want. A second tool/prompt
+pair for the names phase was considered and rejected — the names list is a
+transient proposal carried in conversation context, not a registered artifact,
+so staging the single prompt is sufficient.
+
+It mirrors the `define_terms` two-tool + prompt shape:
+
+- `define_resolution_source` — prompt-returning, read-only. Inputs
+  `unit_number`, `selected_unit`, and the agreed `definitions` (so sources
+  resolve against the definitions, not the raw wording). Returns the
+  `define-resolution-source.md` prompt for the host model to act on.
+- `submit_resolution_source` — deterministic, `inputSchema = outputSchema`
+  with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
+  existing `DataSource` schema, `min(1)`), and `followUp`. Validates and echoes
+  `structuredContent`; renders sources in rank order.
+- `define-resolution-source` prompt — the same guidance as an inspectable
+  prompt template, accepting `text` and optional `definitions`.
+
+Scope is source identity/hierarchy only. Settlement calculation
+(`settlementCalculationProcedure`, methodology locking) and timing are
+deferred to later steps.
+
+`submit_resolution_source` additionally runs a **live, advisory** reachability
+check on each source URL (`server/src/url-check.ts`): a HEAD request (GET
+fallback) with a short timeout, in parallel across sources. Results are
+rendered as a per-source `Link check:` line (`✓ 200`, `⚠ 403 blocked`,
+`✗ 404`, `✗ unreachable`), and a warning line is appended when any link is not
+clean. It never blocks registration — `z.url()` already guarantees format
+validity; this only surfaces dead/typo links for the user to fix. `structuredContent`
+stays equal to the input (reachability is transient and text-only, so it does
+not pollute the registered `outputSchema`). Semantic "correct in this context"
+remains the model/user's responsibility.
+
+Steps (all done):
+
+1. Add `define-resolution-source.md` template and `renderDefinitions` /
+   `renderSources` helpers in `server/src/render.ts`.
+2. Add the `define_resolution_source` prompt-returning tool and the
+   `define-resolution-source` prompt.
+3. Add the `submit_resolution_source` tool (`inputSchema = outputSchema` over
+   the ranked `DataSource` array).
+4. Register all three in `server/src/index.ts` and document the step in
+   `instructions.md`.
+5. Add server tool/prompt tests for the new step.
+
 ## Target directory structure
 
 ```text

@@ -52,6 +52,7 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
             text: [
               unitHeader,
               "---",
+              "### Definitions",
               lines.join("\n"),
               "---",
               args.followUp,

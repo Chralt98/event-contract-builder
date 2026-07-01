@@ -24,6 +24,18 @@ Identify ambiguous words and phrases in a display question and propose precise d
 
 Use whenever the user **selects, confirms, or chooses** a display question — even if the message repeats the question text. Never re-run `draft_display_questions` for a selection.
 
+### define_resolution_source
+
+Identify the authoritative data source(s) that will settle the selected unit and rank them into a fixed fallback hierarchy (rank 1 is the primary source). Sources resolve against the **agreed definitions**, so run this after the user has confirmed the term definitions.
+
+This step runs in two turns to avoid overloading the user: **first** present just the ranked source **names** (with publishers) and ask whether the hierarchy is right; **only after the user approves** do you call `submit_resolution_source` with the full source records and present the detail. If the user wants changes, revise the names-only list and ask again before detailing.
+
+This is the step that follows `define_terms`. Do not specify settlement calculation or timing here; those come later.
+
+### submit_resolution_source
+
+Validate and register the ranked resolution source hierarchy for a unit, after you have presented the sources to the user. This call also runs an advisory reachability check on each source URL and annotates the rendered output with a per-source link-check status; if any link is flagged unreachable or errored, surface that to the user and fix the URL before locking in the hierarchy. This call is for registration only; do not show its raw JSON result to the user or restate its text.
+
 ## Workflow: Building an event contract
 
 1. **Gather the event details** — identify the core event, measurable threshold, and time boundary from the user's input. If any of these are missing, ask the user to clarify before proceeding.
@@ -34,7 +46,8 @@ Use whenever the user **selects, confirms, or chooses** a display question — e
    - The core meaning (event, threshold, time period) is preserved
    - It reads as conversational and scannable, not formal or legalistic
 5. **Call `define_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions. Present them to the user for review. Do not wait for an additional prompt.
-6. **Iterate** — if the user wants changes to the question or definitions, revise and re-check against the criteria above.
+6. **Call `define_resolution_source`** once the user agrees the definitions — first present just the ranked source **names** and ask whether the hierarchy is right. Only after the user approves, call `submit_resolution_source` with the full source records and present the detail (including its link-check results) for review.
+7. **Iterate** — if the user wants changes to the question, definitions, or sources, revise and re-check against the criteria above.
 
 ## Available prompts
 
@@ -45,3 +58,7 @@ The same display question guidance available as a prompt template. Use this when
 ### define-terms
 
 The same definitions guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
+
+### define-resolution-source
+
+The same resolution-source guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
