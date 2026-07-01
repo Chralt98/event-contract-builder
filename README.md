@@ -1,37 +1,128 @@
 # event-contract-builder
 
-A TypeScript library, CLI, and MCP server for generating, validating, and converting YAML and JSON event contract specifications for prediction markets.
+An MCP server (with an underlying TypeScript schema library) for turning a
+free-form event description into trader-facing prediction market display
+questions and precise term definitions — the first steps of drafting an
+event contract for prediction markets.
 
 ## Status
 
-This package is in early development. The public API may change before v1.0.0.
+Early development; the public API and tool set may change before v1.0.0.
 
-The library entry point is available through the package root after building:
+The **MCP server is the working, demonstrable part of this project today**.
+The schema library (`src/schema`) models a complete event-contract
+specification, but nothing in this repo yet turns a server-drafted question
+into one of those specs — see [Library (schema)](#library-schema) below.
+
+## MCP server
+
+`server/` runs a stateless HTTP MCP server exposing tools that draft display
+questions and definitions from free-form text.
+
+### Run it
 
 ```sh
-bun run build
+bun install
+bun run dev:server
 ```
 
-## Installation
+This starts the server at `http://localhost:8787/mcp` and restarts on file
+changes.
+
+Inspect it locally with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+
+```sh
+bun run dev:server:inspect
+```
+
+To connect an external client (e.g. ChatGPT developer mode) to your local
+server, expose it over HTTPS:
+
+```sh
+bun run dev:server:tunnel
+```
+
+### Tools
+
+| Tool                       | Purpose                                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `draft_display_questions`  | Turn a free-form event description into binary/scalar/categorical display questions.                     |
+| `submit_drafted_questions` | Validate and register the drafted questions, organized into units, after they've been shown to the user. |
+| `define_terms`             | Identify ambiguous terms in a selected question and propose precise definitions for each.                |
+| `submit_defined_terms`     | Validate and register the definitions for a selected question.                                           |
+
+Two prompts, `draft-display-questions` and `generate-definitions`, expose the
+same guidance as inspectable prompt templates.
+
+### Workflow
+
+1. **Draft** — call `draft_display_questions` with a free-form event
+   description, e.g. `"CPI year-over-year inflation might exceed 3 percent in
+June 2026"`. The response groups the drafted questions by market type:
+
+   ```md
+   **Scalar market**
+
+   - Will CPI YoY be below 3 percent in June 2026?
+   - Will CPI YoY be at least 3 percent in June 2026?
+   ```
+
+2. **Submit** — call `submit_drafted_questions` with the same draft as
+   structured units, to validate and register it:
+
+   ```json
+   {
+     "units": [
+       {
+         "type": "scalar",
+         "questions": [
+           "Will CPI YoY be below 3 percent in June 2026?",
+           "Will CPI YoY be at least 3 percent in June 2026?"
+         ]
+       }
+     ],
+     "followUp": "Which unit should we use for further specification?"
+   }
+   ```
+
+3. **Select and define** — once the user picks a unit, call `define_terms`
+   with that unit to get proposed definitions for its ambiguous terms (e.g.
+   "CPI YoY", "June 2026").
+
+4. **Submit definitions** — call `submit_defined_terms` with the selected
+   unit and the agreed definitions to validate and register them.
+
+## Library (schema)
+
+`src/schema` models a complete event-contract specification — meta,
+underlying event, outcome, trading parameters, resolution, payout, integrity
+assessment, and compliance posture — as `zod` schemas, published as an npm
+package.
+
+**This library has no consumer in this repo yet.** The MCP server above only
+drafts display questions and term definitions; nothing currently assembles
+those into a full `EventContractSpec`. Treat the example below as a
+standalone demonstration of the schema, not a description of an existing
+pipeline.
+
+### Installation
 
 ```sh
 npm install event-contract-builder
 ```
 
-## Quick usage
+### Product name
 
-### 1. Product name
-
-Every contract has a trader-facing product name — a free-form question string
-(10–200 characters, ending with `?`). Names are typically authored by
-agents/LLMs via prompt guidance rather than assembled from fixed slots, so the
-schema imposes only length and punctuation constraints.
+Every contract has a trader-facing product name — a free-form question
+string (10–200 characters, ending with `?`). Names are typically authored by
+agents/LLMs via prompt guidance rather than assembled from fixed slots, so
+the schema imposes only length and punctuation constraints.
 
 ```ts
 const productName = "Will CPI YoY be at least 3 percent?";
 ```
 
-### 2. Build and validate a full contract spec
+### Build and validate a full contract spec
 
 A complete spec includes meta (with product name), underlying event, outcome, trading parameters, resolution, payout, integrity assessment, and compliance posture. The `canonicalStatement` is rendered from structured resolution fields — hand-written statements that drift from the structured terms fail validation.
 
