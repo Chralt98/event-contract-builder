@@ -9,7 +9,7 @@ import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-quest
 import { registerDefineTermsTool } from "./tools/define-terms";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
 import { registerDraftDisplayQuestionsPrompt } from "./prompts/draft-display-questions";
-import { registerGenerateDefinitionsPrompt } from "./prompts/generate-definitions";
+import { registerDefineTermsPrompt } from "./prompts/define-terms";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -35,7 +35,7 @@ export function createServer() {
   registerDefineTermsTool(server);
   registerSubmitDefinedTermsTool(server);
   registerDraftDisplayQuestionsPrompt(server);
-  registerGenerateDefinitionsPrompt(server);
+  registerDefineTermsPrompt(server);
 
   return server;
 }

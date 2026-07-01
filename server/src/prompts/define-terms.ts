@@ -2,11 +2,11 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loadPrompt } from "../render";
 
-export function registerGenerateDefinitionsPrompt(server: McpServer): void {
+export function registerDefineTermsPrompt(server: McpServer): void {
   server.registerPrompt(
-    "generate-definitions",
+    "define-terms",
     {
-      title: "Generate Definitions",
+      title: "Define Terms",
       description:
         "Identify ambiguous terms in a prediction market display question and propose precise definitions for each.",
       argsSchema: {
@@ -21,7 +21,7 @@ export function registerGenerateDefinitionsPrompt(server: McpServer): void {
           role: "user" as const,
           content: {
             type: "text" as const,
-            text: loadPrompt("generate-definitions", { text: args.text }),
+            text: loadPrompt("define-terms", { text: args.text }),
           },
         },
       ],

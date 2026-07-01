@@ -51,7 +51,7 @@ bun run dev:server:tunnel
 | `define_terms`             | Identify ambiguous terms in a selected question and propose precise definitions for each.                |
 | `submit_defined_terms`     | Validate and register the definitions for a selected question.                                           |
 
-Two prompts, `draft-display-questions` and `generate-definitions`, expose the
+Two prompts, `draft-display-questions` and `define-terms`, expose the
 same guidance as inspectable prompt templates.
 
 ### Workflow

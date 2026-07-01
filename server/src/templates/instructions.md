@@ -16,9 +16,9 @@ Use only when the user is describing a **new event** to turn into questions.
 
 Validate and register the same drafted set of display questions, organized into binary/scalar/categorical units, after you have already presented them to the user. Pass the same draft as structured `units` plus the `followUp` line — each standalone binary question is its own unit, and each scalar/categorical market's range/option questions form one unit together. This call is for registration only; do not show its raw JSON result to the user or restate its text — the user already saw the grouped Markdown from `draft_display_questions`.
 
-Skip this call when selecting an existing question (see `define_question_terms` below) or when the input was too vague to draft anything.
+Skip this call when selecting an existing question (see `define_terms` below) or when the input was too vague to draft anything.
 
-### define_question_terms
+### define_terms
 
 Identify ambiguous words and phrases in a display question and propose precise definitions for each, tight enough that traders and resolution authorities agree on what the question means.
 
@@ -33,7 +33,7 @@ Use whenever the user **selects, confirms, or chooses** a display question — e
    - A trader reading only this question knows exactly what they are betting on
    - The core meaning (event, threshold, time period) is preserved
    - It reads as conversational and scannable, not formal or legalistic
-5. **Call `define_question_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions. Present them to the user for review. Do not wait for an additional prompt.
+5. **Call `define_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions. Present them to the user for review. Do not wait for an additional prompt.
 6. **Iterate** — if the user wants changes to the question or definitions, revise and re-check against the criteria above.
 
 ## Available prompts
@@ -42,6 +42,6 @@ Use whenever the user **selects, confirms, or chooses** a display question — e
 
 The same display question guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.
 
-### generate-definitions
+### define-terms
 
 The same definitions guidance available as a prompt template. Use this when you want to inspect or modify the prompt before sending it, rather than calling the tool directly.

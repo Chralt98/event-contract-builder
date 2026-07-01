@@ -38,7 +38,7 @@ export function registerDefineTermsTool(server: McpServer): void {
             type: "text" as const,
             text: [
               renderUnitHeader(unit, args.unit_number),
-              loadPrompt("generate-definitions", { text: unitText }),
+              loadPrompt("define-terms", { text: unitText }),
             ].join("\n\n"),
           },
         ],

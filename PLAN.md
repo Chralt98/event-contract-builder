@@ -81,7 +81,7 @@ prompt-returning; it cannot block on a sampling round trip.
 - `draft_display_questions` is unchanged in shape from before this scope
   change — it has no `outputSchema` and returns the `draft-display-questions.md`
   prompt as text for the host's own model to act on in its next turn, the same
-  way `define_question_terms` does.
+  way `define_terms` does.
 - A new tool, `submit_drafted_questions`, has both `inputSchema` and
   `outputSchema` set to the units/`followUp` shape. It performs no generation:
   it is purely deterministic, validating the host-drafted input and echoing it
