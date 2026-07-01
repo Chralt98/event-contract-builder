@@ -40,6 +40,48 @@ const draftUnitSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+/**
+ * Renders a selected unit as a numbered, typed header followed by its
+ * question bullets, e.g. "**Selected Unit 2: Categorical market**\n- ...".
+ */
+function renderUnitHeader(
+  unit: z.infer<typeof draftUnitSchema>,
+  unitNumber: number,
+): string {
+  const label =
+    unit.type === "binary"
+      ? "Binary market"
+      : unit.type === "scalar"
+        ? "Scalar market"
+        : "Categorical market";
+  const questions = unit.type === "binary" ? [unit.question] : unit.questions;
+  const bullets = questions.map((q) => `- ${q}`).join("\n");
+  return `**Selected Unit ${unitNumber}: ${label}**\n${bullets}`;
+}
+
+const definedTermsShape = {
+  unit_number: z
+    .number()
+    .int()
+    .describe(
+      "The 1-based number of the selected unit as shown in the prior draft.",
+    ),
+  selected_unit: draftUnitSchema.describe(
+    "The selected market unit being defined — same structure as a unit from submit_drafted_questions.",
+  ),
+  definitions: z
+    .record(z.string(), z.string())
+    .describe(
+      "Map from each ambiguous term to its precise, unambiguous definition.",
+    ),
+  followUp: z
+    .string()
+    .describe(
+      "A follow-up question asking the user whether they agree with the " +
+        "definitions or would like to change anything.",
+    ),
+};
+
 const draftDisplayQuestionsOutputShape = {
   units: z
     .array(draftUnitSchema)
@@ -159,35 +201,79 @@ export function createServer() {
   );
 
   server.registerTool(
-    "define_question_terms",
+    "define_terms",
     {
-      title: "Define Question Terms",
+      title: "Define Terms",
       description:
-        "Identify ambiguous terms in a display question the user has selected " +
-        "and propose precise definitions for each. Use whenever the user " +
-        "selects, confirms, or chooses a display question.",
+        "Identify ambiguous terms in a selected market unit and propose " +
+        "precise definitions for each. Use whenever the user selects, confirms, " +
+        "or chooses a market unit.",
       inputSchema: {
-        selected_question: z
-          .string()
+        unit_number: z
+          .number()
+          .int()
           .describe(
-            "The display question the user selected, to analyze for ambiguous terms",
+            "The 1-based number of the selected unit as shown in the prior draft.",
           ),
+        selected_unit: draftUnitSchema.describe(
+          "The market unit to analyze for ambiguous terms — same structure as a unit from submit_drafted_questions",
+        ),
       },
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
       },
     },
-    (args) => ({
-      content: [
-        {
-          type: "text" as const,
-          text: loadPrompt("generate-definitions", {
-            text: args.selected_question,
-          }),
-        },
-      ],
-    }),
+    (args) => {
+      const unit = args.selected_unit;
+      const unitText =
+        unit.type === "binary" ? unit.question : unit.questions.join("\n");
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [
+              renderUnitHeader(unit, args.unit_number),
+              loadPrompt("generate-definitions", { text: unitText }),
+            ].join("\n\n"),
+          },
+        ],
+      };
+    },
+  );
+
+  server.registerTool(
+    "submit_defined_terms",
+    {
+      title: "Submit Defined Terms",
+      description:
+        "Validate and register a set of term definitions for the event contract. " +
+        "Call this once after defining terms, passing the definitions as a " +
+        "term-to-definition map.",
+      inputSchema: definedTermsShape,
+      outputSchema: definedTermsShape,
+      annotations: {
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    (args) => {
+      const unitHeader = renderUnitHeader(args.selected_unit, args.unit_number);
+      const lines = Object.entries(args.definitions).map(
+        ([term, definition]) => `**${term}** — ${definition}`,
+      );
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [unitHeader, lines.join("\n"), "---", args.followUp].join(
+              "\n\n",
+            ),
+          },
+        ],
+        structuredContent: args,
+      };
+    },
   );
 
   server.registerPrompt(

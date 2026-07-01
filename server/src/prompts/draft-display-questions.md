@@ -78,7 +78,11 @@ A scalar or categorical market is selected as a whole — its range/option quest
 
 The input below may be the user **selecting or confirming questions that already exist** (e.g. "I'll take Unit 2", "let's go with the second one", "I'll take the categorical set", or a list of finished questions) rather than a new event to draft.
 
-If so, do NOT generate or restate questions, and do NOT call `submit_drafted_questions` — the questions are already chosen, not newly drafted. Apply Selection granularity: a selection resolves to exactly one unit — one binary question, or the full group of questions for one scalar or categorical market. A bare number or "Unit N" refers to that unit's heading from the prior draft. If the user names only part of a scalar/categorical group, treat it as selecting that whole market. Respond only with: "Defining the selected question(s) now." and call `define_question_terms` for each question in the selected unit. Defining the selected questions is the required next step.
+If so, do NOT generate or restate questions, and do NOT call `submit_drafted_questions` — the questions are already chosen, not newly drafted.
+
+**Selection granularity:** A selection resolves to exactly one unit — one binary question, or the full group of questions for one scalar or categorical market. "Unit N" refers to that unit's heading from the prior draft. If the user names only part of a scalar/categorical group, treat it as selecting the whole group.
+
+Respond only with: "Defining the terms in the selected unit now." and call `define_terms` once with the selected unit as a structured object. This is the required next step.
 
 # Stop rules
 
