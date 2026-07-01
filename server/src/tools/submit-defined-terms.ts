@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DraftUnit, Definitions } from "../../../src/schema/display-question";
-import { renderUnitHeader } from "../render";
+import { renderUnitHeader, renderDefinitions } from "../render";
 
 const definedTermsShape = {
   unit_number: z
@@ -42,9 +42,6 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
     },
     (args) => {
       const unitHeader = renderUnitHeader(args.selected_unit, args.unit_number);
-      const lines = Object.entries(args.definitions).map(
-        ([term, definition]) => `**${term}** — ${definition}`,
-      );
       return {
         content: [
           {
@@ -53,7 +50,7 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
               unitHeader,
               "---",
               "### Definitions",
-              lines.join("\n"),
+              renderDefinitions(args.definitions),
               "---",
               args.followUp,
             ].join("\n\n"),

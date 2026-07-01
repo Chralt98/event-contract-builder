@@ -130,6 +130,15 @@ single-sourced and unit-testable, and shrinks the template to "call the tool,
 echo verbatim." The proposal tool still echoes `structuredContent` for parity
 with the other steps, even though the names list is not persisted downstream.)
 
+The same "format lives in code, template says echo verbatim" convention was then
+applied back to `define_terms`: its `submit_defined_terms` handler now renders
+the reply via the shared `renderDefinitions` helper, and `define-terms.md` was
+slimmed from a six-step layout spec to "call the tool, present its Markdown
+verbatim." `draft_display_questions` still formats its reply from prompt prose,
+because there `submit_drafted_questions` is a silent validator rather than the
+render source — aligning it would require flipping that flow to echo the tool's
+output, and is deferred.
+
 It mirrors the `define_terms` two-tool + prompt shape:
 
 - `define_resolution_source` — prompt-returning, read-only. Inputs

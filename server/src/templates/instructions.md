@@ -24,6 +24,10 @@ Identify ambiguous words and phrases in a display question and propose precise d
 
 Use whenever the user **selects, confirms, or chooses** a display question — even if the message repeats the question text. Never re-run `draft_display_questions` for a selection.
 
+### submit_defined_terms
+
+Validate and register the term definitions for the selected unit. It renders the reply for you and returns it already formatted as Markdown — the selected unit's header, a `### Definitions` glossary of `**term** — definition` lines, and the follow-up. Reproduce that returned Markdown **verbatim** for the user: do not paraphrase, reformat, rename fields, or reorder it. Do not show its raw JSON `structuredContent`.
+
 ### define_resolution_source
 
 Identify the authoritative data source(s) that will settle the selected unit and rank them into a fixed fallback hierarchy (rank 1 is the primary source). Sources resolve against the **agreed definitions**, so run this after the user has confirmed the term definitions.
@@ -45,7 +49,7 @@ Validate and register the ranked resolution source hierarchy for a unit, after t
    - A trader reading only this question knows exactly what they are betting on
    - The core meaning (event, threshold, time period) is preserved
    - It reads as conversational and scannable, not formal or legalistic
-5. **Call `define_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions. Present them to the user for review. Do not wait for an additional prompt.
+5. **Call `define_terms`** as soon as the user selects a question — identify ambiguous terms and propose definitions, then call `submit_defined_terms` and present its returned Markdown to the user verbatim for review. Do not wait for an additional prompt.
 6. **Call `define_resolution_source`** once the user agrees the definitions — first present just the ranked source **names** and ask whether the hierarchy is right. Only after the user approves, call `submit_resolution_source` with the full source records and present the detail (including its link-check results) for review.
 7. **Iterate** — if the user wants changes to the question, definitions, or sources, revise and re-check against the criteria above.
 

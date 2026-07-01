@@ -28,6 +28,11 @@ Given an event contract component, identify every word or phrase that a trader c
 
 # Output
 
+`submit_defined_terms` renders the exact Markdown reply for you, so the output
+format lives in the tool, not here. Call it, then present its returned text to
+the user **verbatim** — do not paraphrase, reformat, rename fields, reorder, or
+add or drop anything.
+
 Call `submit_defined_terms` with:
 
 - `unit_number`: the 1-based number of the selected unit, as shown in the prior draft
@@ -35,14 +40,7 @@ Call `submit_defined_terms` with:
 - `definitions`: a map where each key is an ambiguous term and each value is its precise definition
 - `followUp`: a single sentence asking the user whether they agree with these definitions or would like to change anything
 
-Then present your reply to the user in exactly this order, and nothing else:
-
-1. A header line `**Selected Unit X: Binary / Scalar / Categorical Market**`, using the unit's number and type, followed by its market question(s) as bullet points (one bullet per question).
-2. A `---` separator line on its own.
-3. A `### Definitions` section header on its own line.
-4. List each ambiguous term and its definition, one per line, as `**term** — definition`.
-5. A `---` separator line on its own.
-6. The follow-up question on its own line.
+Present the tool's returned Markdown to the user verbatim, and nothing else.
 
 <input>
 {{text}}
