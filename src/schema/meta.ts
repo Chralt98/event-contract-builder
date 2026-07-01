@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { IsoDate, Slug } from "./common";
 import { ProductName } from "./product-name";
+import { DraftUnit, Definitions } from "./display-question";
 
 /* -------------------------------------------------------------------------- */
 /* §1 Meta                                                                    */
@@ -34,18 +35,14 @@ export const Meta = z
     /** Free-form trader-facing question string (bounded length, ends with `?`). */
     productName: ProductName,
     /**
-     * A concrete example of how a consumer platform
-     * would phrase this product name for display to retail traders.
+     * The trader-facing display question(s) as a consumer platform would phrase
+     * this contract for retail traders — one binary question, or the full set
+     * for a scalar/categorical market. Distinct from `productName`, which is the
+     * contract-level phrasing and may still carry placeholders like `<team>`.
      */
-    specificDisplayQuestionExample: z
-      .string()
-      .min(10)
-      .max(200)
-      .regex(/\?$/s, "Must end with ?")
-      .optional()
-      .describe(
-        "Platform-style display question example, e.g. how prediction market platforms would phrase it",
-      ),
+    displayQuestionExample: DraftUnit.optional().describe(
+      "Platform-style display question(s), i.e. how a prediction-market platform would phrase this contract for traders",
+    ),
     /** Full human title shown to traders. */
     title: z.string().min(10).max(160),
     /** Short title for tickets/mobile, ≤ 50 chars. */
@@ -81,10 +78,7 @@ export const Meta = z
     /** ISO date the draft was last materially edited. */
     lastUpdated: IsoDate,
     authors: z.array(z.string().min(2)).min(1),
-    definitions: z
-      .record(z.string().min(1), z.string().min(1))
-      .optional()
-      .describe("Glossary of key terms used in the contract: word → definition"),
+    definitions: Definitions.optional(),
   })
   .describe("Identification and lifecycle metadata");
 

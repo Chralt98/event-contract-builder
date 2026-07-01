@@ -5,49 +5,19 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
+import {
+  DraftUnit,
+  Definitions,
+  type DraftUnitT,
+} from "../../src/schema/display-question";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/**
- * A selectable draft unit. A scalar or categorical market is selected as a
- * whole, so it carries several question strings; a binary market is one
- * standalone question.
- */
-const draftUnitSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("binary"),
-    question: z
-      .string()
-      .describe("The single Yes/No display question, ending in '?'."),
-  }),
-  z.object({
-    type: z.literal("scalar"),
-    questions: z
-      .array(z.string())
-      .describe(
-        "One binary question per numeric range. Ranges must not overlap and " +
-          "should cover the plausible space so exactly one resolves Yes.",
-      ),
-  }),
-  z.object({
-    type: z.literal("categorical"),
-    questions: z
-      .array(z.string())
-      .describe(
-        "One binary question per mutually exclusive option; each asks whether " +
-          "that option occurs.",
-      ),
-  }),
-]);
 
 /**
  * Renders a selected unit as a numbered, typed header followed by its
  * question bullets, e.g. "**Selected Unit 2: Categorical market**\n- ...".
  */
-function renderUnitHeader(
-  unit: z.infer<typeof draftUnitSchema>,
-  unitNumber: number,
-): string {
+function renderUnitHeader(unit: DraftUnitT, unitNumber: number): string {
   const label =
     unit.type === "binary"
       ? "Binary market"
@@ -66,14 +36,12 @@ const definedTermsShape = {
     .describe(
       "The 1-based number of the selected unit as shown in the prior draft.",
     ),
-  selected_unit: draftUnitSchema.describe(
+  selected_unit: DraftUnit.describe(
     "The selected market unit being defined — same structure as a unit from submit_drafted_questions.",
   ),
-  definitions: z
-    .record(z.string(), z.string())
-    .describe(
-      "Map from each ambiguous term to its precise, unambiguous definition.",
-    ),
+  definitions: Definitions.describe(
+    "Map from each ambiguous term to its precise, unambiguous definition.",
+  ),
   followUp: z
     .string()
     .describe(
@@ -84,7 +52,7 @@ const definedTermsShape = {
 
 const draftDisplayQuestionsOutputShape = {
   units: z
-    .array(draftUnitSchema)
+    .array(DraftUnit)
     .describe(
       "The drafted markets, each a single selectable unit: a binary question, " +
         "or the complete set of questions for one scalar or categorical market.",
@@ -215,7 +183,7 @@ export function createServer() {
           .describe(
             "The 1-based number of the selected unit as shown in the prior draft.",
           ),
-        selected_unit: draftUnitSchema.describe(
+        selected_unit: DraftUnit.describe(
           "The market unit to analyze for ambiguous terms — same structure as a unit from submit_drafted_questions",
         ),
       },
