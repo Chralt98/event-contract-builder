@@ -229,6 +229,9 @@ describe("event-contract tools", () => {
     expect(text).toContain(
       "**Selected Unit 3: Binary market**\n- Will the Fed cut rates 50+ bps by end of 2026?",
     );
+    expect(text).toContain(
+      "Will the Fed cut rates 50+ bps by end of 2026?\n\n---\n\n**50+ bps** —",
+    );
     expect(text).toContain("**50+ bps** —");
     expect(text).toContain("**end of 2026** —");
     expect(text).toContain("---\n\n" + input.followUp);

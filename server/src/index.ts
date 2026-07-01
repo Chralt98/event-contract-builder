@@ -266,9 +266,13 @@ export function createServer() {
         content: [
           {
             type: "text" as const,
-            text: [unitHeader, lines.join("\n"), "---", args.followUp].join(
-              "\n\n",
-            ),
+            text: [
+              unitHeader,
+              "---",
+              lines.join("\n"),
+              "---",
+              args.followUp,
+            ].join("\n\n"),
           },
         ],
         structuredContent: args,

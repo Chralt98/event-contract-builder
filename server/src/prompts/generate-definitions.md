@@ -38,8 +38,10 @@ Call `submit_defined_terms` with:
 Then present your reply to the user in exactly this order, and nothing else:
 
 1. A header line `**Selected Unit X: Binary / Scalar / Categorical Market**`, using the unit's number and type, followed by its market question(s) as bullet points (one bullet per question).
-2. List each ambiguous term and its definition, one per line, as `**term** — definition`.
-3. The follow-up question on its own line.
+2. A `---` separator line on its own.
+3. List each ambiguous term and its definition, one per line, as `**term** — definition`.
+4. A `---` separator line on its own.
+5. The follow-up question on its own line.
 
 <input>
 {{text}}
