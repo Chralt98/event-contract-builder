@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { DraftUnit } from "../../../src/schema/display-question";
 import { renderDraftUnits } from "../render";
 
-const draftDisplayQuestionsOutputShape = {
+const draftedQuestionsShape = {
   units: z
     .array(DraftUnit)
     .describe(
@@ -31,8 +31,8 @@ export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
         "draft_display_questions guidance. Call this once after drafting " +
         "questions for a new event, passing the same draft as structured " +
         "units.",
-      inputSchema: draftDisplayQuestionsOutputShape,
-      outputSchema: draftDisplayQuestionsOutputShape,
+      inputSchema: draftedQuestionsShape,
+      outputSchema: draftedQuestionsShape,
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
