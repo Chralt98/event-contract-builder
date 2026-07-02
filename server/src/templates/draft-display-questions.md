@@ -54,7 +54,7 @@ Examples (`submit_drafted_questions` renders these units as the Markdown shown):
 
 # Output
 
-`submit_drafted_questions` renders the trader-facing reply for you — the numbered unit headings, the question bullets, the `---` rule, and the follow-up line — and returns it already formatted as Markdown. Your job is to work out the units and the follow-up, call the tool, and present its returned text to the user **verbatim**: do not paraphrase, reformat, renumber, or add or drop anything. The layout is owned by the tool, not by you.
+`submit_drafted_questions` renders the trader-facing reply for you — the numbered unit headings, the question bullets, the `---` rule, and the follow-up line — and returns it already formatted as Markdown. Your job is to work out the units and the follow-up, call the tool `submit_drafted_questions`, and present its returned text to the user **verbatim**: do not paraphrase, reformat, renumber, or add or drop anything. The layout is owned by the tool, not by you.
 
 1. Organize the drafted questions into selectable units (see Selection granularity), in the order drafted. Each question ends with "?".
    - Each standalone **binary** question becomes its own unit: `{ "type": "binary", "question": "<question>" }`.
