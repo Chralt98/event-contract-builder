@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { DraftUnit, Definitions } from "../../../src/schema/display-question";
+import { Definitions } from "../../../src/schema/display-question";
+import {
+  ConnectorDraftUnit,
+  parseConnectorDraftUnit,
+} from "../connector-draft-unit";
 import { renderUnitHeader, renderDefinitions } from "../render";
 
 const definedTermsShape = {
@@ -10,7 +14,7 @@ const definedTermsShape = {
     .describe(
       "The 1-based number of the selected unit as shown in the prior draft.",
     ),
-  selected_unit: DraftUnit.describe(
+  selected_unit: ConnectorDraftUnit.describe(
     "The selected market unit being defined — same structure as a unit from submit_drafted_questions.",
   ),
   definitions: Definitions.describe(
@@ -41,7 +45,14 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
       },
     },
     (args) => {
-      const unitHeader = renderUnitHeader(args.selected_unit, args.unit_number);
+      const output = {
+        ...args,
+        selected_unit: parseConnectorDraftUnit(args.selected_unit),
+      };
+      const unitHeader = renderUnitHeader(
+        output.selected_unit,
+        output.unit_number,
+      );
       return {
         content: [
           {
@@ -50,13 +61,13 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
               unitHeader,
               "---",
               "### Definitions",
-              renderDefinitions(args.definitions),
+              renderDefinitions(output.definitions),
               "---",
-              args.followUp,
+              output.followUp,
             ].join("\n\n"),
           },
         ],
-        structuredContent: args,
+        structuredContent: output,
       };
     },
   );

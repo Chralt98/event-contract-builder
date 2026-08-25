@@ -1,6 +1,6 @@
 {
   "name": "event-contract-builder",
-  "version": "0.1.0+codex.20260825190243",
+  "version": "0.1.0+codex.20260825192033",
   "description": "Draft and specify prediction-market event contracts with focused skills and deterministic MCP tools.",
   "author": {
     "name": "Christopher Maximilian Altmann",
@@ -25,9 +25,7 @@
     "longDescription": "Event Contract Builder combines focused workflow skills with deterministic MCP tools for drafting display questions, defining terms, and selecting authoritative resolution sources.",
     "developerName": "Christopher Maximilian Altmann",
     "category": "Productivity",
-    "capabilities": [
-      "Interactive"
-    ],
+    "capabilities": ["Interactive"],
     "websiteURL": "https://github.com/Chralt98/event-contract-builder",
     "defaultPrompt": [
       "Draft prediction-market questions from this event",

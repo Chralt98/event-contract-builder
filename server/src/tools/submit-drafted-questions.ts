@@ -1,11 +1,14 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { DraftUnit } from "../../../src/schema/display-question";
+import {
+  ConnectorDraftUnit,
+  parseConnectorDraftUnit,
+} from "../connector-draft-unit";
 import { renderDraftUnits } from "../render";
 
 const draftedQuestionsShape = {
   units: z
-    .array(DraftUnit)
+    .array(ConnectorDraftUnit)
     .describe(
       "The drafted markets, each a single selectable unit: a binary question, " +
         "or the complete set of questions for one scalar or categorical market.",
@@ -37,16 +40,23 @@ export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
         idempotentHint: true,
       },
     },
-    (args) => ({
-      content: [
-        {
-          type: "text" as const,
-          text: [renderDraftUnits(args.units), "---", args.followUp].join(
-            "\n\n",
-          ),
-        },
-      ],
-      structuredContent: args,
-    }),
+    (args) => {
+      const output = {
+        ...args,
+        units: args.units.map(parseConnectorDraftUnit),
+      };
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: [renderDraftUnits(output.units), "---", output.followUp].join(
+              "\n\n",
+            ),
+          },
+        ],
+        structuredContent: output,
+      };
+    },
   );
 }

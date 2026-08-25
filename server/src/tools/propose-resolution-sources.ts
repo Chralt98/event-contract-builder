@@ -1,6 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { DraftUnit } from "../../../src/schema/display-question";
+import {
+  ConnectorDraftUnit,
+  parseConnectorDraftUnit,
+} from "../connector-draft-unit";
 import { renderUnitHeader, renderSourceProposal } from "../render";
 
 /**
@@ -14,7 +17,7 @@ const proposalShape = {
     .describe(
       "The 1-based number of the selected unit as shown in the prior draft.",
     ),
-  selected_unit: DraftUnit.describe(
+  selected_unit: ConnectorDraftUnit.describe(
     "The selected market unit being sourced — same structure as a unit from submit_drafted_questions.",
   ),
   sources: z
@@ -62,13 +65,17 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
       },
     },
     (args) => {
+      const output = {
+        ...args,
+        selected_unit: parseConnectorDraftUnit(args.selected_unit),
+      };
       const parts = [
-        renderUnitHeader(args.selected_unit, args.unit_number),
+        renderUnitHeader(output.selected_unit, output.unit_number),
         "---",
         "### Resolution Source Hierarchy",
-        renderSourceProposal(args.sources),
+        renderSourceProposal(output.sources),
         "---",
-        args.followUp,
+        output.followUp,
       ];
       return {
         content: [
@@ -77,7 +84,7 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
             text: parts.join("\n\n"),
           },
         ],
-        structuredContent: args,
+        structuredContent: output,
       };
     },
   );

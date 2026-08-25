@@ -10,6 +10,12 @@ import { createServer } from "../src/index.ts";
  */
 let fetchSpy: ReturnType<typeof spyOn> | undefined;
 
+type JsonSchema = {
+  enum?: string[];
+  items?: JsonSchema;
+  properties?: Record<string, JsonSchema>;
+};
+
 function stubFetch(fn: (url: string) => Response) {
   fetchSpy = spyOn(globalThis, "fetch").mockImplementation(((
     input: unknown,
@@ -66,17 +72,29 @@ describe("event-contract tools", () => {
     }
   });
 
-  test("submit_drafted_questions advertises an output schema", async () => {
+  test("draft-unit tool schemas avoid unsupported oneOf and pattern constraints", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
-    const tool = tools.find((t) => t.name === "submit_drafted_questions")!;
-    expect(tool.outputSchema).toBeDefined();
-    expect(tool.outputSchema?.properties).toHaveProperty("units");
-    expect(tool.outputSchema?.properties).toHaveProperty("followUp");
-    const questionSchema =
-      tool.inputSchema?.properties?.units?.items?.oneOf?.[0]?.properties
-        ?.question;
-    expect(questionSchema).not.toHaveProperty("pattern");
+    const propertiesFor = (name: string) =>
+      tools.find((tool) => tool.name === name)!.inputSchema?.properties as
+        | Record<string, JsonSchema>
+        | undefined;
+    const unitSchemas = [
+      propertiesFor("submit_drafted_questions")?.units?.items,
+      propertiesFor("submit_defined_terms")?.selected_unit,
+      propertiesFor("propose_resolution_sources")?.selected_unit,
+      propertiesFor("submit_resolution_source")?.selected_unit,
+    ];
+
+    for (const unitSchema of unitSchemas) {
+      expect(unitSchema).not.toHaveProperty("oneOf");
+      expect(unitSchema?.properties?.type?.enum).toEqual([
+        "binary",
+        "scalar",
+        "categorical",
+      ]);
+      expect(unitSchema?.properties?.question).not.toHaveProperty("pattern");
+    }
   });
 
   test("submit_drafted_questions validates and echoes a structured draft", async () => {
@@ -187,7 +205,8 @@ describe("event-contract tools", () => {
         units: [
           {
             type: "binary",
-            question: "Will the AfD win the most seats in Germany's next federal election",
+            question:
+              "Will the AfD win the most seats in Germany's next federal election",
           },
         ],
         followUp: "Which unit should we use?",
@@ -240,7 +259,7 @@ describe("event-contract tools", () => {
       "**Selected Unit 3: Binary market**\n- Will the Fed cut rates 50+ bps by end of 2026?",
     );
     expect(text).toContain(
-      "Will the Fed cut rates 50+ bps by end of 2026?\n\n---\n\n### Definitions\n\n**50+ bps** —",
+      "Will the Fed cut rates 50+ bps by end of 2026?\n\n---\n\n### Definitions\n\n- **50+ bps** —",
     );
     expect(text).toContain("**50+ bps** —");
     expect(text).toContain("**end of 2026** —");
