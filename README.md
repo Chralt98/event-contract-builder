@@ -29,6 +29,17 @@ bun run dev:server
 This starts the server at `http://localhost:8787/mcp` and restarts on file
 changes.
 
+For a local MCP client or a tunnel client that expects a Stdio command, use
+the separate Stdio entrypoint:
+
+```sh
+bun run start:server:stdio
+```
+
+The Stdio entrypoint uses the same tools and server factory as the HTTP
+endpoint. Its stdout is reserved for MCP protocol messages; diagnostics go to
+stderr.
+
 Inspect it locally with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
 
 ```sh
@@ -36,11 +47,85 @@ bun run dev:server:inspect
 ```
 
 To connect an external client (e.g. ChatGPT developer mode) to your local
-server, expose it over HTTPS:
+server, expose it over HTTPS. For the Secure MCP Tunnel workflow, see
+[Secure MCP Tunnel](#secure-mcp-tunnel) below:
 
 ```sh
 bun run dev:server:tunnel
 ```
+
+### Secure MCP Tunnel
+
+The local HTTP MCP server is available at `http://localhost:8787/mcp`. To
+connect it to an existing tunnel in the OpenAI platform, run the server and
+the tunnel client in separate terminals.
+
+#### 1. Start the local MCP server
+
+```sh
+bun run dev:server
+```
+
+Keep this terminal open while the tunnel is in use.
+
+#### 2. Set the runtime key without echoing it
+
+Create or select a credential with the minimum permission **Tunnels: Read and
+Use** only. In a separate terminal, enter the key silently into the current
+shell:
+
+```sh
+read -r -s CONTROL_PLANE_API_KEY
+export CONTROL_PLANE_API_KEY
+printf '\n'
+```
+
+The key is not printed. Do not put it in this README, the project `.env`, shell
+history, or any committed file. Remove it from the shell when finished:
+
+```sh
+unset CONTROL_PLANE_API_KEY
+```
+
+#### 3. Run the client with the existing tunnel
+
+Use the profile name and tunnel ID from your local setup. Keep the placeholders
+below as placeholders when sharing this documentation:
+
+```sh
+tunnel-client run \
+  --profile <PROFILE_NAME> \
+  --control-plane.api-key env:CONTROL_PLANE_API_KEY \
+  --control-plane.tunnel-id <TUNNEL_ID> \
+  --mcp.server-url "url=http://localhost:8787/mcp"
+```
+
+The profile may hold the non-secret configuration, but keys must remain
+environment or file references such as `env:CONTROL_PLANE_API_KEY`; never put a
+literal key in the profile or a project `.env` file.
+
+#### 4. Diagnose configuration and health
+
+Run the profile checks before starting the client:
+
+```sh
+tunnel-client doctor --profile <PROFILE_NAME> --explain
+```
+
+After startup, check the local liveness and readiness endpoints (the default
+health listener is `127.0.0.1:8080`):
+
+```sh
+curl -fsS http://127.0.0.1:8080/healthz
+curl -fsS http://127.0.0.1:8080/readyz
+```
+
+#### 5. Keep the tunnel running
+
+`tunnel-client run` is a foreground process. Leave its terminal open for as
+long as the MCP endpoint should remain available; closing it or pressing
+`Ctrl-C` stops the tunnel. Do not commit the key, tunnel ID, or other user data
+from your local setup to this repository.
 
 ### Tools
 

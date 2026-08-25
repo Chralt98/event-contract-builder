@@ -246,7 +246,8 @@ event-contract-builder/
 │   │   │   ├── validate.ts
 │   │   │   └── convert.ts
 │   │   ├── widget.ts            # Registers and serves the UI resource
-│   │   └── index.ts             # HTTP MCP server + tool registration
+│   │   ├── index.ts             # HTTP MCP server + tool registration
+│   │   └── stdio.ts             # Stdio adapter for local MCP/tunnel clients
 │   └── test/
 ├── web/
 │   ├── src/
@@ -283,8 +284,10 @@ not edited by hand.
    duplicate validation or conversion logic.
 
 The MCP server is HTTP-first and exposes `/mcp`. Stdio is not the primary
-ChatGPT App transport. Local development may use an HTTPS tunnel; production
-must expose a public HTTPS MCP endpoint.
+ChatGPT App transport, but a separate Stdio entrypoint is provided for local
+MCP clients and tunnel clients that supervise a Stdio command. Local
+development may use an HTTPS tunnel; production must expose a public HTTPS MCP
+endpoint.
 
 ## Library (`src/`)
 
@@ -321,7 +324,9 @@ schema or conversion logic.
 ## ChatGPT App server (`server/`)
 
 `server/src/index.ts` creates the MCP server, registers the widget resource,
-registers tools, and exposes the HTTP `/mcp` endpoint.
+registers tools, and exposes the HTTP `/mcp` endpoint. `server/src/stdio.ts`
+reuses the same factory over the SDK's Stdio transport; it must not emit
+application logs on stdout because stdout is the MCP protocol channel.
 
 Use `@modelcontextprotocol/sdk`, `@modelcontextprotocol/ext-apps`, and Zod.
 
@@ -453,6 +458,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
     production connection instructions.
 20. Add plugin manifest/package wiring for `skills/` and verify skill discovery
     and import in the host.
+21. Add the standalone Stdio MCP entrypoint and verify it with a local MCP
+    initialize/tools-list smoke test for tunnel-client compatibility.
 
 ## Verification
 
@@ -462,6 +469,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 - `bun run cli -- --help`
 - `bun run cli -- validate <fixture>`
 - Start the server and verify `http://localhost:<port>/mcp` with MCP Inspector.
+- Run the Stdio entrypoint and verify MCP `initialize` and `tools/list` over
+  stdin/stdout without contaminating stdout with application logs.
 - Verify the packaged skills are discoverable and the MCP server exposes only
   the four deterministic workflow tools.
 - Retrieve the widget resource and confirm its MIME type is
