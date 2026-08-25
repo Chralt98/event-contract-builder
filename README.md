@@ -54,6 +54,21 @@ bun run dev:server:tunnel
 The `skills/` directory contains the workflow instructions and supporting
 references. It is intended to be packaged with the MCP server as one plugin.
 
+### Plugin package
+
+This repository is also a ChatGPT/Codex plugin package. The manifest at
+`.codex-plugin/plugin.json` discovers the three workflow skills, and
+`.mcp.json` connects the plugin to the local HTTP MCP endpoint. Start the
+server before importing the package into a local host:
+
+```sh
+bun run start:server
+```
+
+The packaged endpoint is `http://localhost:8787/mcp`. For a hosted ChatGPT
+connection, expose the server over HTTPS and replace the endpoint in the
+deployment-specific MCP configuration.
+
 ### Workflow
 
 1. **Draft** — use the `draft-display-question` skill with a sufficiently

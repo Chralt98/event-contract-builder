@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "event-contract-builder": {
+      "type": "http",
+      "url": "http://localhost:8787/mcp"
+    }
+  }
+}

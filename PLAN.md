@@ -205,12 +205,15 @@ Migration status:
 3. Reduce server instructions and update tests, tool metadata, README, and this
    plan — done.
 4. Add plugin manifest/package wiring and verify skill discovery/import in the
-   host — next implementation step.
+   host — done.
 
 ## Target directory structure
 
 ```text
 event-contract-builder/
+├── .codex-plugin/
+│   └── plugin.json              # ChatGPT/Codex plugin manifest
+├── .mcp.json                    # Local HTTP MCP server connection
 ├── src/                          # Public npm library
 │   ├── schema/                   # Existing schemas; no redesign in this plan
 │   ├── lib/                      # Generation, validation, conversion, expansion
