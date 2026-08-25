@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { z } from "zod";
 import type {
   DraftUnitT,
@@ -9,20 +6,6 @@ import type {
 import type { DataSource } from "../../src/schema/resolution";
 
 type DataSourceT = z.infer<typeof DataSource>;
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-/** Loads a markdown prompt template and substitutes `{{var}}` placeholders. */
-export function loadPrompt(name: string, vars: Record<string, string>): string {
-  let template = readFileSync(
-    join(__dirname, "templates", `${name}.md`),
-    "utf-8",
-  );
-  for (const [key, value] of Object.entries(vars)) {
-    template = template.replaceAll(`{{${key}}}`, value);
-  }
-  return template;
-}
 
 /** Human label for a draft unit's market type. */
 function unitLabel(unit: DraftUnitT): string {

@@ -27,10 +27,9 @@ export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
       title: "Submit Drafted Questions",
       description:
         "Validate and register a drafted set of display questions, " +
-        "organized into binary/scalar/categorical units per " +
-        "draft_display_questions guidance. Call this once after drafting " +
-        "questions for a new event, passing the same draft as structured " +
-        "units.",
+        "organized into binary/scalar/categorical units. Call this once " +
+        "after the model has drafted questions for a new event, passing " +
+        "the draft as structured units.",
       inputSchema: draftedQuestionsShape,
       outputSchema: draftedQuestionsShape,
       annotations: {

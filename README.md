@@ -1,23 +1,23 @@
 # event-contract-builder
 
-An MCP server (with an underlying TypeScript schema library) for turning a
-free-form event description into trader-facing prediction market display
-questions and precise term definitions — the first steps of drafting an
-event contract for prediction markets.
+An MCP server and TypeScript schema library for turning a free-form event
+description into a prediction-market event contract.
 
 ## Status
 
 Early development; the public API and tool set may change before v1.0.0.
 
-The **MCP server is the working, demonstrable part of this project today**.
-The schema library (`src/schema`) models a complete event-contract
-specification, but nothing in this repo yet turns a server-drafted question
-into one of those specs — see [Library (schema)](#library-schema) below.
+The packaged skills are the semantic workflow layer for drafting questions,
+defining terms, and selecting resolution sources. The MCP server is the
+deterministic execution layer that validates and renders their structured
+outputs. The schema library (`src/schema`) models the eventual full
+event-contract specification — see [Library (schema)](#library-schema) below.
 
 ## MCP server
 
-`server/` runs a stateless HTTP MCP server exposing tools that draft display
-questions and definitions from free-form text.
+`server/` runs a stateless HTTP MCP server exposing deterministic tools for
+validating, rendering, and checking the structured outputs produced by the
+packaged skills.
 
 ### Run it
 
@@ -44,53 +44,63 @@ bun run dev:server:tunnel
 
 ### Tools
 
-| Tool                       | Purpose                                                                                                  |
-| -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `draft_display_questions`  | Turn a free-form event description into binary/scalar/categorical display questions.                     |
-| `submit_drafted_questions` | Validate and register the drafted questions, organized into units, after they've been shown to the user. |
-| `define_terms`             | Identify ambiguous terms in a selected question and propose precise definitions for each.                |
-| `submit_defined_terms`     | Validate and register the definitions for a selected question.                                           |
+| Tool                         | Purpose                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| `submit_drafted_questions`   | Validate and render binary, scalar, and categorical display-question units.    |
+| `submit_defined_terms`       | Validate and render definitions for a selected unit.                           |
+| `propose_resolution_sources` | Validate and render a names-only ranked source hierarchy.                      |
+| `submit_resolution_source`   | Validate and render full source details with advisory URL reachability checks. |
 
-Two prompts, `draft-display-questions` and `define-terms`, expose the
-same guidance as inspectable prompt templates.
+The `skills/` directory contains the workflow instructions and supporting
+references. It is intended to be packaged with the MCP server as one plugin.
 
 ### Workflow
 
-1. **Draft** — call `draft_display_questions` with a free-form event
-   description, e.g. `"CPI year-over-year inflation might exceed 3 percent in
-June 2026"`. The response groups the drafted questions by market type:
+1. **Draft** — use the `draft-display-question` skill with a sufficiently
+   specific future event, e.g. `"CPI year-over-year inflation might exceed 3
+percent in June 2026"`. Organize the result into selectable units, then
+   call `submit_drafted_questions` and present its returned Markdown verbatim:
 
    ```md
-   **Scalar market**
+   **Unit 1: Scalar market**
 
    - Will CPI YoY be below 3 percent in June 2026?
    - Will CPI YoY be at least 3 percent in June 2026?
+
+   ---
+
+   Which unit should we use for further specification?
    ```
 
-2. **Submit** — call `submit_drafted_questions` with the same draft as
-   structured units, to validate and register it:
+2. **Select and define** — when the user selects a unit, use the `define-terms`
+   skill to propose precise definitions, then call `submit_defined_terms` and
+   present its returned Markdown verbatim.
+
+3. **Choose sources** — after the user agrees to the definitions, use the
+   `define-resolution-source` skill. First call `propose_resolution_sources`
+   with ranked names and publishers only:
 
    ```json
    {
-     "units": [
+     "unit_number": 1,
+     "selected_unit": {
+       "type": "binary",
+       "question": "Will CPI YoY be at least 3 percent in June 2026?"
+     },
+     "sources": [
        {
-         "type": "scalar",
-         "questions": [
-           "Will CPI YoY be below 3 percent in June 2026?",
-           "Will CPI YoY be at least 3 percent in June 2026?"
-         ]
+         "rank": 1,
+         "name": "Consumer Price Index",
+         "publisher": "U.S. Bureau of Labor Statistics"
        }
      ],
-     "followUp": "Which unit should we use for further specification?"
+     "followUp": "Does this source hierarchy look right?"
    }
    ```
 
-3. **Select and define** — once the user picks a unit, call `define_terms`
-   with that unit to get proposed definitions for its ambiguous terms (e.g.
-   "CPI YoY", "June 2026").
-
-4. **Submit definitions** — call `submit_defined_terms` with the selected
-   unit and the agreed definitions to validate and register them.
+4. **Submit sources** — after the user approves the hierarchy, call
+   `submit_resolution_source` with the full source records and present its
+   returned Markdown verbatim. Revise the hierarchy if the user requests it.
 
 ## Library (schema)
 
@@ -100,7 +110,7 @@ assessment, and compliance posture — as `zod` schemas, published as an npm
 package.
 
 **This library has no consumer in this repo yet.** The MCP server above only
-drafts display questions and term definitions; nothing currently assembles
+validates and renders workflow outputs; nothing currently assembles
 those into a full `EventContractSpec`. Treat the example below as a
 standalone demonstration of the schema, not a description of an existing
 pipeline.

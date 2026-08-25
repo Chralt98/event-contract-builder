@@ -4,16 +4,10 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { registerDraftDisplayQuestionsTool } from "./tools/draft-display-questions";
 import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-questions";
-import { registerDefineTermsTool } from "./tools/define-terms";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
-import { registerDefineResolutionSourceTool } from "./tools/define-resolution-source";
 import { registerProposeResolutionSourcesTool } from "./tools/propose-resolution-sources";
 import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
-import { registerDraftDisplayQuestionsPrompt } from "./prompts/draft-display-questions";
-import { registerDefineTermsPrompt } from "./prompts/define-terms";
-import { registerDefineResolutionSourcePrompt } from "./prompts/define-resolution-source";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,20 +24,14 @@ export function createServer() {
     },
     {
       instructions,
-      capabilities: { prompts: {}, tools: {} },
+      capabilities: { tools: {} },
     },
   );
 
-  registerDraftDisplayQuestionsTool(server);
   registerSubmitDraftedQuestionsTool(server);
-  registerDefineTermsTool(server);
   registerSubmitDefinedTermsTool(server);
-  registerDefineResolutionSourceTool(server);
   registerProposeResolutionSourcesTool(server);
   registerSubmitResolutionSourceTool(server);
-  registerDraftDisplayQuestionsPrompt(server);
-  registerDefineTermsPrompt(server);
-  registerDefineResolutionSourcePrompt(server);
 
   return server;
 }

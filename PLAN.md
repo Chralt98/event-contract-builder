@@ -51,8 +51,10 @@ Steps (all done):
 
 ## Approved scope change: structured draft output
 
-A structured shape for drafted display questions was added, split across two
-tools rather than folded into `draft_display_questions` directly.
+A structured shape for drafted display questions is validated and rendered by
+`submit_drafted_questions`. The semantic drafting workflow belongs to the
+packaged `draft-display-question` skill, rather than to a prompt-returning MCP
+tool.
 
 Output/draft shape: an array of selectable **units**, each a discriminated
 union on `type`:
@@ -73,36 +75,29 @@ existing Selection granularity rule.
 the connected host's own model produced the structured JSON. This was reverted
 after manual testing showed the call hanging until the SDK's 60s default
 request timeout.
-`sampling/createMessage` requests. Any tool needing host intelligence must stay
-prompt-returning; it cannot block on a sampling round trip.
+`sampling/createMessage` requests. Semantic generation is handled by the
+packaged skill; MCP tools remain deterministic and do not block on a sampling
+round trip.
 
-**Approach taken: two tools, prompt-returning + deterministic.**
+**Approach taken: skill + deterministic tool.**
 
-- `draft_display_questions` is unchanged in shape from before this scope
-  change — it has no `outputSchema` and returns the `draft-display-questions.md`
-  prompt as text for the host's own model to act on in its next turn, the same
-  way `define_terms` does.
-- A new tool, `submit_drafted_questions`, has both `inputSchema` and
+- `skills/draft-display-question/SKILL.md` defines the workflow boundary,
+  selection guard, stop rules, and output organization, with detailed rules in
+  `references/drafting-spec.md`.
+- `submit_drafted_questions` has both `inputSchema` and
   `outputSchema` set to the units/`followUp` shape. It performs no generation:
-  it is purely deterministic, validating the host-drafted input and echoing it
-  back as `structuredContent`.
-- The prompt's Output section instructs the host model to present the
-  plain-text questions as before, then call `submit_drafted_questions` once
-  with the same draft organized into `units`, after it has finished drafting
-  (not during drafting, and not when the Selection guard or Stop rules apply).
+  it validates the skill-produced input, renders the trader-facing Markdown,
+  and returns the same structured content.
 
 Steps (all done):
 
 1. Define the Zod unit/output schema (`draftUnitSchema`,
    `draftDisplayQuestionsOutputShape`) shared by input and output.
-2. Revert `draft_display_questions` to a plain prompt-returning tool (no
-   `outputSchema`, synchronous handler).
+2. Add the focused `draft-display-question` skill and its drafting reference.
 3. Add `submit_drafted_questions` with `inputSchema = outputSchema` set to the
-   shared shape; handler validates via the registered schema and echoes
-   `structuredContent`.
-4. Update the prompt's Output section to add the `submit_drafted_questions`
-   call as a final step, without changing the plain-text question format.
-5. Update server tool/prompt tests for the two-tool shape.
+   shared shape; the handler validates, renders, and returns `structuredContent`.
+4. Remove the duplicate prompt-returning tool and MCP prompt registration.
+5. Update server tests to cover the deterministic tool shape.
 
 ## Approved scope change: resolution-source step
 
@@ -113,48 +108,24 @@ deadline and observation window are anchored to a source's publication
 schedule, and because naming the source is the natural continuation of
 disambiguating the terms it measures.
 
-The step is presented to the user in **two turns**, each backed by a tool that
-renders the exact Markdown so the visible format lives in code, not in prompt
-prose: Turn 1 calls `propose_resolution_sources` to reveal only the ranked
+The step is presented to the user in **two turns**, with source-selection
+semantics in the packaged `define-resolution-source` skill and each visible
+format backed by a deterministic tool. Turn 1 calls
+`propose_resolution_sources` to reveal only the ranked
 source **names** (with publishers) and asks whether the hierarchy is right;
 Turn 2, only after the user approves, calls `submit_resolution_source` with the
 full `DataSource` records and presents the detail + link checks. This keeps the
 user from being buried in per-source detail for sources they may not want.
 
-(An earlier revision drove Turn 1 from the prompt alone, on the reasoning that
-the names list is a transient proposal rather than a registered artifact. That
-was reversed: keeping the Turn 1 format as prose in `define-resolution-source.md`
-duplicated the `submit_resolution_source` layout in English and drifted from it.
-Moving it into `renderSourceProposal` in `server/src/render.ts` makes the format
-single-sourced and unit-testable, and shrinks the template to "call the tool,
-echo verbatim." The proposal tool still echoes `structuredContent` for parity
-with the other steps, even though the names list is not persisted downstream.)
+The visible formats remain single-sourced and unit-testable in
+`server/src/render.ts`; semantic instructions remain in the skills and their
+references. The MCP server does not register prompt-returning workflow tools or
+MCP prompts.
 
-The same "format lives in code, template says echo verbatim" convention was then
-applied back to `define_terms`: its `submit_defined_terms` handler now renders
-the reply via the shared `renderDefinitions` helper, and `define-terms.md` was
-slimmed from a six-step layout spec to "call the tool, present its Markdown
-verbatim."
+The skills-first shape is:
 
-`draft_display_questions` was then aligned too. Previously `submit_drafted_questions`
-was a silent validator ("do not show its result") and the model formatted the
-draft from prompt prose. That flow was flipped: `submit_drafted_questions` is now
-the render source — its handler renders the numbered `**Unit N**` list via a new
-`renderDraftUnits` helper (which shares `unitLabel`/`unitBullets` with
-`renderUnitHeader`), and the model calls it first, then echoes the returned
-Markdown verbatim. `draft-display-questions.md` keeps only the semantic guidance
-(decomposition, unit organization, follow-up wording, Selection/Stop guards); the
-layout spec is gone. All three prompt-driven steps now own their visible format
-in `server/src/render.ts` rather than in template prose. Hard enforcement of the
-rendered output (a widget from `structuredContent`) remains the deferred robust
-fix noted above.
-
-It mirrors the `define_terms` two-tool + prompt shape:
-
-- `define_resolution_source` — prompt-returning, read-only. Inputs
-  `unit_number`, `selected_unit`, and the agreed `definitions` (so sources
-  resolve against the definitions, not the raw wording). Returns the
-  `define-resolution-source.md` prompt for the host model to act on.
+- `skills/define-resolution-source/SKILL.md` defines the two-turn source
+  workflow and uses the agreed definitions as its input context.
 - `propose_resolution_sources` — deterministic, read-only, `inputSchema =
 outputSchema` with `unit_number`, `selected_unit`, `sources` (a names-only
   ranked array of `rank`/`name`/`publisher`, `min(1)`), and `followUp`. Renders
@@ -164,8 +135,6 @@ outputSchema` with `unit_number`, `selected_unit`, `sources` (a names-only
   with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
   existing `DataSource` schema, `min(1)`), and `followUp`. Validates and echoes
   `structuredContent`; renders sources in rank order.
-- `define-resolution-source` prompt — the same guidance as an inspectable
-  prompt template, accepting `text` and optional `definitions`.
 
 Scope is source identity/hierarchy only. Settlement calculation
 (`settlementCalculationProcedure`, methodology locking) and timing are
@@ -187,26 +156,56 @@ formatted Markdown (name as a plain bold header, each attribute as a `- `
 bullet), but the ChatGPT host model composes its own reply from that output and
 has been observed paraphrasing it — flattening the bullets into plain lines,
 dropping the bold name, and renaming fields (e.g. `URL` → "API URL"). The
-current mitigation is prompt-level only: `define-resolution-source.md` (Turn 2)
-and `instructions.md` instruct the model to reproduce the returned Markdown
-verbatim. This makes faithful rendering likely but cannot guarantee it. The
+current mitigation is instruction-level only: the
+`define-resolution-source` skill and `instructions.md` instruct the model to
+reproduce the returned Markdown verbatim. This makes faithful rendering likely
+but cannot guarantee it. The
 robust fix is deferred (see Deferred): render the hierarchy in the `web/` React
 widget from `structuredContent` instead of relying on the model to echo text.
 
 Steps (all done):
 
-1. Add `define-resolution-source.md` template and `renderDefinitions` /
-   `renderSources` helpers in `server/src/render.ts`.
-2. Add the `define_resolution_source` prompt-returning tool and the
-   `define-resolution-source` prompt.
-3. Add the `submit_resolution_source` tool (`inputSchema = outputSchema` over
+1. Add the `define-resolution-source` skill and its source reference, plus the
+   `renderDefinitions` / `renderSources` helpers in `server/src/render.ts`.
+2. Add the `submit_resolution_source` tool (`inputSchema = outputSchema` over
    the ranked `DataSource` array).
-4. Register all three in `server/src/index.ts` and document the step in
-   `instructions.md`.
-5. Add server tool/prompt tests for the new step.
-6. Move the Turn 1 names-only format out of the prompt into a
+3. Register the deterministic proposal/submission tools and document the step
+   in `instructions.md`.
+4. Add server tool tests for the new step.
+5. Move the Turn 1 names-only format into a
    `propose_resolution_sources` tool backed by `renderSourceProposal`; slim
-   `define-resolution-source.md` to "call the tool, echo verbatim."
+   the server instructions to cross-tool guidance.
+
+## Approved scope change: skills-first plugin architecture
+
+The three semantic workflows are packaged as focused skills with supporting
+references:
+
+- `skills/draft-display-question/`
+- `skills/define-terms/`
+- `skills/define-resolution-source/`
+
+Each skill keeps `SKILL.md` concise and routes detailed policies, schemas, and
+examples through `references/`. The MCP server is the controlled execution
+layer and exposes only these deterministic tools:
+
+- `submit_drafted_questions`
+- `submit_defined_terms`
+- `propose_resolution_sources`
+- `submit_resolution_source`
+
+The removed `draft_display_questions`, `define_terms`, and
+`define_resolution_source` prompt-returning tools, their MCP prompts, and their
+duplicated server templates are no longer part of the server surface.
+
+Migration status:
+
+1. Create the three focused skills and supporting references — done.
+2. Remove the duplicate prompt layer and prompt capability — done.
+3. Reduce server instructions and update tests, tool metadata, README, and this
+   plan — done.
+4. Add plugin manifest/package wiring and verify skill discovery/import in the
+   host — next implementation step.
 
 ## Target directory structure
 
@@ -227,6 +226,16 @@ event-contract-builder/
 │   │   │   └── convert.ts
 │   │   └── index.ts
 │   └── test/
+├── skills/                       # Packaged semantic workflow instructions
+│   ├── draft-display-question/
+│   │   ├── SKILL.md
+│   │   └── references/drafting-spec.md
+│   ├── define-terms/
+│   │   ├── SKILL.md
+│   │   └── references/definition-spec.md
+│   └── define-resolution-source/
+│       ├── SKILL.md
+│       └── references/source-spec.md
 ├── server/
 │   ├── src/
 │   │   ├── tools/
@@ -257,8 +266,10 @@ not edited by hand.
 
 ## Architecture
 
-1. ChatGPT calls an MCP tool exposed by `server/`.
-2. The tool handler delegates all event-contract behavior to `src/`.
+1. A packaged skill guides the model through semantic drafting and calls an
+   MCP tool exposed by `server/` for each structured handoff.
+2. The tool handler delegates schema validation and rendering to the server
+   helpers and existing `src/` schemas.
 3. The handler returns concise `content` plus typed `structuredContent`.
 4. The tool descriptor points to a versioned widget resource URI.
 5. The server registers that resource as `text/html;profile=mcp-app`, inlining
@@ -437,6 +448,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 18. Add one end-to-end build and MCP integration test.
 19. Update `README.md` with library, CLI, local ChatGPT App, HTTPS tunnel, and
     production connection instructions.
+20. Add plugin manifest/package wiring for `skills/` and verify skill discovery
+    and import in the host.
 
 ## Verification
 
@@ -446,6 +459,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 - `bun run cli -- --help`
 - `bun run cli -- validate <fixture>`
 - Start the server and verify `http://localhost:<port>/mcp` with MCP Inspector.
+- Verify the packaged skills are discoverable and the MCP server exposes only
+  the four deterministic workflow tools.
 - Retrieve the widget resource and confirm its MIME type is
   `text/html;profile=mcp-app`.
 - Connect the HTTPS endpoint from ChatGPT developer mode and verify tool
