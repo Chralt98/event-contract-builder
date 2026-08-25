@@ -44,7 +44,7 @@ A scalar or categorical group is always selected as a whole, even if the user na
 
 ## Tool output
 
-`submit_drafted_questions` owns the trader-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its returned Markdown verbatim.
+`submit_drafted_questions` owns the trader-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown verbatim. Do not replace the rendered units or questions with a summary.
 
 Use these unit shapes:
 

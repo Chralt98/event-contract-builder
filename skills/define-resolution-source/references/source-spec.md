@@ -54,7 +54,9 @@ Call `propose_resolution_sources` with:
 - `sources`: a ranked names-only array containing only `rank`, `name`, and `publisher`; and
 - `followUp`: one sentence asking whether the hierarchy is correct or should be changed, for example: “Does this source hierarchy look right, or should we add, remove, or reorder any source?”
 
-Present the returned Markdown verbatim, then stop. Do not call `submit_resolution_source` in Turn 1.
+Present the complete returned Markdown verbatim, including the full ranked
+hierarchy and follow-up, then stop. Do not call `submit_resolution_source` in
+Turn 1.
 
 If the user requests changes, revise the names-only proposal and call `propose_resolution_sources` again. Do not advance to Turn 2 until the user approves the hierarchy.
 
@@ -81,7 +83,7 @@ publiclyAccessible
 independenceNote
 ```
 
-`submit_resolution_source` performs an advisory reachability check on every URL and renders the result with the source detail. Present that returned Markdown verbatim. If any link is unreachable or errored, surface the warning and correct the URL before locking in the hierarchy; the check itself does not block submission.
+`submit_resolution_source` performs an advisory reachability check on every URL and renders the result with the source detail. Present the complete returned Markdown verbatim, including every source detail, link-check note, warning, and follow-up. If any link is unreachable or errored, surface the warning and correct the URL before locking in the hierarchy; the check itself does not block submission.
 
 ## Stop rules
 

@@ -1,0 +1,8 @@
+{
+  "apps": {
+    "event-contract-builder": {
+      "id": "<YOUR_CHATGPT_APP_ID>",
+      "category": "Productivity"
+    }
+  }
+}

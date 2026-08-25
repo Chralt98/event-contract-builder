@@ -154,6 +154,40 @@ The packaged endpoint is `http://localhost:8787/mcp`. For a hosted ChatGPT
 connection, expose the server over HTTPS and replace the endpoint in the
 deployment-specific MCP configuration.
 
+#### Local ChatGPT app mapping
+
+The plugin manifest keeps its `apps` reference at `./.app.json`. For local
+ChatGPT testing, copy the tracked example and replace the placeholder with
+your own registered ChatGPT App ID:
+
+```sh
+cp .app.example.json .app.json
+```
+
+Edit `.app.json` after copying it. The file is intentionally ignored because
+the App ID is specific to the local ChatGPT connection; do not commit it.
+The tracked `.app.example.json` is safe to publish and must retain only the
+placeholder.
+
+#### Updating the local plugin after skill changes
+
+When one of the three files under `skills/` changes, run these commands from
+the project directory to update the plugin version and reinstall the existing
+personal marketplace entry:
+
+```sh
+python3 ~/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py .
+codex plugin add event-contract-builder@personal --json
+```
+
+Then start a new Codex chat so the updated skills are loaded. For server-only
+logic changes, restarting the server is sufficient; `bun run dev:server`
+restarts it automatically during development.
+
+If tool metadata such as the description, schema, or return shape changes, also
+refresh or update the ChatGPT plugin connection and test it in a new chat. Do
+not add keys, tunnel IDs, or user data to this guide or to project files.
+
 ### Workflow
 
 1. **Draft** — use the `draft-display-question` skill with a sufficiently

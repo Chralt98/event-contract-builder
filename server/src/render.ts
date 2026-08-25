@@ -46,13 +46,14 @@ export function renderDraftUnits(units: DraftUnitT[]): string {
 }
 
 /**
- * Renders a definitions glossary as one `**term** — definition` line per
- * entry, or a placeholder when empty.
+ * Renders a definitions glossary as one Markdown bullet per entry, or a
+ * placeholder when empty. Bullets keep every term and definition visible when
+ * the host reflows the tool's text content.
  */
 export function renderDefinitions(definitions: DefinitionsT): string {
   const entries = Object.entries(definitions);
   if (entries.length === 0) return "_None provided._";
-  return entries.map(([term, def]) => `**${term}** — ${def}`).join("\n");
+  return entries.map(([term, def]) => `- **${term}** — ${def}`).join("\n");
 }
 
 /**

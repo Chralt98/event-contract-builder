@@ -15,7 +15,9 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
 2. Analyze the exact selected unit for terms that a trader or resolution authority could reasonably interpret in more than one way.
 3. Propose concise, dispute-resistant definitions without rewriting the selected questions.
 4. Call `submit_defined_terms` once with the unit number, exact selected unit, definitions map, and a follow-up asking whether the definitions should be changed.
-5. Present the tool's returned Markdown verbatim and nothing else.
+5. Present the tool's complete returned Markdown verbatim and nothing else. It is
+   the user-facing glossary: include every term, its definition, and the
+   follow-up. Never replace it with a confirmation or the follow-up alone.
 
 The selected unit is supplied directly to this skill by the host workflow. Do not call a separate prompt-returning tool; the only MCP call in this workflow is `submit_defined_terms`.
 

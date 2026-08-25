@@ -14,7 +14,7 @@ The workflow expects a free-form event description and produces one or more conc
 1. Read [references/drafting-spec.md](references/drafting-spec.md) before drafting or handling a selection. It contains the writing rules, market decomposition, output schema, and guard conditions.
 2. Decide whether the input describes a new event or selects/confirms questions from an existing draft.
 3. For a new event, identify the event, outcome, and future resolution period. If any is too vague, ask for clarification and stop.
-4. Draft the questions according to the reference, organize them into selectable units, and call `submit_drafted_questions` exactly once. Present its returned Markdown verbatim.
+4. Draft the questions according to the reference, organize them into selectable units, and call `submit_drafted_questions` exactly once. Present the tool's complete returned Markdown verbatim, including every unit, question, and follow-up; do not summarize it.
 5. For an existing-question selection, do not generate or restate questions. Respond only with `Defining the terms in the selected unit now.` and hand off to the `define-terms` skill with the selected unit; no MCP tool is needed for this handoff.
 
 ## Boundaries

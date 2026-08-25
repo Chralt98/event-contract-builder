@@ -46,7 +46,9 @@ Do not define words with one obvious meaning in context. Do not define data sour
 - `definitions`: a term-to-definition map; and
 - `followUp`: one sentence asking whether the user agrees with the definitions or wants any changed.
 
-Present the returned Markdown verbatim. Do not paraphrase, reformat, rename fields, reorder content, or expose the raw structured payload.
+Present the returned Markdown verbatim. It is the user-facing glossary and must
+include every term, definition, and the follow-up. Do not paraphrase, reformat,
+rename fields, reorder content, or expose the raw structured payload.
 
 ## Stop rules
 
