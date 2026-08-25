@@ -15,7 +15,9 @@ export const DisplayQuestion = z
   .string()
   .min(10)
   .max(200)
-  .regex(/\?$/s, "Must end with ?")
+  // Keep this as a runtime refinement rather than a regex so connector
+  // validators cannot double-escape the generated JSON Schema pattern.
+  .refine((value) => value.endsWith("?"), "Must end with ?")
   .describe("Trader-facing display question, ending in '?'");
 
 export type DisplayQuestionT = z.infer<typeof DisplayQuestion>;

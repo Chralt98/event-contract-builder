@@ -73,6 +73,10 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema).toBeDefined();
     expect(tool.outputSchema?.properties).toHaveProperty("units");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    const questionSchema =
+      tool.inputSchema?.properties?.units?.items?.oneOf?.[0]?.properties
+        ?.question;
+    expect(questionSchema).not.toHaveProperty("pattern");
   });
 
   test("submit_drafted_questions validates and echoes a structured draft", async () => {
@@ -168,6 +172,25 @@ describe("event-contract tools", () => {
       arguments: {
         units: [{ type: "scalar" }],
         followUp: "Which one?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("submit_drafted_questions still rejects a question without a trailing question mark", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [
+          {
+            type: "binary",
+            question: "Will the AfD win the most seats in Germany's next federal election",
+          },
+        ],
+        followUp: "Which unit should we use?",
       },
     });
 

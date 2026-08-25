@@ -13,7 +13,9 @@ export const ProductName = z
   .string()
   .min(10)
   .max(200)
-  .regex(/\?$/s, "Product name must end with ?")
+  // Keep this as a runtime refinement rather than a regex so connector
+  // validators cannot double-escape the generated JSON Schema pattern.
+  .refine((value) => value.endsWith("?"), "Product name must end with ?")
   .describe("Trader-facing product name question");
 
 export type ProductNameT = z.infer<typeof ProductName>;
