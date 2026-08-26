@@ -12,11 +12,11 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
 ## Workflow
 
 1. Confirm that the selected unit, unit number, and agreed definitions are present. If definitions are missing or not approved, route back to `define-terms` and stop.
-2. Work out the full source records internally, but first call `propose_resolution_sources` with names, publishers, and ranks only.
+2. Work out the full source records internally, but first call `propose_resolution_sources` with each source's rank, name, publisher, and exact URL.
 3. Present the proposal tool's complete returned Markdown verbatim, including
    the full ranked hierarchy and follow-up, then stop. Do not call
    `submit_resolution_source` in the proposal turn.
-4. If the user requests changes, revise and resubmit the names-only proposal. Wait for approval again.
+4. If the user requests changes, revise and resubmit the concise proposal. Wait for approval again.
 5. After approval, call `submit_resolution_source` once with the full source
    records. Present its complete returned Markdown verbatim, including every
    source detail, advisory link-check warning, and follow-up.

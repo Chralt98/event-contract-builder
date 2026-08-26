@@ -133,7 +133,7 @@ from your local setup to this repository.
 | ---------------------------- | ------------------------------------------------------------------------------ |
 | `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.  |
 | `submit_defined_terms`       | Validate and render definitions for a selected unit.                           |
-| `propose_resolution_sources` | Validate and render a names-only ranked source hierarchy.                      |
+| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs.     |
 | `submit_resolution_source`   | Validate and render full source details with advisory URL reachability checks. |
 
 The `skills/` directory contains the workflow instructions and supporting
@@ -219,7 +219,7 @@ percent in June 2026"`. Organize the result into selectable units, then
 
 3. **Choose sources** — after the user agrees to the definitions, use the
    `define-resolution-source` skill. First call `propose_resolution_sources`
-   with ranked names and publishers only:
+   with ranked names, publishers, and exact URLs:
 
    ```json
    {
@@ -232,7 +232,8 @@ percent in June 2026"`. Organize the result into selectable units, then
        {
          "rank": 1,
          "name": "Consumer Price Index",
-         "publisher": "U.S. Bureau of Labor Statistics"
+         "publisher": "U.S. Bureau of Labor Statistics",
+         "url": "https://www.bls.gov/cpi/"
        }
      ],
      "followUp": "Does this source hierarchy look right?"

@@ -53,14 +53,17 @@ Call `propose_resolution_sources` with:
 
 - `unit_number`: the selected unit's 1-based number;
 - `selected_unit`: the exact selected unit;
-- `sources`: a ranked names-only array containing only `rank`, `name`, and `publisher`; and
+- `sources`: a ranked array containing `rank`, `name`, `publisher`, and the exact `url`; and
 - `followUp`: one sentence asking whether the hierarchy is correct or should be changed, for example: “Does this source hierarchy look right, or should we add, remove, or reorder any source?”
 
 Present the complete returned Markdown verbatim, including the full ranked
 hierarchy and follow-up, then stop. Do not call `submit_resolution_source` in
 Turn 1.
 
-If the user requests changes, revise the names-only proposal and call `propose_resolution_sources` again. Do not advance to Turn 2 until the user approves the hierarchy.
+Each URL is rendered as a clickable Markdown link so the user can inspect the
+candidate source before approval. If the user requests changes, revise the
+concise proposal and call `propose_resolution_sources` again. Do not advance to
+Turn 2 until the user approves the hierarchy.
 
 ### Turn 2: detail and register
 
@@ -90,7 +93,7 @@ independenceNote
 ## Stop rules
 
 - If the selected unit, unit number, or agreed definitions are missing, stop and request them.
-- If the user has not approved the names-only hierarchy, do not call `submit_resolution_source`.
+- If the user has not approved the proposed hierarchy, do not call `submit_resolution_source`.
 - If the exact URL or dataset identifier cannot be established, do not guess; ask the user or leave the source unresolved.
 - If a source cannot cover a fact the unit resolves on, revise the hierarchy rather than submitting an incomplete source set.
 - Do not move into settlement calculation or timing in this step.

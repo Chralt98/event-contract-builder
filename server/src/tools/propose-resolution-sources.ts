@@ -7,8 +7,8 @@ import {
 import { renderUnitHeader, renderSourceProposal } from "../render";
 
 /**
- * Names-only view of a source: just enough to let the user approve the
- * hierarchy before the full per-source records are worked up in Turn 2.
+ * Concise view of a source: identity plus a clickable locator, so the user can
+ * inspect it before approving the hierarchy in Turn 1.
  */
 const proposalShape = {
   unit_number: z
@@ -33,11 +33,16 @@ const proposalShape = {
           .string()
           .min(2)
           .describe("Organization that produces the data."),
+        url: z
+          .url()
+          .describe(
+            "Exact source URL shown as a clickable link in the proposal.",
+          ),
       }),
     )
     .min(1)
     .describe(
-      "The ranked source hierarchy as names only; rank 1 is the primary source.",
+      "The ranked source hierarchy with clickable URLs; rank 1 is the primary source.",
     ),
   followUp: z
     .string()
@@ -53,7 +58,7 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
     {
       title: "Propose Resolution Sources",
       description:
-        "Present the ranked resolution source hierarchy as names only, for the " +
+        "Present the ranked resolution source hierarchy with clickable URLs, for the " +
         "user to approve before the full per-source detail is registered. Call " +
         "this in the first turn — after identifying the source(s) but before " +
         "submit_resolution_source.",

@@ -68,18 +68,22 @@ export function renderDefinitions(definitions: DefinitionsT): string {
 }
 
 /**
- * Renders a names-only source hierarchy proposal (Turn 1): one
- * `**N. Name** (Publisher)` line per source in rank order, with no attribute
- * bullets. The detailed per-attribute view is produced later by `renderSources`,
- * so the two stages stay format-consistent while living in one place.
+ * Renders a concise source hierarchy proposal (Turn 1): one
+ * `**N. Name** (Publisher)` heading and an explicit Markdown URL link per source
+ * in rank order. The detailed per-attribute view is produced later by
+ * `renderSources`, so the proposal stays easy to scan.
  */
 export function renderSourceProposal(
-  sources: { rank: number; name: string; publisher: string }[],
+  sources: { rank: number; name: string; publisher: string; url: string }[],
 ): string {
   return [...sources]
     .sort((a, b) => a.rank - b.rank)
-    .map((s) => `**${s.rank}. ${s.name}** (${s.publisher})`)
-    .join("\n");
+    .map(
+      (s) =>
+        `**${s.rank}. ${s.name}** (${s.publisher})\n` +
+        `- URL: [${s.url}](${s.url})`,
+    )
+    .join("\n\n");
 }
 
 /**

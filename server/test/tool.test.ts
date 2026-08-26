@@ -381,9 +381,13 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("sources");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    const sourcesSchema = tool.outputSchema?.properties?.sources as
+      | JsonSchema
+      | undefined;
+    expect(sourcesSchema?.items?.properties).toHaveProperty("url");
   });
 
-  test("propose_resolution_sources renders names-only sources in rank order and echoes structured content", async () => {
+  test("propose_resolution_sources renders clickable source URLs in rank order and echoes structured content", async () => {
     const input = {
       unit_number: 1,
       selected_unit: {
@@ -395,11 +399,13 @@ describe("event-contract tools", () => {
           rank: 2,
           name: "FRED CPI series",
           publisher: "Federal Reserve Bank of St. Louis",
+          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
         },
         {
           rank: 1,
           name: "BLS Consumer Price Index",
           publisher: "U.S. Bureau of Labor Statistics",
+          url: "https://www.bls.gov/cpi/",
         },
       ],
       followUp:
@@ -420,15 +426,20 @@ describe("event-contract tools", () => {
       "**Selected Unit 1: Binary market**\n- Will U.S. CPI rise 3%+ year-over-year in June 2026?",
     );
     expect(text).toContain(
-      "---\n\n### Resolution Source Hierarchy\n\n**1. BLS Consumer Price Index** (U.S. Bureau of Labor Statistics)",
+      "---\n\n### Resolution Source Hierarchy\n\n" +
+        "**1. BLS Consumer Price Index** (U.S. Bureau of Labor Statistics)\n" +
+        "- URL: [https://www.bls.gov/cpi/](https://www.bls.gov/cpi/)",
     );
     // Rank 1 renders before rank 2 regardless of input order.
     const primaryIdx = text.indexOf("**1. BLS Consumer Price Index**");
     const fallbackIdx = text.indexOf("**2. FRED CPI series**");
     expect(primaryIdx).toBeGreaterThanOrEqual(0);
     expect(fallbackIdx).toBeGreaterThan(primaryIdx);
-    // Names only: no per-source attribute detail leaks into the proposal.
-    expect(text).not.toContain("- URL:");
+    expect(text).toContain(
+      "- URL: [https://fred.stlouisfed.org/series/CPIAUCNS]" +
+        "(https://fred.stlouisfed.org/series/CPIAUCNS)",
+    );
+    // Full per-source detail still does not leak into the concise proposal.
     expect(text).not.toContain("- Establishes:");
     expect(text).toContain("---\n\n" + input.followUp);
   });
@@ -446,6 +457,32 @@ describe("event-contract tools", () => {
         },
         sources: [],
         followUp: "Which source?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("propose_resolution_sources requires a valid source URL", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [
+          {
+            rank: 1,
+            name: "BLS Consumer Price Index",
+            publisher: "U.S. Bureau of Labor Statistics",
+            url: "not-a-url",
+          },
+        ],
+        followUp: "Does this source hierarchy look right?",
       },
     });
 

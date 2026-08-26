@@ -164,8 +164,8 @@ disambiguating the terms it measures.
 The step is presented to the user in **two turns**, with source-selection
 semantics in the packaged `define-resolution-source` skill and each visible
 format backed by a deterministic tool. Turn 1 calls
-`propose_resolution_sources` to reveal only the ranked
-source **names** (with publishers) and asks whether the hierarchy is right;
+`propose_resolution_sources` to reveal the ranked source identities — names,
+publishers, and clickable URLs — and asks whether the hierarchy is right;
 Turn 2, only after the user approves, calls `submit_resolution_source` with the
 full `DataSource` records and presents the detail + link checks. This keeps the
 user from being buried in per-source detail for sources they may not want.
@@ -180,9 +180,10 @@ The skills-first shape is:
 - `skills/define-resolution-source/SKILL.md` defines the two-turn source
   workflow and uses the agreed definitions as its input context.
 - `propose_resolution_sources` — deterministic, read-only, `inputSchema =
-outputSchema` with `unit_number`, `selected_unit`, `sources` (a names-only
-  ranked array of `rank`/`name`/`publisher`, `min(1)`), and `followUp`. Renders
-  the Turn 1 names-only hierarchy via `renderSourceProposal` and echoes
+outputSchema` with `unit_number`, `selected_unit`, `sources` (a ranked array of
+  `rank`/`name`/`publisher`/`url`, `min(1)`), and `followUp`. Renders the Turn 1
+  hierarchy with each URL as an explicit Markdown link via
+  `renderSourceProposal` and echoes
   `structuredContent`.
 - `submit_resolution_source` — deterministic, `inputSchema = outputSchema`
   with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
@@ -225,9 +226,22 @@ Steps (all done):
 3. Register the deterministic proposal/submission tools and document the step
    in `instructions.md`.
 4. Add server tool tests for the new step.
-5. Move the Turn 1 names-only format into a
+5. Move the original Turn 1 names-only format into a
    `propose_resolution_sources` tool backed by `renderSourceProposal`; slim
    the server instructions to cross-tool guidance.
+
+## Approved scope change: clickable proposal source URLs
+
+The Turn 1 `propose_resolution_sources` result must let the user open each
+candidate source before approving the hierarchy. Each proposal source therefore
+includes its exact `url`, and `renderSourceProposal` displays that value as an
+explicit Markdown link. The proposal remains concise: full source metadata and
+live reachability checks still belong to `submit_resolution_source` in Turn 2.
+
+Steps (done):
+
+1. Add `url` to the proposal schema and rendered Markdown; align the
+   resolution-source skill, server instructions, README, and focused tool tests.
 
 ## Approved scope change: skills-first plugin architecture
 
@@ -519,6 +533,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
     template units.
 24. Update packaged skill guidance and user-facing documentation for template
     draft units and their downstream handoff.
+25. Add clickable source URLs to `propose_resolution_sources` and align its
+    workflow guidance, documentation, and focused tests — done.
 
 ## Verification
 
