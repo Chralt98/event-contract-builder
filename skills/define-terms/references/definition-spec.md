@@ -12,9 +12,10 @@ The input is one selected market unit from a prior display-question draft:
 
 - a binary unit contains one question;
 - a scalar unit contains the complete set of range questions; and
-- a categorical unit contains the complete set of option questions.
+- a categorical unit contains the complete set of option questions; or
+- a template unit contains one placeholder-bearing question and the complete ordered list of variables and allowed values.
 
-Keep the selected unit exactly as provided. Do not rewrite or modify its question text.
+Keep the selected unit exactly as provided. Do not rewrite or modify its question text, placeholders, variables, or values. For a template, analyze the common question wording and the full value set; do not choose a value or instantiate one concrete question.
 
 ## What counts as ambiguous
 
@@ -42,7 +43,7 @@ Do not define words with one obvious meaning in context. Do not define data sour
 `submit_defined_terms` owns the visible Markdown. After completing the analysis, call it exactly once with:
 
 - `unit_number`: the 1-based number shown in the prior draft;
-- `selected_unit`: the exact binary, scalar, or categorical unit selected by the user;
+- `selected_unit`: the exact binary, scalar, categorical, or template unit selected by the user;
 - `definitions`: a term-to-definition map; and
 - `followUp`: one sentence asking whether the user agrees with the definitions or wants any changed.
 

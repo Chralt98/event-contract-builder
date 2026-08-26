@@ -14,15 +14,26 @@ const ConnectorDisplayQuestion = z
   .max(200)
   .describe("Trader-facing display question, ending in '?'.");
 
+const ConnectorTemplateVariable = z.object({
+  name: z
+    .string()
+    .min(1)
+    .describe("Placeholder name without the surrounding angle brackets."),
+  values: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe("Allowed concrete values for this placeholder."),
+});
+
 export const ConnectorDraftUnit = z
   .object({
     type: z
-      .enum(["binary", "scalar", "categorical"])
+      .enum(["binary", "scalar", "categorical", "template"])
       .describe(
-        "Market shape. Binary uses question; scalar and categorical use questions.",
+        "Market shape. Binary uses question; scalar and categorical use questions; template uses question and variables.",
       ),
     question: ConnectorDisplayQuestion.optional().describe(
-      "The single Yes/No question for a binary market.",
+      "The single Yes/No question for a binary market, or placeholder-bearing question for a template market.",
     ),
     questions: z
       .array(ConnectorDisplayQuestion)
@@ -30,6 +41,13 @@ export const ConnectorDraftUnit = z
       .optional()
       .describe(
         "The complete question set for a scalar or categorical market (at least two).",
+      ),
+    variables: z
+      .array(ConnectorTemplateVariable)
+      .min(1)
+      .optional()
+      .describe(
+        "For a template market, one entry per angle-bracket placeholder in question.",
       ),
   })
   .describe(

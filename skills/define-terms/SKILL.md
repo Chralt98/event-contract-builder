@@ -11,7 +11,7 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
 
 ## Workflow
 
-1. Confirm that the input identifies exactly one unit. If the unit number or selected unit is missing or ambiguous, ask for clarification and stop. A scalar or categorical selection always means the complete group.
+1. Confirm that the input identifies exactly one unit. If the unit number or selected unit is missing or ambiguous, ask for clarification and stop. A scalar, categorical, or template selection always means the complete group, including every template variable and value.
 2. Analyze the exact selected unit for terms that a trader or resolution authority could reasonably interpret in more than one way.
 3. Propose concise, dispute-resistant definitions without rewriting the selected questions.
 4. Call `submit_defined_terms` once with the unit number, exact selected unit, definitions map, and a follow-up asking whether the definitions should be changed.
@@ -24,6 +24,6 @@ The selected unit is supplied directly to this skill by the host workflow. Do no
 ## Boundaries
 
 - Do not define obvious words or invent missing facts, data sources, authorities, reporting entities, deadlines, or observation periods.
-- Do not rewrite, narrow, or otherwise modify the selected question(s).
+- Do not rewrite, narrow, or otherwise modify the selected question(s), template placeholders, variables, or allowed values.
 - Do not use this skill to draft new display questions; route new-event requests to `draft-display-question`.
 - Do not call `submit_defined_terms` when the selected unit is unclear; ask for clarification when necessary. If no genuine ambiguity exists, submit an empty definitions map so the tool can render that result.

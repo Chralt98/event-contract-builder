@@ -92,8 +92,12 @@ describe("event-contract tools", () => {
         "binary",
         "scalar",
         "categorical",
+        "template",
       ]);
       expect(unitSchema?.properties?.question).not.toHaveProperty("pattern");
+      expect(unitSchema?.properties?.variables?.items).not.toHaveProperty(
+        "oneOf",
+      );
     }
   });
 
@@ -180,6 +184,41 @@ describe("event-contract tools", () => {
       "**Unit 4: Binary market**\n- Will the Fed raise rates in 2026?",
     );
     expect(text).toContain("---\n\n" + draft.followUp);
+  });
+
+  test("submit_drafted_questions renders template variables and preserves structured content", async () => {
+    const draft = {
+      units: [
+        {
+          type: "template" as const,
+          question:
+            "Will Bitcoin's USD price be <comparator> <price> on <date>?",
+          variables: [
+            { name: "comparator", values: ["below", "at least"] },
+            { name: "price", values: ["$60k", "$100k"] },
+            { name: "date", values: ["November 26, 2026"] },
+          ],
+        },
+      ],
+      followUp: "Should we use Unit 1 for further specification?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+
+    expect(result.structuredContent).toEqual(draft);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain(
+      "**Unit 1: Template market**\n" +
+        "- Will Bitcoin's USD price be <comparator> <price> on <date>?\n" +
+        "  - `<comparator>`: below; at least\n" +
+        "  - `<price>`: $60k; $100k\n" +
+        "  - `<date>`: November 26, 2026",
+    );
+    expect(content[0]!.text).toContain("---\n\n" + draft.followUp);
   });
 
   test("submit_drafted_questions rejects a unit missing its discriminated fields", async () => {
@@ -295,6 +334,42 @@ describe("event-contract tools", () => {
       "**Selected Unit 2: Scalar market**\n- Will the Fed cut rates 25bps in 2026?",
     );
     expect(text).toContain("- Will the Fed cut rates 50bps in 2026?");
+  });
+
+  test("submit_defined_terms renders the complete selected template unit", async () => {
+    const input = {
+      unit_number: 6,
+      selected_unit: {
+        type: "template" as const,
+        question:
+          "Will the museum's dinosaur exhibition remain open through <date>?",
+        variables: [
+          {
+            name: "date",
+            values: ["August 25", "August 31", "September 15"],
+          },
+        ],
+      },
+      definitions: {
+        "dinosaur exhibition":
+          "The ticketed dinosaur exhibition advertised by the museum under that title.",
+      },
+      followUp: "Do these definitions match your expectations?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_defined_terms",
+      arguments: input,
+    });
+
+    expect(result.structuredContent).toEqual(input);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain(
+      "**Selected Unit 6: Template market**\n" +
+        "- Will the museum's dinosaur exhibition remain open through <date>?\n" +
+        "  - `<date>`: August 25; August 31; September 15",
+    );
   });
 
   test("propose_resolution_sources advertises an output schema", async () => {

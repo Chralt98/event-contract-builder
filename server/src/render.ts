@@ -13,11 +13,22 @@ function unitLabel(unit: DraftUnitT): string {
     ? "Binary market"
     : unit.type === "scalar"
       ? "Scalar market"
-      : "Categorical market";
+      : unit.type === "categorical"
+        ? "Categorical market"
+        : "Template market";
 }
 
 /** A unit's question(s) rendered as `- ` bullets, one per line. */
 function unitBullets(unit: DraftUnitT): string {
+  if (unit.type === "template") {
+    return [
+      `- ${unit.question}`,
+      ...unit.variables.map(
+        ({ name, values }) => `  - \`<${name}>\`: ${values.join("; ")}`,
+      ),
+    ].join("\n");
+  }
+
   const questions = unit.type === "binary" ? [unit.question] : unit.questions;
   return questions.map((q) => `- ${q}`).join("\n");
 }

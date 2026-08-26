@@ -37,7 +37,8 @@ export const Meta = z
     /**
      * The trader-facing display question(s) as a consumer platform would phrase
      * this contract for retail traders — one binary question, or the full set
-     * for a scalar/categorical market. Distinct from `productName`, which is the
+     * for a scalar/categorical market, or a configurable template with allowed
+     * placeholder values. Distinct from `productName`, which is the
      * contract-level phrasing and may still carry placeholders like `<team>`.
      */
     displayQuestionExample: DraftUnit.optional().describe(

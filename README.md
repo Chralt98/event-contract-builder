@@ -131,7 +131,7 @@ from your local setup to this repository.
 
 | Tool                         | Purpose                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------ |
-| `submit_drafted_questions`   | Validate and render binary, scalar, and categorical display-question units.    |
+| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.  |
 | `submit_defined_terms`       | Validate and render definitions for a selected unit.                           |
 | `propose_resolution_sources` | Validate and render a names-only ranked source hierarchy.                      |
 | `submit_resolution_source`   | Validate and render full source details with advisory URL reachability checks. |
@@ -201,9 +201,16 @@ percent in June 2026"`. Organize the result into selectable units, then
    - Will CPI YoY be below 3 percent in June 2026?
    - Will CPI YoY be at least 3 percent in June 2026?
 
+   **Unit 2: Template market**
+
+   - Will CPI YoY be <comparator> <threshold> in <month>?
+     - `<comparator>`: below; at least
+     - `<threshold>`: 3 percent
+     - `<month>`: June 2026
+
    ---
 
-   Which unit should we use for further specification?
+   Which unit (1 or 2) should we use for further specification?
    ```
 
 2. **Select and define** — when the user selects a unit, use the `define-terms`

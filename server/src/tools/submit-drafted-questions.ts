@@ -11,7 +11,8 @@ const draftedQuestionsShape = {
     .array(ConnectorDraftUnit)
     .describe(
       "The drafted markets, each a single selectable unit: a binary question, " +
-        "or the complete set of questions for one scalar or categorical market.",
+        "the complete set of questions for one scalar or categorical market, " +
+        "or an additional placeholder-bearing template with its allowed values.",
     ),
   followUp: z
     .string()
@@ -30,7 +31,7 @@ export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
       title: "Submit Drafted Questions",
       description:
         "Validate and register a drafted set of display questions, " +
-        "organized into binary/scalar/categorical units. Call this once " +
+        "organized into binary/scalar/categorical/template units. Call this once " +
         "after the model has drafted questions for a new event, passing " +
         "the draft as structured units.",
       inputSchema: draftedQuestionsShape,

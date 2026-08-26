@@ -99,6 +99,59 @@ Steps (all done):
 4. Remove the duplicate prompt-returning tool and MCP prompt registration.
 5. Update server tests to cover the deterministic tool shape.
 
+## Approved scope change: template draft units
+
+Draft output gains a fourth selectable unit type, `template`, alongside the
+existing concrete binary, scalar, and categorical units. A template represents
+a configurable family of closely related binary display questions. It does not
+replace the concrete draft: when several concrete questions share a common
+event phrasing but vary by values such as dates, thresholds, comparators, or
+options, the drafting workflow appends a template unit in addition to the
+existing concrete units.
+
+Target shape:
+
+```json
+{
+  "type": "template",
+  "question": "Will Bitcoin's USD price be <comparator> <price> on <date>?",
+  "variables": [
+    { "name": "comparator", "values": ["below", "at least"] },
+    { "name": "price", "values": ["$60k", "$100k"] },
+    { "name": "date", "values": ["November 26, 2026"] }
+  ]
+}
+```
+
+`variables` is an ordered, non-empty array rather than Bitcoin-specific fields
+or a free-form object. Each entry has a placeholder `name` and a non-empty list
+of allowed string `values`. The names must correspond exactly to the distinct
+angle-bracket placeholders in `question`; every placeholder must have one
+entry, no undeclared variable is allowed, and values within an entry must be
+unique. This keeps the shape generic, connector-safe, and deterministically
+renderable. The template question retains the 10–200 character bound and
+trailing `?`, but unlike a concrete `DisplayQuestion`, it intentionally
+contains unresolved placeholders.
+
+Template units remain selectable as whole units and pass unchanged into the
+term-definition and resolution-source steps. The draft renderer labels them
+`Template market`, shows the question template, and lists each placeholder's
+allowed values. The drafting skill should append one when two or more concrete
+questions can usefully be expressed as one shared template with explicit value
+choices; it must retain the concrete units and must not invent a missing event
+or time boundary merely to construct a template.
+
+Steps:
+
+1. Add the domain and connector-safe `template` unit schemas, exact
+   placeholder/variable validation, and direct schema/tool-boundary tests —
+   done.
+2. Render template units in draft and selected-unit views, and add tool tests
+   for the Markdown and structured-content round trip — done.
+3. Update the drafting, definition, and resolution-source skill guidance plus
+   MCP instructions and README documentation for template creation, selection,
+   and handoff — done.
+
 ## Approved scope change: resolution-source step
 
 The specification flow gains a step after `define_terms`: identify the
@@ -460,6 +513,12 @@ Each item below is a separate reviewable step. Complete only one item per turn.
     and import in the host.
 21. Add the standalone Stdio MCP entrypoint and verify it with a local MCP
     initialize/tools-list smoke test for tunnel-client compatibility.
+22. Add the domain and connector-safe template draft-unit schemas with exact
+    placeholder/variable validation and boundary tests.
+23. Add deterministic rendering and structured-content tool coverage for
+    template units.
+24. Update packaged skill guidance and user-facing documentation for template
+    draft units and their downstream handoff.
 
 ## Verification
 
@@ -481,7 +540,7 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 ## Deferred
 
 - Schema redesign or new outcome types (except the approved product-name
-  simplification described above).
+  simplification and template draft-unit addition described above).
 - Authentication and user accounts.
 - Persistent contract storage.
 - External market or resolution-source integrations.

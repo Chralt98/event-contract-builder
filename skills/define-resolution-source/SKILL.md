@@ -27,6 +27,7 @@ The selected unit and agreed definitions are supplied directly to this skill by 
 
 - Resolve sources against the agreed definitions, not the raw question wording.
 - Cover every fact the unit resolves on; do not leave any fact unsourced.
+- Treat a selected template as one complete unit: cover every allowed variable value without choosing a value or rewriting the template.
 - Do not invent URLs, dataset identifiers, publication details, or source facts. Ask or stop when the exact locator is uncertain.
 - Prefer one primary source; add a fallback only for a concrete failure mode. Ranks must be unique and start at 1, with rank 1 binding first.
 - Do not define settlement calculations, methodology locking, deadlines, or observation windows; those belong to later steps.

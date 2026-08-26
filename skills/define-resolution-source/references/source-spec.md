@@ -15,10 +15,12 @@ Name the specific source that establishes each fact the unit resolves on. Fix th
 The input must contain:
 
 - `unit_number`: the 1-based number from the prior draft;
-- `selected_unit`: the exact binary, scalar, or categorical market unit; and
+- `selected_unit`: the exact binary, scalar, categorical, or template market unit; and
 - `definitions`: the agreed term-to-definition map for that unit.
 
 Resolve against the agreed definitions rather than the raw question wording. If the definitions are absent or not approved, stop and return to the term-definition workflow.
+
+For a template unit, keep the placeholder-bearing question and every variable value unchanged. The proposed hierarchy must cover all allowed variations; do not select one value or silently reduce the template to a concrete question.
 
 ## Source-quality criteria
 
