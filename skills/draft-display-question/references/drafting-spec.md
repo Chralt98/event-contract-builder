@@ -82,12 +82,13 @@ Do not paraphrase, reformat, renumber, or add to the Markdown returned by `submi
 The message may select or confirm questions from a prior draft, for example:
 
 - "I'll take Unit 2";
+- "Unit 4";
 - "let's go with the second one";
 - "I'll take the categorical set";
 - "use the template market"; or
 - a list of finished questions.
 
-When it does, do not generate or restate questions and do not call `submit_drafted_questions`. Respond only with `Defining the terms in the selected unit now.` and hand off to the `define-terms` skill with the selected unit; no MCP tool is needed for this handoff.
+When it does, do not generate or restate questions and do not call `submit_drafted_questions`. Respond only with `Defining the terms in the selected unit now.` and then call the `define-terms` skill with the selected unit; no MCP tool is needed for this handoff.
 
 If the message is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing. Do not call `submit_drafted_questions` in that case.
 
