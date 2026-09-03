@@ -255,9 +255,13 @@ percent in June 2026"`. Organize the result into selectable units, then
    **Unit 2: Template market**
 
    - Will CPI YoY be <comparator> <threshold> in <month>?
-     - `<comparator>`: below; at least
-     - `<threshold>`: 3 percent
-     - `<month>`: June 2026
+     - `<comparator>`:
+       - below
+       - at least
+     - `<threshold>`:
+       - 3 percent
+     - `<month>`:
+       - June 2026
 
    ---
 

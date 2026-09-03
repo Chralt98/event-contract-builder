@@ -23,9 +23,10 @@ function unitBullets(unit: DraftUnitT): string {
   if (unit.type === "template") {
     return [
       `- ${unit.question}`,
-      ...unit.variables.map(
-        ({ name, values }) => `  - \`<${name}>\`: ${values.join("; ")}`,
-      ),
+      ...unit.variables.flatMap(({ name, values }) => [
+        `  - \`<${name}>\`:`,
+        ...values.map((value) => `    - ${value}`),
+      ]),
     ].join("\n");
   }
 

@@ -214,9 +214,14 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain(
       "**Unit 1: Template market**\n" +
         "- Will Bitcoin's USD price be <comparator> <price> on <date>?\n" +
-        "  - `<comparator>`: below; at least\n" +
-        "  - `<price>`: $60k; $100k\n" +
-        "  - `<date>`: November 26, 2026",
+        "  - `<comparator>`:\n" +
+        "    - below\n" +
+        "    - at least\n" +
+        "  - `<price>`:\n" +
+        "    - $60k\n" +
+        "    - $100k\n" +
+        "  - `<date>`:\n" +
+        "    - November 26, 2026",
     );
     expect(content[0]!.text).toContain("---\n\n" + draft.followUp);
   });
@@ -368,7 +373,10 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain(
       "**Selected Unit 6: Template market**\n" +
         "- Will the museum's dinosaur exhibition remain open through <date>?\n" +
-        "  - `<date>`: August 25; August 31; September 15",
+        "  - `<date>`:\n" +
+        "    - August 25\n" +
+        "    - August 31\n" +
+        "    - September 15",
     );
   });
 

@@ -136,7 +136,8 @@ contains unresolved placeholders.
 Template units remain selectable as whole units and pass unchanged into the
 term-definition and resolution-source steps. The draft renderer labels them
 `Template market`, shows the question template, and lists each placeholder's
-allowed values. The drafting skill should append one when two or more concrete
+allowed values as separate nested bullets. The drafting skill should append one
+when two or more concrete
 questions can usefully be expressed as one shared template with explicit value
 choices; it must retain the concrete units and must not invent a missing event
 or time boundary merely to construct a template.
