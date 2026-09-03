@@ -289,9 +289,15 @@ percent in June 2026"`. Organize the result into selectable units, then
          "name": "Consumer Price Index",
          "publisher": "U.S. Bureau of Labor Statistics",
          "url": "https://www.bls.gov/cpi/"
+       },
+       {
+         "rank": 2,
+         "name": "FRED CPI series",
+         "publisher": "Federal Reserve Bank of St. Louis",
+         "url": "https://fred.stlouisfed.org/series/CPIAUCNS"
        }
      ],
-     "followUp": "Does this source hierarchy look right?"
+     "followUp": "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
    }
    ```
 

@@ -32,7 +32,13 @@ Each source should be:
 - **Scheduled:** published on a known cadence so later timing can be anchored to it; and
 - **Specific:** linked to the exact series or dataset, not merely a homepage. Include the publisher's `datasetId` when one exists.
 
-Prefer one primary source. Add a lower-ranked fallback only for a concrete failure mode, such as the primary becoming unavailable or stopping publication. Never use a vague “or similar” fallback.
+Default to at least one primary source and one lower-ranked fallback source. The
+primary is rank 1 and the fallback is rank 2; add further sources only for a
+concrete additional failure mode, such as the primary becoming unavailable or
+stopping publication. If the user explicitly chooses only the primary, a
+single rank-1 source is valid, but the MCP tools must display a visible `⚠`
+warning that no pre-approved fallback exists. Never use a vague “or similar”
+fallback.
 
 ## Constraints
 
@@ -53,7 +59,10 @@ Call `propose_resolution_sources` with:
 
 - `unit_number`: the selected unit's 1-based number;
 - `selected_unit`: the exact selected unit;
-- `sources`: a ranked array containing `rank`, `name`, `publisher`, and the exact `url`; and
+- `sources`: by default, a ranked array containing a rank-1 primary and rank-2
+  fallback, with each source's `rank`, `name`, `publisher`, and exact `url`. If
+  the user explicitly chooses primary-only, pass one rank-1 source; the tool
+  will render the single-source warning; and
 - `followUp`: one sentence asking whether the hierarchy is correct or should be changed, for example: “Does this source hierarchy look right, or should we add, remove, or reorder any source?”
 
 Present the complete returned Markdown verbatim, including the full ranked
@@ -70,7 +79,9 @@ Turn 2 until the user approves the hierarchy.
 Only after the user approves the hierarchy, call `submit_resolution_source` with:
 
 - `unit_number` and `selected_unit` unchanged from Turn 1;
-- `sources`: the complete ranked records; and
+- `sources`: the complete ranked records, normally including the rank-1 primary
+  and rank-2 fallback. A user-approved primary-only hierarchy may contain one
+  rank-1 record and must retain the tool's single-source warning; and
 - `followUp`: one sentence asking whether the detailed sources are correct or should be changed.
 
 Each full source record contains:
@@ -96,4 +107,6 @@ independenceNote
 - If the user has not approved the proposed hierarchy, do not call `submit_resolution_source`.
 - If the exact URL or dataset identifier cannot be established, do not guess; ask the user or leave the source unresolved.
 - If a source cannot cover a fact the unit resolves on, revise the hierarchy rather than submitting an incomplete source set.
+- If only one source is intentionally selected, keep it at rank 1 and preserve
+  the visible warning about having no pre-approved fallback.
 - Do not move into settlement calculation or timing in this step.

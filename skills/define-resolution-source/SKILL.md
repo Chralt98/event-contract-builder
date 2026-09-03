@@ -12,7 +12,11 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
 ## Workflow
 
 1. Confirm that the selected unit, unit number, and agreed definitions are present. If definitions are missing or not approved, route back to `define-terms` and stop.
-2. Work out the full source records internally, but first call `propose_resolution_sources` with each source's rank, name, publisher, and exact URL.
+2. Work out the full source records internally. By default include at least one
+   rank-1 primary source and one rank-2 fallback source, but first call
+   `propose_resolution_sources` with each source's rank, name, publisher, and
+   exact URL. If the user explicitly chooses a primary-only hierarchy, pass the
+   single rank-1 source; the tool will display a warning.
 3. Present the proposal tool's complete returned Markdown verbatim, including
    the full ranked hierarchy and follow-up, then stop. Do not call
    `submit_resolution_source` in the proposal turn.
@@ -29,6 +33,11 @@ The selected unit and agreed definitions are supplied directly to this skill by 
 - Cover every fact the unit resolves on; do not leave any fact unsourced.
 - Treat a selected template as one complete unit: cover every allowed variable value without choosing a value or rewriting the template.
 - Do not invent URLs, dataset identifiers, publication details, or source facts. Ask or stop when the exact locator is uncertain.
-- Prefer one primary source; add a fallback only for a concrete failure mode. Ranks must be unique and start at 1, with rank 1 binding first.
+- Default to at least two sources: rank 1 is the primary source and rank 2 is
+  the fallback used for a pre-specified primary-source failure. A user may
+  explicitly choose only the rank-1 primary; that is valid but the tool must
+  display its single-source warning. Add further sources only for concrete
+  additional failure modes. Ranks must be unique and contiguous, with rank 1
+  binding first.
 - Do not define settlement calculations, methodology locking, deadlines, or observation windows; those belong to later steps.
 - Do not use this skill to draft questions or define ambiguous terms.

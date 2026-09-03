@@ -6,6 +6,10 @@ import {
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
 import { renderUnitHeader, renderSources } from "../render";
+import {
+  singleSourceWarning,
+  sourceHierarchyRankError,
+} from "../source-hierarchy";
 import { checkUrl } from "../url-check";
 
 const resolutionSourceShape = {
@@ -20,9 +24,13 @@ const resolutionSourceShape = {
   ),
   sources: z
     .array(DataSource)
-    .min(1)
+    .min(1, "At least one rank-1 primary source is required.")
+    .superRefine((sources, ctx) => {
+      const error = sourceHierarchyRankError(sources);
+      if (error) ctx.addIssue({ code: "custom", message: error });
+    })
     .describe(
-      "The ranked resolution source hierarchy; rank 1 is the primary source that binds first.",
+      "The ranked resolution source hierarchy; default to rank 1 as the primary and rank 2 as the fallback. A single rank-1 source is allowed but emits a warning.",
     ),
   followUp: z
     .string()
@@ -39,7 +47,9 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
       title: "Submit Resolution Source",
       description:
         "Validate and register the resolution source hierarchy for a market unit. " +
-        "Call this once after defining the source(s), passing them as a ranked array.",
+        "By default pass a rank-1 primary and a rank-2 fallback in the ranked " +
+        "array. A user-requested single rank-1 source is valid but emits a " +
+        "warning. Call this once after the hierarchy is approved.",
       inputSchema: resolutionSourceShape,
       outputSchema: resolutionSourceShape,
       annotations: {
@@ -66,12 +76,14 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
       );
       const reachability = new Map(checks.map(([url, r]) => [url, r.label]));
       const hasProblems = checks.some(([, r]) => r.severity !== "ok");
+      const sourceWarning = singleSourceWarning(output.sources.length);
 
       const parts = [
         unitHeader,
         "---",
         "### Resolution Source Hierarchy",
         renderSources(output.sources, reachability),
+        ...(sourceWarning ? [sourceWarning] : []),
         "---",
       ];
       if (hasProblems) {

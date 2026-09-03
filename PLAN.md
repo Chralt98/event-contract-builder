@@ -171,7 +171,7 @@ Turn 2, only after the user approves, calls `submit_resolution_source` with the
 full `DataSource` records and presents the detail + link checks. This keeps the
 user from being buried in per-source detail for sources they may not want.
 
-The visible formats remain single-sourced and unit-testable in
+The visible formats remain deterministic and unit-testable in
 `server/src/render.ts`; semantic instructions remain in the skills and their
 references. The MCP server does not register prompt-returning workflow tools or
 MCP prompts.
@@ -182,14 +182,15 @@ The skills-first shape is:
   workflow and uses the agreed definitions as its input context.
 - `propose_resolution_sources` — deterministic, read-only, `inputSchema =
 outputSchema` with `unit_number`, `selected_unit`, `sources` (a ranked array of
-  `rank`/`name`/`publisher`/`url`, `min(1)`), and `followUp`. Renders the Turn 1
-  hierarchy with each URL as an explicit Markdown link via
-  `renderSourceProposal` and echoes
-  `structuredContent`.
+  `rank`/`name`/`publisher`/`url`, `min(1)` with rank 1 primary and, by default,
+  rank 2 fallback), and `followUp`. Renders the Turn 1 hierarchy with each URL
+  as an explicit Markdown link via `renderSourceProposal`, adds a warning when
+  only the primary is supplied, and echoes `structuredContent`.
 - `submit_resolution_source` — deterministic, `inputSchema = outputSchema`
   with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
-  existing `DataSource` schema, `min(1)`), and `followUp`. Validates and echoes
-  `structuredContent`; renders sources in rank order.
+  existing `DataSource` schema, `min(1)` with rank 1 primary and, by default,
+  rank 2 fallback), and `followUp`. Validates and echoes `structuredContent`;
+  renders sources in rank order and warns when only the primary is supplied.
 
 Scope is source identity/hierarchy only. Settlement calculation
 (`settlementCalculationProcedure`, methodology locking) and timing are
@@ -230,6 +231,35 @@ Steps (all done):
 5. Move the original Turn 1 names-only format into a
    `propose_resolution_sources` tool backed by `renderSourceProposal`; slim
    the server instructions to cross-tool guidance.
+
+## Approved scope change: default primary and fallback sources
+
+The resolution-source workflow defaults to at least two ranked sources: a rank-1
+primary and a rank-2 fallback. A user may intentionally choose only the rank-1
+primary, but that one-source hierarchy remains valid and is rendered with a
+visible warning that a source failure would leave no pre-approved fallback.
+Additional sources remain allowed only for concrete, pre-specified failure
+modes.
+
+Steps (done):
+
+1. Default to and validate the rank-1 primary/rank-2 fallback in both source
+   tools, then align the packaged skill guidance, MCP instructions, README, and
+   tests.
+
+## Approved scope change: optional fallback warning
+
+The source tools accept a single rank-1 primary when the user explicitly wants
+to omit a fallback. They continue to require unique, contiguous ranks starting
+at 1, and they render a `⚠` warning in the visible proposal (and again during
+registration) when no rank-2 fallback is supplied. The warning explains that a
+source outage, missing report, or other source failure would leave the market
+without a pre-approved resolution source.
+
+Steps (done):
+
+1. Relax both source arrays to `min(1)`, add the single-source warning, align the
+   guidance and tests, and refresh the installed plugin.
 
 ## Approved scope change: clickable proposal source URLs
 
@@ -568,6 +598,10 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 27. Add a maintained ngrok HTTP publication helper for an unauthenticated
    public HTTPS test endpoint, and document it alongside the retained Secure
    MCP Tunnel instructions — done.
+28. Default to a rank-1 primary and rank-2 fallback in the proposal and
+    submission source tools, align the workflow guidance and tests — done.
+29. Allow an intentional primary-only hierarchy with an explicit warning while
+    keeping two sources as the default — done.
 
 ## Verification
 

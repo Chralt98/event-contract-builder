@@ -1,6 +1,6 @@
 {
   "name": "event-contract-builder",
-  "version": "0.1.0+codex.20260901112608",
+  "version": "0.1.0+codex.20260903141201",
   "description": "Draft and specify prediction-market event contracts with focused skills and deterministic MCP tools.",
   "author": {
     "name": "Christopher Maximilian Altmann",

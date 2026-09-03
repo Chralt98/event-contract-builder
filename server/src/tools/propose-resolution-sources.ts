@@ -5,6 +5,10 @@ import {
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
 import { renderUnitHeader, renderSourceProposal } from "../render";
+import {
+  singleSourceWarning,
+  sourceHierarchyRankError,
+} from "../source-hierarchy";
 
 /**
  * Concise view of a source: identity plus a clickable locator, so the user can
@@ -40,9 +44,13 @@ const proposalShape = {
           ),
       }),
     )
-    .min(1)
+    .min(1, "At least one rank-1 primary source is required.")
+    .superRefine((sources, ctx) => {
+      const error = sourceHierarchyRankError(sources);
+      if (error) ctx.addIssue({ code: "custom", message: error });
+    })
     .describe(
-      "The ranked source hierarchy with clickable URLs; rank 1 is the primary source.",
+      "The ranked source hierarchy with clickable URLs; default to rank 1 as the primary and rank 2 as the fallback. A single rank-1 source is allowed but emits a warning.",
     ),
   followUp: z
     .string()
@@ -59,8 +67,10 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
       title: "Propose Resolution Sources",
       description:
         "Present the ranked resolution source hierarchy with clickable URLs, for the " +
-        "user to approve before the full per-source detail is registered. Call " +
-        "this in the first turn — after identifying the source(s) but before " +
+        "user to approve before the full per-source detail is registered. By " +
+        "default include a rank-1 primary source and a rank-2 fallback source. " +
+        "A user-requested single rank-1 source is allowed and renders a warning. " +
+        "Call this in the first turn — after identifying the source(s) but before " +
         "submit_resolution_source.",
       inputSchema: proposalShape,
       outputSchema: proposalShape,
@@ -74,11 +84,13 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
         ...args,
         selected_unit: parseConnectorDraftUnit(args.selected_unit),
       };
+      const sourceWarning = singleSourceWarning(output.sources.length);
       const parts = [
         renderUnitHeader(output.selected_unit, output.unit_number),
         "---",
         "### Resolution Source Hierarchy",
         renderSourceProposal(output.sources),
+        ...(sourceWarning ? [sourceWarning] : []),
         "---",
         output.followUp,
       ];

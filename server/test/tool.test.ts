@@ -13,6 +13,7 @@ let fetchSpy: ReturnType<typeof spyOn> | undefined;
 type JsonSchema = {
   enum?: string[];
   items?: JsonSchema;
+  minItems?: number;
   properties?: Record<string, JsonSchema>;
 };
 
@@ -393,6 +394,7 @@ describe("event-contract tools", () => {
       | JsonSchema
       | undefined;
     expect(sourcesSchema?.items?.properties).toHaveProperty("url");
+    expect(sourcesSchema?.minItems).toBe(1);
   });
 
   test("propose_resolution_sources renders clickable source URLs in rank order and echoes structured content", async () => {
@@ -489,8 +491,79 @@ describe("event-contract tools", () => {
             publisher: "U.S. Bureau of Labor Statistics",
             url: "not-a-url",
           },
+          {
+            rank: 2,
+            name: "FRED CPI series",
+            publisher: "Federal Reserve Bank of St. Louis",
+            url: "https://fred.stlouisfed.org/series/CPIAUCNS",
+          },
         ],
         followUp: "Does this source hierarchy look right?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("propose_resolution_sources allows a primary-only hierarchy with a warning", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [
+          {
+            rank: 1,
+            name: "BLS Consumer Price Index",
+            publisher: "U.S. Bureau of Labor Statistics",
+            url: "https://www.bls.gov/cpi/",
+          },
+        ],
+        followUp: "Which source?",
+      },
+    });
+
+    expect(result.isError).toBeUndefined();
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain(
+      "⚠ Warning: Only one resolution source is supplied.",
+    );
+    expect(content[0]!.text).toContain(
+      "the market will have no pre-approved fallback resolution source.",
+    );
+  });
+
+  test("propose_resolution_sources requires contiguous primary and fallback ranks", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [
+          {
+            rank: 1,
+            name: "BLS Consumer Price Index",
+            publisher: "U.S. Bureau of Labor Statistics",
+            url: "https://www.bls.gov/cpi/",
+          },
+          {
+            rank: 3,
+            name: "FRED CPI series",
+            publisher: "Federal Reserve Bank of St. Louis",
+            url: "https://fred.stlouisfed.org/series/CPIAUCNS",
+          },
+        ],
+        followUp: "Which source?",
       },
     });
 
@@ -506,6 +579,10 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("sources");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    const sourcesSchema = tool.outputSchema?.properties?.sources as
+      | JsonSchema
+      | undefined;
+    expect(sourcesSchema?.minItems).toBe(1);
   });
 
   test("submit_resolution_source renders sources in rank order and echoes structured content", async () => {
@@ -597,11 +674,25 @@ describe("event-contract tools", () => {
           independenceNote:
             "A federal statistical agency independent of any prediction market participant.",
         },
+        {
+          id: "fred-cpi-backup",
+          rank: 2,
+          controlsFor: ["headline CPI value"],
+          name: "FRED CPI series",
+          publisher: "Federal Reserve Bank of St. Louis",
+          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
+          publicationSchedule: "Monthly, mirrors the BLS release schedule.",
+          publiclyAccessible: true,
+          independenceNote:
+            "A public reserve bank data mirror with no stake in any market outcome.",
+        },
       ],
       followUp: "Does this source look right?",
     };
-    stubFetch(
-      () => new Response(null, { status: 404, statusText: "Not Found" }),
+    stubFetch((url) =>
+      url.endsWith("/typo")
+        ? new Response(null, { status: 404, statusText: "Not Found" })
+        : new Response(null, { status: 200 }),
     );
     const client = await connectClient();
 
@@ -641,11 +732,26 @@ describe("event-contract tools", () => {
           independenceNote:
             "A federal statistical agency independent of any prediction market participant.",
         },
+        {
+          id: "fred-cpi-backup",
+          rank: 2,
+          controlsFor: ["headline CPI value"],
+          name: "FRED CPI series",
+          publisher: "Federal Reserve Bank of St. Louis",
+          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
+          publicationSchedule: "Monthly, mirrors the BLS release schedule.",
+          publiclyAccessible: true,
+          independenceNote:
+            "A public reserve bank data mirror with no stake in any market outcome.",
+        },
       ],
       followUp: "Does this source look right?",
     };
-    stubFetch(() => {
-      throw new Error("getaddrinfo ENOTFOUND");
+    stubFetch((url) => {
+      if (url.includes("not-a-real-host")) {
+        throw new Error("getaddrinfo ENOTFOUND");
+      }
+      return new Response(null, { status: 200 });
     });
     const client = await connectClient();
 
@@ -658,6 +764,47 @@ describe("event-contract tools", () => {
     const text = content[0]!.text;
     expect(text).toContain("- Link check: ✗ unreachable (connection failed)");
     expect(text).toContain("could not be automatically verified");
+  });
+
+  test("submit_resolution_source allows a primary-only hierarchy with a warning", async () => {
+    stubFetch(() => new Response(null, { status: 200 }));
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_resolution_source",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [
+          {
+            id: "bls-cpi",
+            rank: 1,
+            controlsFor: ["headline CPI value"],
+            name: "BLS Consumer Price Index",
+            publisher: "U.S. Bureau of Labor Statistics",
+            url: "https://www.bls.gov/cpi/",
+            publicationSchedule:
+              "Monthly, around the middle of the following month.",
+            publiclyAccessible: true,
+            independenceNote:
+              "A federal statistical agency independent of any prediction market participant.",
+          },
+        ],
+        followUp: "Which source?",
+      },
+    });
+
+    expect(result.isError).toBeUndefined();
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain(
+      "⚠ Warning: Only one resolution source is supplied.",
+    );
+    expect(content[0]!.text).toContain(
+      "the market will have no pre-approved fallback resolution source.",
+    );
   });
 
   test("submit_resolution_source rejects an empty source list", async () => {
