@@ -274,6 +274,31 @@ Migration status:
 4. Add plugin manifest/package wiring and verify skill discovery/import in the
    host — done.
 
+## Approved scope change: bounded semantic-risk review
+
+The plugin gains a standalone `reduce-semantic-risk` skill for reviewing or
+refining prediction-market questions and contract terms before trading. It
+makes ordinary resolution cases deterministic, surfaces material exceptional
+cases, minimises unilateral discretion, defines constrained meta-rules for
+genuinely unforeseen events, and governs residual discretion through evidence,
+conflicts rules, escalation, deadlines, correction windows, and finality.
+
+This is an advisory semantic-hardening capability. It does not alter the
+existing draft → define → source workflow, add a new MCP tool, redesign the
+event-contract schema, or claim legal compliance.
+
+Step (done):
+
+1. Add the self-contained `reduce-semantic-risk` skill and align the packaged
+   plugin metadata and user-facing documentation.
+
+## Current integration decision: public ngrok test or Secure MCP Tunnel
+
+The README documents two connection paths: an unauthenticated public ngrok
+endpoint for simple ChatGPT tests, and the protected Secure MCP Tunnel using
+`tunnel-client`. The public ngrok path is for test data only. OAuth and a
+managed production endpoint remain outside the current scope.
+
 ## Target directory structure
 
 ```text
@@ -303,9 +328,11 @@ event-contract-builder/
 │   ├── define-terms/
 │   │   ├── SKILL.md
 │   │   └── references/definition-spec.md
-│   └── define-resolution-source/
-│       ├── SKILL.md
-│       └── references/source-spec.md
+│   ├── define-resolution-source/
+│   │   ├── SKILL.md
+│   │   └── references/source-spec.md
+│   └── reduce-semantic-risk/
+│       └── SKILL.md
 ├── server/
 │   ├── src/
 │   │   ├── tools/
@@ -535,6 +562,11 @@ Each item below is a separate reviewable step. Complete only one item per turn.
     draft units and their downstream handoff.
 25. Add clickable source URLs to `propose_resolution_sources` and align its
     workflow guidance, documentation, and focused tests — done.
+26. Add the standalone `reduce-semantic-risk` skill and align the packaged
+   plugin metadata and user-facing documentation — done.
+27. Add a maintained ngrok HTTP publication helper for an unauthenticated
+   public HTTPS test endpoint, and document it alongside the retained Secure
+   MCP Tunnel instructions — done.
 
 ## Verification
 
@@ -557,7 +589,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 
 - Schema redesign or new outcome types (except the approved product-name
   simplification and template draft-unit addition described above).
-- Authentication and user accounts.
+- OAuth 2.1 authentication and user accounts until the provider and
+  client-registration strategy are selected.
 - Persistent contract storage.
 - External market or resolution-source integrations.
 - App monetization and app-directory submission work beyond the metadata
@@ -567,3 +600,5 @@ Each item below is a separate reviewable step. Complete only one item per turn.
   `structuredContent`), replacing the current reliance on the host model to
   echo the tool's Markdown verbatim. See the "Known limitation — host
   reformatting" note under the resolution-source step.
+- A managed production tunnel or hosted deployment; the ngrok helper is for
+  local development and testing only.

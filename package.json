@@ -38,7 +38,7 @@
     "start:server:stdio": "bun run server/src/stdio.ts",
     "dev:server": "bun --watch run server/src/index.ts",
     "dev:server:inspect": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
-    "dev:server:tunnel": "ngrok http 8787",
+    "dev:server:ngrok": "./scripts/start-ngrok.sh",
     "format": "prettier . --write",
     "format:check": "prettier . --check"
   },

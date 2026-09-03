@@ -23,11 +23,13 @@ packaged skills.
 
 ```sh
 bun install
-bun run dev:server
+bun run start:server
 ```
 
-This starts the server at `http://localhost:8787/mcp` and restarts on file
-changes.
+This starts the server once at `http://localhost:8787/mcp`. Keep the terminal
+open while the endpoint is in use. For development with automatic restarts on
+file changes, use `bun run dev:server` instead; do not run both commands at the
+same time because they listen on the same port.
 
 For a local MCP client or a tunnel client that expects a Stdio command, use
 the separate Stdio entrypoint:
@@ -46,12 +48,15 @@ Inspect it locally with the [MCP Inspector](https://github.com/modelcontextproto
 bun run dev:server:inspect
 ```
 
-To connect an external client (e.g. ChatGPT developer mode) to your local
-server, expose it over HTTPS. For the Secure MCP Tunnel workflow, see
-[Secure MCP Tunnel](#secure-mcp-tunnel) below:
+To connect an external client to your local server, use one of these
+alternatives:
+
+- For an existing OpenAI Secure MCP Tunnel, follow [Secure MCP Tunnel](#secure-mcp-tunnel).
+- For a simple ChatGPT test with an unauthenticated public endpoint, use the
+  ngrok helper:
 
 ```sh
-bun run dev:server:tunnel
+bun run dev:server:ngrok
 ```
 
 ### Secure MCP Tunnel
@@ -63,7 +68,7 @@ the tunnel client in separate terminals.
 #### 1. Start the local MCP server
 
 ```sh
-bun run dev:server
+bun run start:server
 ```
 
 Keep this terminal open while the tunnel is in use.
@@ -127,6 +132,50 @@ long as the MCP endpoint should remain available; closing it or pressing
 `Ctrl-C` stops the tunnel. Do not commit the key, tunnel ID, or other user data
 from your local setup to this repository.
 
+### Public ngrok ChatGPT test
+
+The local HTTP MCP server is available at `http://localhost:8787/mcp`. The
+ngrok helper publishes it through HTTPS without authentication so it can be
+used for a simple ChatGPT test. The endpoint is publicly reachable; use test
+data only and stop the tunnel when finished. For a protected alternative, use
+[Secure MCP Tunnel](#secure-mcp-tunnel).
+
+#### 1. Start the local MCP server once
+
+In Terminal 1, start the HTTP MCP server and leave it running:
+
+```sh
+bun run start:server
+```
+
+For a development session that needs automatic restarts, use
+`bun run dev:server` here instead. Choose one mode only; both serve the same
+HTTP endpoint on port 8787.
+
+#### 2. Configure ngrok once
+
+Create an ngrok account and configure the local agent with its authtoken once,
+using the official ngrok instructions. The token is stored in ngrok's own
+user configuration, not in this project:
+
+```sh
+ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
+printf '\n'
+```
+
+Do not replace the placeholder in this README or commit the token.
+
+#### 3. Start the public endpoint in Terminal 2
+
+The server is already running on port 8787 in Terminal 1. In Terminal 2, run:
+```sh
+bun run dev:server:ngrok
+```
+
+The public HTTPS URL is printed by ngrok; use that URL with the `/mcp` path in
+ChatGPT's MCP connection setup. Keep both terminals open while the endpoint is
+in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
+
 ### Tools
 
 | Tool                         | Purpose                                                                        |
@@ -136,13 +185,15 @@ from your local setup to this repository.
 | `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs.     |
 | `submit_resolution_source`   | Validate and render full source details with advisory URL reachability checks. |
 
-The `skills/` directory contains the workflow instructions and supporting
-references. It is intended to be packaged with the MCP server as one plugin.
+The `skills/` directory contains four focused capabilities: drafting display
+questions, defining ambiguous terms, selecting resolution sources, and
+reducing semantic risk. It is intended to be packaged with the MCP server as
+one plugin.
 
 ### Plugin package
 
 This repository is also a ChatGPT/Codex plugin package. The manifest at
-`.codex-plugin/plugin.json` discovers the three workflow skills, and
+`.codex-plugin/plugin.json` discovers the four packaged skills, and
 `.mcp.json` connects the plugin to the local HTTP MCP endpoint. Start the
 server before importing the package into a local host:
 
@@ -171,7 +222,7 @@ placeholder.
 
 #### Updating the local plugin after skill changes
 
-When one of the three files under `skills/` changes, run these commands from
+When a file under `skills/` changes, run these commands from
 the project directory to update the plugin version and reinstall the existing
 personal marketplace entry:
 
@@ -243,6 +294,12 @@ percent in June 2026"`. Organize the result into selectable units, then
 4. **Submit sources** — after the user approves the hierarchy, call
    `submit_resolution_source` with the full source records and present its
    returned Markdown verbatim. Revise the hierarchy if the user requests it.
+
+5. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
+   before trading or when auditing a proposed contract. It makes ordinary
+   resolution cases deterministic, surfaces material exceptions, constrains
+   unforeseen-event rules, and governs any remaining discretion. This review
+   is advisory and does not call an MCP tool or establish legal compliance.
 
 ## Library (schema)
 
