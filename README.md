@@ -179,12 +179,12 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 
 ### Tools
 
-| Tool                         | Purpose                                                                                                |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.                          |
-| `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                   |
-| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives. |
-| `submit_resolution_source`   | Validate and render full source details with independence and advisory URL checks.                     |
+| Tool                         | Purpose                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.                                                                           |
+| `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                                                                    |
+| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives |
+| `submit_resolution_source`   | Validate and render full source details with independence and advisory URL checks.                                                                      |
 
 The `skills/` directory contains four focused capabilities: drafting display
 questions, defining ambiguous terms, selecting resolution sources, and
@@ -245,7 +245,9 @@ not add keys, tunnel IDs, or user data to this guide or to project files.
 1. **Draft** — use the `draft-display-question` skill with a sufficiently
    specific future event, e.g. `"CPI year-over-year inflation might exceed 3
 percent in June 2026"`. Organize the result into selectable units, then
-   call `submit_drafted_questions` and present its returned Markdown verbatim:
+   call `submit_drafted_questions` and present its returned Markdown faithfully,
+   translating fixed English renderer labels into the user's language while
+   preserving the questions and values:
 
    ```md
    **Unit 1: Scalar market**
@@ -271,7 +273,8 @@ percent in June 2026"`. Organize the result into selectable units, then
 
 2. **Select and define** — when the user selects a unit, use the `define-terms`
    skill to propose precise definitions, then call `submit_defined_terms` and
-   present its returned Markdown verbatim.
+   present its returned Markdown faithfully, translating fixed English renderer
+   labels into the user's language while preserving the definitions.
 
 3. **Choose sources** — after the user agrees to the definitions, use the
    `define-resolution-source` skill. First call `propose_resolution_sources`
@@ -319,9 +322,17 @@ percent in June 2026"`. Organize the result into selectable units, then
    kind of new display-question alternative without silently replacing the
    selected question.
 
+   Before rendering this proposal, the tool checks every clickable main and
+   alternative source URL in the background and keeps only links whose final
+   response is HTTP `200`. It does not show those preflight statuses or failure
+   details. If no main source passes, the tool returns no source proposal so
+   replacement URLs can be supplied.
+
 4. **Submit sources** — after the user approves the hierarchy, call
    `submit_resolution_source` with the full source records and present its
-   returned Markdown verbatim. Revise the hierarchy if the user requests it.
+   returned Markdown faithfully, translating fixed English renderer labels into
+   the user's language while preserving source data. Revise the hierarchy if the
+   user requests it.
 
 5. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
    before trading or when auditing a proposed contract. It makes ordinary

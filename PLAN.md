@@ -171,6 +171,12 @@ Turn 2, only after the user approves, calls `submit_resolution_source` with the
 full `DataSource` records and presents the detail + link checks. This keeps the
 user from being buried in per-source detail for sources they may not want.
 
+Before rendering Turn 1, `propose_resolution_sources` silently preflights every
+clickable proposal URL, including alternative-market source URLs, with the
+shared redirect-following HEAD/GET check and keeps only final HTTP `200` links.
+It does not expose those preflight statuses; full advisory link-check details
+remain a Turn 2 concern.
+
 The visible formats remain deterministic and unit-testable in
 `server/src/render.ts`; semantic instructions remain in the skills and their
 references. The MCP server does not register prompt-returning workflow tools or
@@ -214,8 +220,9 @@ has been observed paraphrasing it — flattening the bullets into plain lines,
 dropping the bold name, and renaming fields (e.g. `URL` → "API URL"). The
 current mitigation is instruction-level only: the
 `define-resolution-source` skill and `instructions.md` instruct the model to
-reproduce the returned Markdown verbatim. This makes faithful rendering likely
-but cannot guarantee it. The
+preserve the complete returned Markdown while translating fixed English labels
+into the user's language. This makes faithful localized rendering likely but
+cannot guarantee it. The
 robust fix is deferred (see Deferred): render the hierarchy in the `web/` React
 widget from `structuredContent` instead of relying on the model to echo text.
 
@@ -318,6 +325,25 @@ Step:
    `define-terms`, and add focused schema, tool, skill, documentation, and
    handoff tests.
 
+## Approved scope change: preflight proposal source links
+
+`propose_resolution_sources` already renders clickable source URLs, but those
+URLs must be checked before the proposal reaches the user. Reuse the existing
+short, redirect-following HEAD/GET reachability check in the background and
+accept a proposal link only when the final response status is exactly HTTP
+`200`. Do not render link-check labels, statuses, or failure details in the
+proposal. Non-200 main candidates are silently removed and the remaining
+hierarchy is kept contiguous; an alternative-market suggestion is shown only
+when at least two of its source URLs pass the same check. If no main source
+passes, return no proposal content so the workflow can source replacement
+URLs.
+
+Step:
+
+1. Preflight every clickable URL in `propose_resolution_sources`, keep only
+   HTTP-200 links in the visible/structured proposal, align the workflow
+   guidance and focused tests — done.
+
 ## Approved scope change: skills-first plugin architecture
 
 The three semantic workflows are packaged as focused skills with supporting
@@ -348,6 +374,21 @@ Migration status:
    plan — done.
 4. Add plugin manifest/package wiring and verify skill discovery/import in the
    host — done.
+
+## Approved scope change: language-aware deterministic tool output
+
+The deterministic renderer remains English-only. When the user works in another
+language, the host model must present the rendered workflow in the language the
+user most likely needs by translating only renderer-generated English labels,
+headings, warnings, and other fixed UI text. User-authored and data-bearing
+content — including questions, definitions, source names, publishers, URLs,
+values, placeholders, ranks, and numbers — must be preserved.
+
+Step:
+
+1. Add the language instruction at the server and packaged-skill boundaries,
+   align the user-facing guidance, and keep the renderer and schemas unchanged
+   — done.
 
 ## Approved scope change: bounded semantic-risk review
 
@@ -651,6 +692,10 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 31. Represent alternative markets as new selectable display-question units,
     route a selected alternative through term definition before re-evaluating
     its resolution sources, and add the corresponding tests — done.
+32. Preflight proposal source links in the background and expose only links
+    confirmed with HTTP 200 — done.
+33. Translate deterministic English tool labels in the host model's response to
+    the user's language without changing renderer or schema behavior — done.
 
 ## Verification
 
@@ -682,7 +727,7 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 - Guaranteed-fidelity rendering of the resolution-source hierarchy via the
   `web/` React widget (driven by `submit_resolution_source`'s
   `structuredContent`), replacing the current reliance on the host model to
-  echo the tool's Markdown verbatim. See the "Known limitation — host
+  present localized Markdown faithfully. See the "Known limitation — host
   reformatting" note under the resolution-source step.
 - A managed production tunnel or hosted deployment; the ngrok helper is for
   local development and testing only.

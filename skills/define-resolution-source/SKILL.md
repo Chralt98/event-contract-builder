@@ -35,10 +35,15 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    is a display-question proposal, not a definitions map or an already
    selected unit. If no gap exists, omit `coverage_gaps`; if the ordinary
    two-source hierarchy is available, omit the alternative unless it is useful
-   to the user.
-5. Present the proposal tool's complete returned Markdown verbatim, including
-   the full ranked hierarchy and follow-up, then stop. Do not call
-   `submit_resolution_source` in the proposal turn.
+   to the user. The proposal tool silently preflights every clickable URL and
+   keeps only links whose final response is exactly HTTP `200`; do not expose
+   those statuses or failure details to the user. If no main source survives,
+   source replacement URLs are needed before a proposal can be shown.
+5. Present the proposal tool's complete returned Markdown faithfully, including
+   the full ranked hierarchy and follow-up, translating renderer-generated
+   English labels and other fixed UI text into the user's language while
+   preserving source data, then stop. Do not call `submit_resolution_source` in
+   the proposal turn.
 6. If the user selects the displayed `alternative_market`, stop the original
    source workflow and route that exact `display_question_unit` as the new
    `selected_unit`, together with its `unit_number`, to `define-terms`. Do not
@@ -49,8 +54,10 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    the concise proposal. Wait for approval again.
 8. After approval of the original hierarchy, call `submit_resolution_source` once with the full source
    records and carry any `coverage_gaps` and `alternative_market` through
-   unchanged. Present its complete returned Markdown, including every source
-   detail, warning, alternative, advisory link-check warning, and follow-up.
+   unchanged. Present its complete returned Markdown faithfully, including every
+   source detail, warning, alternative, advisory link-check warning, and
+   follow-up; translate renderer-generated English labels and other fixed UI
+   text into the user's language while preserving source data.
 
 The selected unit and agreed definitions are supplied directly to this skill by the host workflow. Do not call a separate prompt-returning tool; use only the deterministic proposal and submission tools described above.
 

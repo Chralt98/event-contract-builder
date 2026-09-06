@@ -15,6 +15,33 @@ import {
   singleSourceWarning,
   sourceHierarchyRankError,
 } from "../source-hierarchy";
+import { checkUrl } from "../url-check";
+
+type UrlSource = { url: string };
+
+/**
+ * Keep only source candidates whose final HEAD/GET response is exactly HTTP
+ * 200. The reachability details remain internal to the proposal preflight.
+ */
+async function keepHttp200Sources<T extends UrlSource>(
+  sources: readonly T[],
+): Promise<T[]> {
+  const checks = await Promise.all(
+    sources.map(
+      async (source) => [source, await checkUrl(source.url)] as const,
+    ),
+  );
+  return checks
+    .filter(([, result]) => result.status === 200)
+    .map(([source]) => source);
+}
+
+function closeRanks<T extends { rank: number }>(sources: readonly T[]): T[] {
+  return sources.map((source, index) => ({
+    ...source,
+    rank: index + 1,
+  }));
+}
 
 /**
  * Concise view of a source: identity plus a clickable locator, so the user can
@@ -94,6 +121,8 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
         "user to approve before the full per-source detail is registered. By " +
         "default include a rank-1 primary source and a rank-2 fallback source. " +
         "A user-requested single rank-1 source is allowed and renders a warning. " +
+        "Before rendering, silently keep only candidate URLs whose final response " +
+        "is HTTP 200; do not expose the preflight result. " +
         "Call this in the first turn — after identifying the source(s) but before " +
         "submit_resolution_source.",
       inputSchema: proposalShape,
@@ -103,10 +132,49 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
         idempotentHint: true,
       },
     },
-    (args) => {
+    async (args) => {
+      const { alternative_market: requestedAlternative, ...proposalArgs } =
+        args;
+      const [verifiedSources, verifiedAlternativeSources] = await Promise.all([
+        keepHttp200Sources(args.sources),
+        requestedAlternative
+          ? keepHttp200Sources(requestedAlternative.sources)
+          : Promise.resolve(undefined),
+      ]);
+
+      // Do not return a proposal containing an unverified URL. A generic tool
+      // error gives the workflow a chance to source replacement URLs without
+      // exposing HTTP statuses or reachability details to the user.
+      if (verifiedSources.length === 0) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "No resolution-source proposal is available.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      const sources =
+        verifiedSources.length === args.sources.length
+          ? verifiedSources
+          : closeRanks([...verifiedSources].sort((a, b) => a.rank - b.rank));
+      const alternative_market =
+        requestedAlternative &&
+        verifiedAlternativeSources &&
+        verifiedAlternativeSources.length >= 2
+          ? {
+              ...requestedAlternative,
+              sources: verifiedAlternativeSources,
+            }
+          : undefined;
       const output = {
-        ...args,
+        ...proposalArgs,
         selected_unit: parseConnectorDraftUnit(args.selected_unit),
+        sources,
+        ...(alternative_market ? { alternative_market } : {}),
       };
       const sourceWarning = singleSourceWarning(output.sources.length);
       const coverageAdvice = renderSourceCoverageAdvice(

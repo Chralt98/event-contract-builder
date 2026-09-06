@@ -4,9 +4,9 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/index.ts";
 
 /**
- * submit_resolution_source runs a live reachability check on each source URL.
- * Stub global fetch so these tests never touch the network and can drive the
- * advisory link-check output deterministically.
+ * Resolution-source tools run live URL checks. Stub global fetch so these
+ * tests never touch the network and can drive proposal preflight and advisory
+ * submission output deterministically.
  */
 let fetchSpy: ReturnType<typeof spyOn> | undefined;
 
@@ -460,6 +460,7 @@ describe("event-contract tools", () => {
       followUp:
         "Does this source hierarchy look right, or should we add, remove, or reorder any source?",
     };
+    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -491,6 +492,161 @@ describe("event-contract tools", () => {
     // Full per-source detail still does not leak into the concise proposal.
     expect(text).not.toContain("- Establishes:");
     expect(text).toContain("---\n\n" + input.followUp);
+  });
+
+  test("propose_resolution_sources silently keeps only links verified with HTTP 200", async () => {
+    const input = {
+      unit_number: 1,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+      },
+      sources: [
+        {
+          rank: 1,
+          name: "BLS Consumer Price Index",
+          publisher: "U.S. Bureau of Labor Statistics",
+          url: "https://www.bls.gov/cpi/",
+        },
+        {
+          rank: 2,
+          name: "Stale CPI mirror",
+          publisher: "Independent Data Archive",
+          url: "https://archive.example/cpi",
+        },
+      ],
+      followUp: "Does this source hierarchy look right?",
+    };
+    stubFetch((url) =>
+      url.includes("archive.example")
+        ? new Response(null, { status: 204 })
+        : new Response(null, { status: 200 }),
+    );
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: input,
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(
+      (result.structuredContent as { sources: unknown[] }).sources,
+    ).toEqual([input.sources[0]]);
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+    expect(text).toContain(
+      "- URL: [https://www.bls.gov/cpi/](https://www.bls.gov/cpi/)",
+    );
+    expect(text).not.toContain("archive.example");
+    expect(text).not.toContain("Link check");
+    expect(text).not.toContain("204");
+  });
+
+  test("propose_resolution_sources returns no proposal when no URL returns HTTP 200", async () => {
+    stubFetch(
+      () => new Response(null, { status: 404, statusText: "Not Found" }),
+    );
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
+        },
+        sources: [
+          {
+            rank: 1,
+            name: "Unavailable CPI source",
+            publisher: "Unavailable Statistics Agency",
+            url: "https://unavailable.example/cpi",
+          },
+        ],
+        followUp: "Which source should be used?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toBe(
+      "No resolution-source proposal is available.",
+    );
+    expect(content[0]!.text).not.toContain("404");
+    expect(content[0]!.text).not.toContain("unavailable.example");
+    expect(result.structuredContent).toBeUndefined();
+  });
+
+  test("propose_resolution_sources omits an alternative with fewer than two verified links", async () => {
+    const input = {
+      unit_number: 1,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will the metric reach the threshold by June 2026?",
+      },
+      sources: [
+        {
+          rank: 1,
+          name: "Primary metric report",
+          publisher: "Primary Statistics Agency",
+          url: "https://primary.example/metric",
+        },
+        {
+          rank: 2,
+          name: "Independent metric report",
+          publisher: "Independent Statistics Agency",
+          url: "https://independent.example/metric",
+        },
+      ],
+      coverage_gaps: ["the regional breakdown"],
+      alternative_market: {
+        unit_number: 2,
+        display_question_unit: {
+          type: "binary" as const,
+          question:
+            "Will the national metric reach the threshold by June 2026?",
+        },
+        rationale:
+          "The national version stays close to the user's intent and is published independently by two agencies.",
+        sources: [
+          {
+            name: "National agency series",
+            publisher: "National Statistics Agency",
+            url: "https://national.example/metric",
+          },
+          {
+            name: "Unavailable research series",
+            publisher: "Independent Research Institute",
+            url: "https://research.example/unavailable",
+          },
+        ],
+      },
+      followUp: "Would you prefer the nearby alternative market?",
+    };
+    stubFetch((url) =>
+      url.includes("unavailable")
+        ? new Response(null, { status: 404 })
+        : new Response(null, { status: 200 }),
+    );
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: input,
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(
+      (result.structuredContent as { alternative_market?: unknown })
+        .alternative_market,
+    ).toBeUndefined();
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+    expect(text).toContain("⚠ No authoritative primary source was found for:");
+    expect(text).not.toContain("Nearby Alternative Display Question");
+    expect(text).not.toContain("research.example/unavailable");
   });
 
   test("propose_resolution_sources rejects an empty source list", async () => {
@@ -545,6 +701,7 @@ describe("event-contract tools", () => {
   });
 
   test("propose_resolution_sources allows a primary-only hierarchy with a warning", async () => {
+    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -656,6 +813,7 @@ describe("event-contract tools", () => {
       followUp:
         "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
     };
+    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({

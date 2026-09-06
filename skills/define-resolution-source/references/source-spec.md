@@ -90,7 +90,7 @@ a proxy market, or a better proposal for the user's intent.
 
 ## Two-turn workflow
 
-Work out the full records internally, but reveal the hierarchy in two turns. The MCP tools own the visible Markdown in both turns; present each returned result verbatim.
+Work out the full records internally, but reveal the hierarchy in two turns. The MCP tools own the visible Markdown in both turns; present each returned result faithfully, translating renderer-generated English labels and other fixed UI text into the user's language while preserving source data.
 
 ### Turn 1: propose the hierarchy
 
@@ -111,9 +111,10 @@ Call `propose_resolution_sources` with:
   add, remove, or reorder any source?” When a warning or gap is present, the
   follow-up must also ask whether the user prefers the displayed alternative.
 
-Present the complete returned Markdown verbatim, including the full ranked
-hierarchy and follow-up, then stop. Do not call `submit_resolution_source` in
-Turn 1.
+Present the complete returned Markdown faithfully, including the full ranked
+hierarchy and follow-up, translating renderer-generated English labels and
+other fixed UI text into the user's language while preserving source data, then
+stop. Do not call `submit_resolution_source` in Turn 1.
 
 If the user selects the displayed alternative instead of approving the current
 unit's hierarchy, stop this source step and route the alternative's exact
@@ -123,7 +124,14 @@ definitions. The alternative source list is only a candidate set until the new
 definitions are agreed.
 
 Each URL is rendered as a clickable Markdown link so the user can inspect the
-candidate source before approval. If the user requests changes, revise the
+candidate source before approval. Before rendering, the deterministic proposal
+tool silently checks every main and alternative-market URL with the shared
+reachability check and keeps only links whose final response is exactly HTTP
+`200`; it does not render the check result or failure details. If a main source
+fails, the tool removes it and closes the remaining ranks. If fewer than two
+alternative sources pass, it omits that alternative rather than showing an
+unverified link. If no main source passes, the tool returns no proposal so the
+workflow can source replacement URLs. If the user requests changes, revise the
 concise proposal and call `propose_resolution_sources` again. Do not advance to
 Turn 2 until the user approves the hierarchy.
 
@@ -155,7 +163,7 @@ publiclyAccessible
 independenceNote
 ```
 
-`submit_resolution_source` performs an advisory reachability check on every URL and renders the result with the source detail. Present the complete returned Markdown verbatim, including every source detail, link-check note, warning, and follow-up. If any link is unreachable or errored, surface the warning and correct the URL before locking in the hierarchy; the check itself does not block submission.
+`submit_resolution_source` performs an advisory reachability check on every URL and renders the result with the source detail. Present the complete returned Markdown faithfully, including every source detail, link-check note, warning, and follow-up. Translate renderer-generated English labels and other fixed UI text into the user's language while preserving source data. If any link is unreachable or errored, surface the warning and correct the URL before locking in the hierarchy; the check itself does not block submission.
 
 ## Stop rules
 

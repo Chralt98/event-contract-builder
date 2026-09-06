@@ -1,8 +1,8 @@
 /**
- * Live reachability check for a resolution source URL. This is advisory only:
- * it reports whether the URL currently resolves so the user can catch typos and
- * dead links, and never blocks registration. `z.url()` already guarantees the
- * string is a well-formed URL before this runs.
+ * Shared live reachability check for a resolution source URL. Submission uses
+ * it to show advisory status, while proposal preflight uses the final
+ * status to keep unverified URLs out of the visible proposal. `z.url()` already
+ * guarantees the string is a well-formed URL before this runs.
  */
 export interface UrlCheckResult {
   /**
@@ -11,6 +11,8 @@ export interface UrlCheckResult {
    * `error` — the link did not resolve (HTTP error, DNS, refused, or timeout).
    */
   severity: "ok" | "warn" | "error";
+  /** Final HTTP status, when a server returned one. */
+  status?: number;
   /** Short human-readable status for rendering next to the URL. */
   label: string;
 }
@@ -72,16 +74,18 @@ export async function checkUrl(
 
   const { status, statusText } = response;
   if (status >= 200 && status < 400) {
-    return { severity: "ok", label: `✓ ${status}` };
+    return { severity: "ok", status, label: `✓ ${status}` };
   }
   if (status === 401 || status === 403 || status === 429) {
     return {
       severity: "warn",
+      status,
       label: `⚠ ${status} (blocked to automated checks; verify manually)`,
     };
   }
   return {
     severity: "error",
+    status,
     label: `✗ ${status}${statusText ? ` ${statusText}` : ""}`,
   };
 }
