@@ -1,6 +1,6 @@
 # Event Contract Builder MCP server
 
-The packaged skills provide the semantic workflow for building prediction-market event contracts. This server provides deterministic validation, rendering, and source-link checks for the structured outputs produced by those skills.
+The packaged skills provide the semantic workflow for building prediction-market event contracts. This server provides deterministic validation, rendering, and advisory source-link checks for the structured outputs produced by those skills.
 
 ## Language and rendered tool output
 
@@ -27,6 +27,6 @@ structured payload.
 - `submit_drafted_questions` validates and renders selectable binary, scalar, categorical, and template question units.
 - `submit_defined_terms` validates and renders the selected unit with its definitions.
 - `propose_resolution_sources` validates and renders a concise ranked source proposal with clickable URLs, silently preflights every main and alternative URL and keeps only final HTTP-200 links, rejects repeated publishers/source agencies, and renders coverage warnings or a newly drafted selectable alternative display-question unit with a `define-terms` handoff when supplied. Do not expose the preflight statuses or failure details.
-- `submit_resolution_source` validates and renders full source details, rejects repeated publishers/source agencies, and performs advisory URL reachability checks.
+- `submit_resolution_source` validates and renders full user-facing source details, rejecting repeated publishers/source agencies. It still performs advisory URL checks and retains one aggregate warning for unavailable sources, while its Markdown omits transient individual statuses and the `publiclyAccessible` metadata.
 
 Keep semantic drafting and definition guidance in the packaged skills; keep tool descriptions and these instructions concise and complementary.

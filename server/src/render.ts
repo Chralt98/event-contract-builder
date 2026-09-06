@@ -148,24 +148,17 @@ export function renderAlternativeUnitHeader(
 
 /**
  * Renders resolution sources in rank order as one block per source:
- * a `**N. Name** (Publisher)` heading followed by its attribute bullets. When a
- * `reachability` map (URL → advisory link-check label) is supplied, a
- * `- Link check:` bullet is added under each source's URL.
+ * a `**N. Name** (Publisher)` heading followed by its user-facing attribute
+ * bullets.
  */
-export function renderSources(
-  sources: DataSourceT[],
-  reachability?: ReadonlyMap<string, string>,
-): string {
+export function renderSources(sources: DataSourceT[]): string {
   return [...sources]
     .sort((a, b) => a.rank - b.rank)
     .map((s) => {
-      const linkCheck = reachability?.get(s.url);
       const bullets = [
-        `- Establishes: ${s.controlsFor.join("; ")}`,
-        `- Published: ${s.publicationSchedule}`,
         `- URL: ${s.url}${s.datasetId ? ` (dataset ${s.datasetId})` : ""}`,
-        ...(linkCheck ? [`- Link check: ${linkCheck}`] : []),
-        `- Publicly accessible: ${s.publiclyAccessible ? "yes" : "no"}`,
+        `- Establishes: ${s.controlsFor.join("; ")}`,
+        `- Publishing Schedule: ${s.publicationSchedule}`,
         `- Independence: ${s.independenceNote}`,
       ].join("\n");
       return `**${s.rank}. ${s.name}** (${s.publisher})\n${bullets}`;

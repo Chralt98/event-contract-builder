@@ -91,15 +91,18 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
         output.unit_number,
       );
 
-      // Advisory only: probe each source URL in parallel so typos and dead
-      // links surface here, but never block registration of the hierarchy.
+      // Advisory only: validate every source URL in parallel. Keep individual
+      // reachability results out of the user-facing Markdown, but retain one
+      // aggregate warning when a source is unavailable.
       const checks = await Promise.all(
         output.sources.map(
-          async (s) => [s.url, await checkUrl(s.url)] as const,
+          async (source) => [source, await checkUrl(source.url)] as const,
         ),
       );
-      const reachability = new Map(checks.map(([url, r]) => [url, r.label]));
-      const hasProblems = checks.some(([, r]) => r.severity !== "ok");
+      const hasProblems =
+        checks.some(([, result]) => result.severity !== "ok") ||
+        output.sources.some((source) => !source.publiclyAccessible);
+
       const sourceWarning = singleSourceWarning(output.sources.length);
       const coverageAdvice = renderSourceCoverageAdvice(
         output.coverage_gaps,
@@ -110,15 +113,16 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
         unitHeader,
         "---",
         "### Resolution Source Hierarchy",
-        renderSources(output.sources, reachability),
+        renderSources(output.sources),
         ...(sourceWarning ? [sourceWarning] : []),
         ...(coverageAdvice ? [coverageAdvice] : []),
         "---",
       ];
       if (hasProblems) {
         parts.push(
-          "⚠ Some source links could not be automatically verified — review the " +
-            "link-check notes above with the user before locking in the hierarchy.",
+          "⚠ One or more resolution sources are not publicly accessible or " +
+            "could not be automatically verified — review the source URLs " +
+            "before locking in the hierarchy.",
         );
       }
       parts.push(output.followUp);

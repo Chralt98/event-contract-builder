@@ -168,14 +168,16 @@ format backed by a deterministic tool. Turn 1 calls
 `propose_resolution_sources` to reveal the ranked source identities — names,
 publishers, and clickable URLs — and asks whether the hierarchy is right;
 Turn 2, only after the user approves, calls `submit_resolution_source` with the
-full `DataSource` records and presents the detail + link checks. This keeps the
-user from being buried in per-source detail for sources they may not want.
+full `DataSource` records and presents the user-facing source detail. This keeps
+the user from being buried in per-source detail for sources they may not want.
 
 Before rendering Turn 1, `propose_resolution_sources` silently preflights every
 clickable proposal URL, including alternative-market source URLs, with the
 shared redirect-following HEAD/GET check and keeps only final HTTP `200` links.
 It does not expose those preflight statuses; full advisory link-check details
-remain a Turn 2 concern.
+remain internal in both turns. Turn 2 still checks its source URLs and emits a
+single aggregate warning when a source is unavailable, without exposing the
+individual status.
 
 The visible formats remain deterministic and unit-testable in
 `server/src/render.ts`; semantic instructions remain in the skills and their
@@ -202,16 +204,12 @@ Scope is source identity/hierarchy only. Settlement calculation
 (`settlementCalculationProcedure`, methodology locking) and timing are
 deferred to later steps.
 
-`submit_resolution_source` additionally runs a **live, advisory** reachability
-check on each source URL (`server/src/url-check.ts`): a HEAD request (GET
-fallback) with a short timeout, in parallel across sources. Results are
-rendered as a per-source `Link check:` line (`✓ 200`, `⚠ 403 blocked`,
-`✗ 404`, `✗ unreachable`), and a warning line is appended when any link is not
-clean. It never blocks registration — `z.url()` already guarantees format
-validity; this only surfaces dead/typo links for the user to fix. `structuredContent`
-stays equal to the input (reachability is transient and text-only, so it does
-not pollute the registered `outputSchema`). Semantic "correct in this context"
-remains the model/user's responsibility.
+`submit_resolution_source` renders only the user-facing source details. It does
+not expose transient URL reachability statuses or the `publiclyAccessible`
+metadata in its Markdown; those fields remain part of the validated
+`DataSource`/`structuredContent` shape. It still checks each source URL and
+retains only an aggregate unavailable-source warning. Semantic "correct in
+this context" remains the model/user's responsibility.
 
 **Known limitation — host reformatting.** The submit tool returns fully
 formatted Markdown (name as a plain bold header, each attribute as a `- `
@@ -273,8 +271,9 @@ Steps (done):
 The Turn 1 `propose_resolution_sources` result must let the user open each
 candidate source before approving the hierarchy. Each proposal source therefore
 includes its exact `url`, and `renderSourceProposal` displays that value as an
-explicit Markdown link. The proposal remains concise: full source metadata and
-live reachability checks still belong to `submit_resolution_source` in Turn 2.
+explicit Markdown link. The proposal remains concise: full source metadata
+belongs to `submit_resolution_source` in Turn 2, while URL preflight statuses
+remain internal.
 
 Steps (done):
 
@@ -343,6 +342,22 @@ Step:
 1. Preflight every clickable URL in `propose_resolution_sources`, keep only
    HTTP-200 links in the visible/structured proposal, align the workflow
    guidance and focused tests — done.
+
+## Approved scope change: concise source-detail rendering
+
+The Turn 2 `submit_resolution_source` output should keep checking every source
+URL for validity, while keeping transient link-check statuses and the
+`publiclyAccessible` field out of the user-facing Markdown. If a source is not
+accessible, retain one aggregate warning without exposing the individual
+status. The validated source records and their structured content remain
+unchanged. The publication field is rendered with the explicit label
+`Publishing Schedule`.
+
+Step:
+
+1. Keep submission URL checks, hide their individual statuses and public-access
+   metadata, retain the aggregate warning, rename the publication label, and
+   align tests and workflow documentation — done.
 
 ## Approved scope change: skills-first plugin architecture
 
@@ -695,7 +710,11 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 32. Preflight proposal source links in the background and expose only links
     confirmed with HTTP 200 — done.
 33. Translate deterministic English tool labels in the host model's response to
-    the user's language without changing renderer or schema behavior — done.
+    the user's language without changing schema behavior — done.
+34. Keep Turn 2 source URL checks while hiding individual statuses and
+    `publiclyAccessible` metadata from rendered output; retain the aggregate
+    unavailable-source warning and label the publication field `Publishing
+    Schedule` — done.
 
 ## Verification
 

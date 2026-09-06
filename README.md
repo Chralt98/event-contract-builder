@@ -184,7 +184,7 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 | `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.                                                                           |
 | `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                                                                    |
 | `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives |
-| `submit_resolution_source`   | Validate and render full source details with independence and advisory URL checks.                                                                      |
+| `submit_resolution_source`   | Validate and render full source details with independence and aggregate advisory URL warnings.                                                          |
 
 The `skills/` directory contains four focused capabilities: drafting display
 questions, defining ambiguous terms, selecting resolution sources, and

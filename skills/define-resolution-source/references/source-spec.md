@@ -163,7 +163,14 @@ publiclyAccessible
 independenceNote
 ```
 
-`submit_resolution_source` performs an advisory reachability check on every URL and renders the result with the source detail. Present the complete returned Markdown faithfully, including every source detail, link-check note, warning, and follow-up. Translate renderer-generated English labels and other fixed UI text into the user's language while preserving source data. If any link is unreachable or errored, surface the warning and correct the URL before locking in the hierarchy; the check itself does not block submission.
+`submit_resolution_source` validates the full source records and renders the
+user-facing source detail. Its Markdown intentionally omits transient URL
+reachability statuses and the `publiclyAccessible` metadata; those remain in
+the validated structured payload. It still checks each URL and retains one
+aggregate warning when a source is unavailable. Present the complete returned
+Markdown faithfully, including every rendered source detail, warning,
+alternative, and follow-up. Translate renderer-generated English labels and
+other fixed UI text into the user's language while preserving source data.
 
 ## Stop rules
 

@@ -3,11 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/index.ts";
 
-/**
- * Resolution-source tools run live URL checks. Stub global fetch so these
- * tests never touch the network and can drive proposal preflight and advisory
- * submission output deterministically.
- */
+/** Stub global fetch so resolution-source URL checks never touch the network. */
 let fetchSpy: ReturnType<typeof spyOn> | undefined;
 
 type JsonSchema = {
@@ -940,6 +936,7 @@ describe("event-contract tools", () => {
         "Does this source hierarchy look right, or should we adjust it?",
     };
     stubFetch(() => new Response(null, { status: 200 }));
+
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -963,13 +960,19 @@ describe("event-contract tools", () => {
     expect(primaryIdx).toBeGreaterThanOrEqual(0);
     expect(fallbackIdx).toBeGreaterThan(primaryIdx);
     expect(text).toContain("(dataset CUUR0000SA0)");
-    // Every reachable URL gets a link-check bullet; no warning line when all ok.
-    expect(text).toContain("- Link check: ✓ 200");
-    expect(text).not.toContain("could not be automatically verified");
+    expect(text).toContain(
+      "- Publishing Schedule: Monthly, around the middle of the following month.",
+    );
+    expect(text).not.toContain("- Published:");
+    expect(text).not.toContain("- Link check:");
+    expect(text).not.toContain("- Publicly accessible:");
+    expect(text).not.toContain("One or more resolution sources");
     expect(text).toContain("---\n\n" + input.followUp);
   });
 
-  test("submit_resolution_source flags an unreachable URL without blocking registration", async () => {
+  test("submit_resolution_source checks URLs without exposing check status or access metadata", async () => {
+    const url = "https://unavailable.example/cpi";
+    const checkedUrls: string[] = [];
     const input = {
       unit_number: 1,
       selected_unit: {
@@ -978,38 +981,23 @@ describe("event-contract tools", () => {
       },
       sources: [
         {
-          id: "bls-cpi",
+          id: "unavailable-cpi",
           rank: 1,
           controlsFor: ["headline CPI value"],
-          name: "BLS Consumer Price Index",
-          publisher: "U.S. Bureau of Labor Statistics",
-          url: "https://www.bls.gov/cpi/typo",
-          publicationSchedule:
-            "Monthly, around the middle of the following month.",
-          publiclyAccessible: true,
-          independenceNote:
-            "A federal statistical agency independent of any prediction market participant.",
-        },
-        {
-          id: "fred-cpi-backup",
-          rank: 2,
-          controlsFor: ["headline CPI value"],
-          name: "FRED CPI series",
-          publisher: "Federal Reserve Bank of St. Louis",
-          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
-          publicationSchedule: "Monthly, mirrors the BLS release schedule.",
-          publiclyAccessible: true,
-          independenceNote:
-            "A public reserve bank data mirror with no stake in any market outcome.",
+          name: "Unavailable CPI source",
+          publisher: "Statistics Agency",
+          url,
+          publicationSchedule: "Monthly publication.",
+          publiclyAccessible: false,
+          independenceNote: "The agency publishes the official value.",
         },
       ],
-      followUp: "Does this source look right?",
+      followUp: "Does this source hierarchy look right?",
     };
-    stubFetch((url) =>
-      url.endsWith("/typo")
-        ? new Response(null, { status: 404, statusText: "Not Found" })
-        : new Response(null, { status: 200 }),
-    );
+    stubFetch((checkedUrl) => {
+      checkedUrls.push(checkedUrl);
+      return new Response(null, { status: 404, statusText: "Not Found" });
+    });
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -1017,69 +1005,18 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    // Advisory only: the submission still succeeds and echoes the sources.
     expect(result.isError).toBeUndefined();
+    expect(checkedUrls).toEqual([url]);
     expect(result.structuredContent).toEqual(input);
-
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
-    expect(text).toContain("- Link check: ✗ 404 Not Found");
-    expect(text).toContain("could not be automatically verified");
-  });
-
-  test("submit_resolution_source reports a connection failure as unreachable", async () => {
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-      },
-      sources: [
-        {
-          id: "bls-cpi",
-          rank: 1,
-          controlsFor: ["headline CPI value"],
-          name: "BLS Consumer Price Index",
-          publisher: "U.S. Bureau of Labor Statistics",
-          url: "https://not-a-real-host.invalid/cpi",
-          publicationSchedule:
-            "Monthly, around the middle of the following month.",
-          publiclyAccessible: true,
-          independenceNote:
-            "A federal statistical agency independent of any prediction market participant.",
-        },
-        {
-          id: "fred-cpi-backup",
-          rank: 2,
-          controlsFor: ["headline CPI value"],
-          name: "FRED CPI series",
-          publisher: "Federal Reserve Bank of St. Louis",
-          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
-          publicationSchedule: "Monthly, mirrors the BLS release schedule.",
-          publiclyAccessible: true,
-          independenceNote:
-            "A public reserve bank data mirror with no stake in any market outcome.",
-        },
-      ],
-      followUp: "Does this source look right?",
-    };
-    stubFetch((url) => {
-      if (url.includes("not-a-real-host")) {
-        throw new Error("getaddrinfo ENOTFOUND");
-      }
-      return new Response(null, { status: 200 });
-    });
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "submit_resolution_source",
-      arguments: input,
-    });
-
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain("- Link check: ✗ unreachable (connection failed)");
-    expect(text).toContain("could not be automatically verified");
+    expect(text).toContain(
+      "⚠ One or more resolution sources are not publicly accessible or could not be automatically verified",
+    );
+    expect(text).not.toContain("404");
+    expect(text).not.toContain("Link check");
+    expect(text).not.toContain("Publicly accessible");
+    expect(text).not.toContain("publiclyAccessible");
   });
 
   test("submit_resolution_source allows a primary-only hierarchy with a warning", async () => {
@@ -1174,7 +1111,6 @@ describe("event-contract tools", () => {
   });
 
   test("submit_resolution_source renders coverage gaps and an alternative market", async () => {
-    stubFetch(() => new Response(null, { status: 200 }));
     const input = {
       unit_number: 1,
       selected_unit: {
@@ -1221,6 +1157,7 @@ describe("event-contract tools", () => {
       followUp:
         "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
     };
+    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({

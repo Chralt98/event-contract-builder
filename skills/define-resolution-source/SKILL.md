@@ -55,9 +55,12 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
 8. After approval of the original hierarchy, call `submit_resolution_source` once with the full source
    records and carry any `coverage_gaps` and `alternative_market` through
    unchanged. Present its complete returned Markdown faithfully, including every
-   source detail, warning, alternative, advisory link-check warning, and
-   follow-up; translate renderer-generated English labels and other fixed UI
-   text into the user's language while preserving source data.
+   rendered source detail, warning, alternative, and follow-up; the renderer
+   still checks source URLs and retains one aggregate unavailable-source warning,
+   but intentionally omits transient individual link-check statuses and
+   `publiclyAccessible` metadata from that user-facing Markdown. Translate
+   renderer-generated English labels and other fixed UI text into the user's
+   language while preserving source data.
 
 The selected unit and agreed definitions are supplied directly to this skill by the host workflow. Do not call a separate prompt-returning tool; use only the deterministic proposal and submission tools described above.
 

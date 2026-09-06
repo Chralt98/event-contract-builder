@@ -1,8 +1,9 @@
 /**
- * Shared live reachability check for a resolution source URL. Submission uses
- * it to show advisory status, while proposal preflight uses the final
- * status to keep unverified URLs out of the visible proposal. `z.url()` already
- * guarantees the string is a well-formed URL before this runs.
+ * Shared live reachability check for a resolution source URL. Proposal
+ * preflight uses the final status to keep unverified URLs out of the visible
+ * proposal, while submission uses it for an invisible per-source check and
+ * emits only an aggregate warning. `z.url()` already guarantees the string is
+ * a well-formed URL before this runs.
  */
 export interface UrlCheckResult {
   /**
