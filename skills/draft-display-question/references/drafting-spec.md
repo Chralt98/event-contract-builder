@@ -19,6 +19,13 @@ Prediction markets resolve as binary Yes/No bets. Decompose scalar and categoric
 - **Categorical:** A set of mutually exclusive options produces one question per option.
 - **Template:** When two or more related concrete questions share stable wording and vary by one or more substitutable values, append a configurable template unit after the concrete unit or units it represents. A template is always additional; it never replaces the binary, scalar, or categorical draft.
 
+Submission invariant: every scalar or categorical unit is incomplete without an
+additional companion template unit. A related family of standalone binary
+questions also requires a template. A lone binary question remains a complete
+unit without one. Check this invariant before calling
+`submit_drafted_questions`; the server rejects grouped drafts that omit
+their templates.
+
 ## Question rules
 
 Every concrete question must:
@@ -85,6 +92,10 @@ A scalar, categorical, or template group is always selected as a whole, even if 
 ## Tool output
 
 `submit_drafted_questions` owns the trader-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown faithfully. Translate only renderer-generated English labels and other fixed UI text into the user's language; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary.
+
+The tool also returns a stable `contract_id` in structured content. Preserve it
+when the user selects a unit and pass it to `submit_defined_terms`; do not show
+the raw structured payload merely to expose the identifier.
 
 Use these unit shapes:
 

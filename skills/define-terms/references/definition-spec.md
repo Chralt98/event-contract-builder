@@ -51,6 +51,9 @@ Do not define words with one obvious meaning in context. Do not define data sour
 
 - `unit_number`: the 1-based number shown in the prior draft or supplied by the
   selected alternative-market branch;
+- `contract_id`: the stable identifier returned by the prior workflow tool,
+  when continuing an existing contract; omit it when starting a newly selected
+  alternative-market record;
 - `selected_unit`: the exact binary, scalar, categorical, or template unit selected by the user;
 - `definitions`: a term-to-definition map; and
 - `followUp`: one sentence asking whether the user agrees with the definitions or wants any changed.

@@ -96,6 +96,9 @@ Work out the full records internally, but reveal the hierarchy in two turns. The
 
 Call `propose_resolution_sources` with:
 
+- `contract_id`: the stable identifier returned by the draft/definition tool
+  when continuing that contract; omit it only when starting a new alternative
+  market record;
 - `unit_number`: the selected unit's 1-based number;
 - `selected_unit`: the exact selected unit;
 - `sources`: by default, a ranked array containing a rank-1 primary and rank-2
@@ -139,6 +142,7 @@ Turn 2 until the user approves the hierarchy.
 
 Only after the user approves the hierarchy, call `submit_resolution_source` with:
 
+- `contract_id`: the same identifier returned by the proposal tool;
 - `unit_number` and `selected_unit` unchanged from Turn 1;
 - `sources`: the complete ranked records, normally including the rank-1 primary
   and rank-2 independent fallback. A user-approved primary-only hierarchy may

@@ -4,6 +4,7 @@ import type {
   DefinitionsT,
 } from "../../src/schema/display-question";
 import type { DataSource } from "../../src/schema/resolution";
+import type { ApprovedContractRecall } from "./approved-contract-store";
 import { parseConnectorDraftUnit } from "./connector-draft-unit";
 import type { AlternativeMarketT } from "./source-alternative";
 
@@ -164,4 +165,45 @@ export function renderSources(sources: DataSourceT[]): string {
       return `**${s.rank}. ${s.name}** (${s.publisher})\n${bullets}`;
     })
     .join("\n\n");
+}
+
+/**
+ * Renders only the approved contract content. The initial candidate draft,
+ * workflow follow-ups, and unselected source alternatives are intentionally
+ * excluded from recall.
+ */
+export function renderApprovedContract(
+  contract: ApprovedContractRecall,
+): string {
+  const parts = [
+    `**Approved Event Contract**\n- Contract ID: ${contract.contract_id}`,
+    "### Selected Unit",
+    renderUnitHeader(
+      parseConnectorDraftUnit(contract.selected_unit),
+      contract.unit_number,
+    ),
+  ];
+
+  if (contract.definitions) {
+    parts.push(
+      "### Approved Definitions",
+      renderDefinitions(contract.definitions),
+    );
+  }
+
+  if (contract.proposed_resolution_sources) {
+    parts.push(
+      "### Proposed Resolution Sources",
+      renderSourceProposal(contract.proposed_resolution_sources.sources),
+    );
+  }
+
+  if (contract.resolution_sources) {
+    parts.push(
+      "### Detailed Resolution Sources",
+      renderSources(contract.resolution_sources.sources),
+    );
+  }
+
+  return parts.join("\n\n");
 }

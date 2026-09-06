@@ -15,9 +15,14 @@ event-contract specification — see [Library (schema)](#library-schema) below.
 
 ## MCP server
 
-`server/` runs a stateless HTTP MCP server exposing deterministic tools for
-validating, rendering, and checking the structured outputs produced by the
-packaged skills.
+`server/` runs a session-aware HTTP MCP server exposing deterministic tools for
+validating, rendering, checking, and recalling the structured outputs produced
+by the packaged skills. Approved workflow data is held in memory. Implicit
+lookup remains scoped to the current MCP session; HTTP sessions may continue a
+record from another session only by passing its explicit `contract_id` through
+the process-lifetime handoff registry. That identifier is a random bearer
+handoff, not authentication or authorization, and all memory is lost when the
+server process ends.
 
 ### Run it
 
@@ -185,6 +190,7 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 | `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                                                                    |
 | `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives |
 | `submit_resolution_source`   | Validate and render full source details with independence and aggregate advisory URL warnings.                                                          |
+| `get_approved_event_contract` | Retrieve approved workflow content from the current session, or by explicit `contract_id` handoff across HTTP sessions.                              |
 
 The `skills/` directory contains four focused capabilities: drafting display
 questions, defining ambiguous terms, selecting resolution sources, and
@@ -271,14 +277,19 @@ percent in June 2026"`. Organize the result into selectable units, then
    Which unit (1 or 2) should we use for further specification?
    ```
 
+   Keep the `contract_id` returned in structured content and pass it to the
+   next workflow step. This explicit identifier is required when the host may
+   invoke the next tool through a new MCP HTTP session.
+
 2. **Select and define** — when the user selects a unit, use the `define-terms`
-   skill to propose precise definitions, then call `submit_defined_terms` and
-   present its returned Markdown faithfully, translating fixed English renderer
-   labels into the user's language while preserving the definitions.
+   skill to propose precise definitions, pass the carried `contract_id`, then
+   call `submit_defined_terms` and present its returned Markdown faithfully,
+   translating fixed English renderer labels into the user's language while
+   preserving the definitions. Carry the returned identifier forward.
 
 3. **Choose sources** — after the user agrees to the definitions, use the
    `define-resolution-source` skill. First call `propose_resolution_sources`
-   with ranked names, publishers, and exact URLs:
+   with the carried `contract_id`, ranked names, publishers, and exact URLs:
 
    ```json
    {
@@ -329,12 +340,22 @@ percent in June 2026"`. Organize the result into selectable units, then
    replacement URLs can be supplied.
 
 4. **Submit sources** — after the user approves the hierarchy, call
-   `submit_resolution_source` with the full source records and present its
-   returned Markdown faithfully, translating fixed English renderer labels into
-   the user's language while preserving source data. Revise the hierarchy if the
-   user requests it.
+   `submit_resolution_source` with the same `contract_id` and full source
+   records and present its returned Markdown faithfully, translating fixed
+   English renderer labels into the user's language while preserving source
+   data. Revise the hierarchy if the user requests it. If the user selects an
+   alternative market, omit the original ID so its definitions and sources
+   start a separate saved record.
 
-5. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
+5. **Recall** — when the user asks to see the approved event-contract
+   information later in the chat, call `get_approved_event_contract`. Omit
+   `contract_id` only when the call remains in the same MCP session; otherwise
+   pass the explicit identifier from the prior tool result. The identifier is a
+   random bearer handoff rather than an authentication credential. The tool
+   returns the selected unit, approved definitions, and approved source
+   records; it does not replay the candidate draft or workflow follow-ups.
+
+6. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
    before trading or when auditing a proposed contract. It makes ordinary
    resolution cases deterministic, surfaces material exceptions, constrains
    unforeseen-event rules, and governs any remaining discretion. This review

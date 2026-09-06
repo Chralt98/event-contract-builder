@@ -2,6 +2,10 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/index.ts";
+import {
+  ApprovedContractHandoffStore,
+  ApprovedContractStore,
+} from "../src/approved-contract-store.ts";
 
 /** Stub global fetch so resolution-source URL checks never touch the network. */
 let fetchSpy: ReturnType<typeof spyOn> | undefined;
@@ -28,8 +32,8 @@ afterEach(() => {
 });
 
 describe("event-contract tools", () => {
-  async function connectClient() {
-    const server = createServer();
+  async function connectClient(store = new ApprovedContractStore()) {
+    const server = createServer(store);
     const [clientTransport, serverTransport] =
       InMemoryTransport.createLinkedPair();
     await server.connect(serverTransport);
@@ -47,6 +51,7 @@ describe("event-contract tools", () => {
     expect(names).toContain("submit_defined_terms");
     expect(names).toContain("propose_resolution_sources");
     expect(names).toContain("submit_resolution_source");
+    expect(names).toContain("get_approved_event_contract");
   });
 
   test("does not expose semantic workflow prompts", async () => {
@@ -54,20 +59,32 @@ describe("event-contract tools", () => {
     await expect(client.listPrompts()).rejects.toThrow("Method not found");
   });
 
-  test("tools are annotated as read-only and idempotent", async () => {
+  test("tools advertise their persistence and idempotence semantics", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
-    for (const name of [
-      "submit_drafted_questions",
-      "submit_defined_terms",
-      "propose_resolution_sources",
-      "submit_resolution_source",
-    ]) {
+    for (const [name, readOnly] of [
+      ["submit_drafted_questions", false],
+      ["submit_defined_terms", false],
+      ["propose_resolution_sources", false],
+      ["submit_resolution_source", false],
+      ["get_approved_event_contract", true],
+    ] as const) {
       const tool = tools.find((t) => t.name === name)!;
-      expect(tool.annotations?.readOnlyHint).toBe(true);
+      expect(tool.annotations?.readOnlyHint).toBe(readOnly);
       expect(tool.annotations?.idempotentHint).toBe(true);
     }
   });
+
+  function expectStoredPayload(
+    result: { structuredContent?: unknown },
+    input: object,
+  ): string {
+    expect(result.structuredContent).toMatchObject(input);
+    const contractId = (result.structuredContent as { contract_id?: unknown })
+      .contract_id;
+    expect(contractId).toEqual(expect.any(String));
+    return contractId as string;
+  }
 
   test("draft-unit tool schemas avoid unsupported oneOf and pattern constraints", async () => {
     const client = await connectClient();
@@ -109,6 +126,11 @@ describe("event-contract tools", () => {
           ],
         },
         {
+          type: "template",
+          question: "Will the Fed cut rates <amount> in 2026?",
+          variables: [{ name: "amount", values: ["25bps", "50bps"] }],
+        },
+        {
           type: "binary",
           question: "Will the Fed hold rates flat through 2026?",
         },
@@ -122,7 +144,7 @@ describe("event-contract tools", () => {
       arguments: draft,
     });
 
-    expect(result.structuredContent).toEqual(draft);
+    expectStoredPayload(result, draft);
 
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]!.type).toBe("text");
@@ -145,11 +167,21 @@ describe("event-contract tools", () => {
           ],
         },
         {
+          type: "template",
+          question: "Will the Fed cut rates <amount> in 2026?",
+          variables: [{ name: "amount", values: ["25bps", "50bps"] }],
+        },
+        {
           type: "scalar",
           questions: [
             "Will Bitcoin close 2026 below $50k?",
             "Will Bitcoin close 2026 above $50k?",
           ],
+        },
+        {
+          type: "template",
+          question: "Will Bitcoin close 2026 <range>?",
+          variables: [{ name: "range", values: ["below $50k", "above $50k"] }],
         },
         {
           type: "binary",
@@ -175,10 +207,16 @@ describe("event-contract tools", () => {
       "**Unit 2: Categorical market**\n- Will the Fed cut rates 25bps in 2026?",
     );
     expect(text).toContain(
-      "**Unit 3: Scalar market**\n- Will Bitcoin close 2026 below $50k?",
+      "**Unit 3: Template market**\n- Will the Fed cut rates <amount> in 2026?",
     );
     expect(text).toContain(
-      "**Unit 4: Binary market**\n- Will the Fed raise rates in 2026?",
+      "**Unit 4: Scalar market**\n- Will Bitcoin close 2026 below $50k?",
+    );
+    expect(text).toContain(
+      "**Unit 5: Template market**\n- Will Bitcoin close 2026 <range>?",
+    );
+    expect(text).toContain(
+      "**Unit 6: Binary market**\n- Will the Fed raise rates in 2026?",
     );
     expect(text).toContain("---\n\n" + draft.followUp);
   });
@@ -206,7 +244,7 @@ describe("event-contract tools", () => {
       arguments: draft,
     });
 
-    expect(result.structuredContent).toEqual(draft);
+    expectStoredPayload(result, draft);
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]!.text).toContain(
       "**Unit 1: Template market**\n" +
@@ -231,6 +269,28 @@ describe("event-contract tools", () => {
       arguments: {
         units: [{ type: "scalar" }],
         followUp: "Which one?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("submit_drafted_questions rejects a grouped market without a companion template", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [
+          {
+            type: "scalar",
+            questions: [
+              "Will Bitcoin close 2026 below $50k?",
+              "Will Bitcoin close 2026 above $50k?",
+            ],
+          },
+        ],
+        followUp: "Which unit should we use?",
       },
     });
 
@@ -266,6 +326,501 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("definitions");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    expect(tool.outputSchema?.properties).toHaveProperty("contract_id");
+  });
+
+  test("recall schema exposes only approved contract content", async () => {
+    const client = await connectClient();
+    const { tools } = await client.listTools();
+    const tool = tools.find((t) => t.name === "get_approved_event_contract")!;
+    expect(tool.outputSchema).toBeDefined();
+    expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
+    expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
+    expect(tool.outputSchema?.properties).toHaveProperty("definitions");
+    expect(tool.outputSchema?.properties).toHaveProperty(
+      "proposed_resolution_sources",
+    );
+    expect(tool.outputSchema?.properties).toHaveProperty("resolution_sources");
+    expect(tool.outputSchema?.properties).not.toHaveProperty(
+      "drafted_questions",
+    );
+  });
+
+  test("stores every workflow stage and recalls only approved contract content", async () => {
+    stubFetch(() => new Response(null, { status: 200 }));
+    const client = await connectClient();
+    const draft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
+        },
+        {
+          type: "binary" as const,
+          question: "Will the ECB cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use for further specification?",
+    };
+
+    const draftResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+    const contractId = expectStoredPayload(draftResult, draft);
+    const selectedUnit = draft.units[0]!;
+    const definitions = {
+      "cut rates":
+        "A reduction in the federal funds target rate announced in a single FOMC decision.",
+    };
+    const definitionsInput = {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+      definitions,
+      followUp: "Do these definitions look right to you?",
+    };
+    const definitionsResult = await client.callTool({
+      name: "submit_defined_terms",
+      arguments: definitionsInput,
+    });
+    expectStoredPayload(definitionsResult, definitionsInput);
+
+    const proposalInput = {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+      sources: [
+        {
+          rank: 1,
+          name: "Federal Reserve decisions",
+          publisher: "Federal Reserve Board",
+          url: "https://fed.example/decisions",
+        },
+        {
+          rank: 2,
+          name: "Rate decision archive",
+          publisher: "Independent Rates Institute",
+          url: "https://rates.example/archive",
+        },
+      ],
+      followUp: "Does this source hierarchy look right?",
+    };
+    const proposalResult = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: proposalInput,
+    });
+    expectStoredPayload(proposalResult, proposalInput);
+
+    const resolutionInput = {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+      sources: [
+        {
+          id: "federal-reserve-decisions",
+          rank: 1,
+          controlsFor: ["rate decision"],
+          name: "Federal Reserve decisions",
+          publisher: "Federal Reserve Board",
+          url: "https://fed.example/decisions",
+          publicationSchedule: "Published after each scheduled policy meeting.",
+          publiclyAccessible: true,
+          independenceNote:
+            "The public agency publishes decisions independently of market participants.",
+        },
+        {
+          id: "rate-decision-archive",
+          rank: 2,
+          controlsFor: ["rate decision"],
+          name: "Rate decision archive",
+          publisher: "Independent Rates Institute",
+          url: "https://rates.example/archive",
+          publicationSchedule: "Updated after each scheduled policy meeting.",
+          publiclyAccessible: true,
+          independenceNote:
+            "The independent institute publishes its archive without market control.",
+        },
+      ],
+      followUp: "Are these detailed sources correct?",
+    };
+    const resolutionResult = await client.callTool({
+      name: "submit_resolution_source",
+      arguments: resolutionInput,
+    });
+    expectStoredPayload(resolutionResult, resolutionInput);
+
+    const retrieved = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: {},
+    });
+    expect(retrieved.isError).toBeUndefined();
+    expect(retrieved.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: definitionsInput.unit_number,
+      selected_unit: definitionsInput.selected_unit,
+      definitions: definitionsInput.definitions,
+      proposed_resolution_sources: {
+        sources: proposalInput.sources,
+      },
+      resolution_sources: {
+        sources: resolutionInput.sources,
+      },
+    });
+    const structured = retrieved.structuredContent as Record<string, unknown>;
+    expect(structured["drafted_questions"]).toBeUndefined();
+    expect(structured["defined_terms"]).toBeUndefined();
+    expect(structured["followUp"]).toBeUndefined();
+    const content = retrieved.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain("### Selected Unit");
+    expect(content[0]!.text).toContain("### Approved Definitions");
+    expect(content[0]!.text).not.toContain("### Drafted Questions");
+    expect(content[0]!.text).not.toContain("### Defined Terms");
+    expect(content[0]!.text).toContain("### Proposed Resolution Sources");
+    expect(content[0]!.text).toContain("### Detailed Resolution Sources");
+    expect(content[0]!.text).toContain("**cut rates**");
+    expect(content[0]!.text).toContain("Federal Reserve decisions");
+    expect(content[0]!.text).not.toContain("Will the ECB cut rates in 2026?");
+    expect(content[0]!.text).not.toContain(definitionsInput.followUp);
+    expect(content[0]!.text).not.toContain(proposalInput.followUp);
+    expect(content[0]!.text).not.toContain(resolutionInput.followUp);
+    expect(content[0]!.text.match(/\*\*Selected Unit 1:/g)).toHaveLength(1);
+  });
+
+  test("retries replace a stage and clear downstream snapshots", async () => {
+    stubFetch(() => new Response(null, { status: 200 }));
+    const client = await connectClient();
+    const draft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const draftResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+    const contractId = expectStoredPayload(draftResult, draft);
+    const baseDefinitions = {
+      "cut rates": "A reduction in the target rate at one policy meeting.",
+    };
+    await client.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: draft.units[0],
+        definitions: baseDefinitions,
+        followUp: "Do these definitions look right?",
+      },
+    });
+    await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: draft.units[0],
+        sources: [
+          {
+            rank: 1,
+            name: "Federal Reserve decisions",
+            publisher: "Federal Reserve Board",
+            url: "https://fed.example/decisions",
+          },
+        ],
+        followUp: "Does this source hierarchy look right?",
+      },
+    });
+
+    const revisedDefinitions = {
+      "cut rates":
+        "A reduction of at least 25 basis points in the federal funds target range at one policy meeting.",
+    };
+    const retry = await client.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: draft.units[0],
+        definitions: revisedDefinitions,
+        followUp: "Do these revised definitions look right?",
+      },
+    });
+    expectStoredPayload(retry, {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: draft.units[0],
+      definitions: revisedDefinitions,
+      followUp: "Do these revised definitions look right?",
+    });
+
+    const retrieved = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(retrieved.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: draft.units[0],
+      definitions: revisedDefinitions,
+    });
+    const record = retrieved.structuredContent as Record<string, unknown>;
+    expect(record["drafted_questions"]).toBeUndefined();
+    expect(record["defined_terms"]).toBeUndefined();
+    expect(record["proposed_resolution_sources"]).toBeUndefined();
+    expect(record["resolution_sources"]).toBeUndefined();
+  });
+
+  test("isolates approved contract memory between server sessions", async () => {
+    const firstClient = await connectClient();
+    const secondClient = await connectClient();
+    const draft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const saved = await firstClient.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+    const contractId = expectStoredPayload(saved, draft);
+    await firstClient.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: draft.units[0],
+        definitions: {
+          "cut rates": "A reduction in the target rate.",
+        },
+        followUp: "Do these definitions look right?",
+      },
+    });
+
+    const leaked = await secondClient.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(leaked.isError).toBe(true);
+    expect(
+      (leaked.content as Array<{ type: string; text: string }>)[0]!.text,
+    ).toContain("No approved event contract was found");
+
+    const available = await firstClient.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(available.isError).toBeUndefined();
+    expect(available.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: draft.units[0],
+      definitions: {
+        "cut rates": "A reduction in the target rate.",
+      },
+    });
+  });
+
+  test(
+    "hands off an approved contract across sessions only with explicit contract_id",
+    async () => {
+      const handoffStore = new ApprovedContractHandoffStore();
+      const firstClient = await connectClient(
+        new ApprovedContractStore(handoffStore),
+      );
+      const secondClient = await connectClient(
+        new ApprovedContractStore(handoffStore),
+      );
+      const thirdClient = await connectClient(
+        new ApprovedContractStore(handoffStore),
+      );
+      const draft = {
+        units: [
+          {
+            type: "binary" as const,
+            question: "Will the Fed cut rates in 2026?",
+          },
+          {
+            type: "binary" as const,
+            question: "Will the ECB cut rates in 2026?",
+          },
+        ],
+        followUp: "Which unit should we use?",
+      };
+
+      const draftResult = await firstClient.callTool({
+        name: "submit_drafted_questions",
+        arguments: draft,
+      });
+      const contractId = expectStoredPayload(draftResult, draft);
+
+      const definitionsResult = await secondClient.callTool({
+        name: "submit_defined_terms",
+        arguments: {
+          contract_id: contractId,
+          unit_number: 2,
+          selected_unit: draft.units[1],
+          definitions: {
+            "cut rates": "A reduction in the ECB deposit facility rate.",
+          },
+          followUp: "Do these definitions look right?",
+        },
+      });
+      expect(definitionsResult.isError).toBeUndefined();
+      expect(definitionsResult.structuredContent).toMatchObject({
+        contract_id: contractId,
+        unit_number: 2,
+      });
+
+      const recalled = await thirdClient.callTool({
+        name: "get_approved_event_contract",
+        arguments: { contract_id: contractId },
+      });
+      expect(recalled.isError).toBeUndefined();
+      expect(recalled.structuredContent).toMatchObject({
+        contract_id: contractId,
+        unit_number: 2,
+        selected_unit: draft.units[1],
+        definitions: {
+          "cut rates": "A reduction in the ECB deposit facility rate.",
+        },
+      });
+
+      const implicitLookup = await thirdClient.callTool({
+        name: "get_approved_event_contract",
+        arguments: {},
+      });
+      expect(implicitLookup.isError).toBe(true);
+      expect(
+        (implicitLookup.content as Array<{ type: string; text: string }>)[0]!
+          .text,
+      ).toContain(
+        "No approved event-contract information is available in this chat.",
+      );
+    },
+  );
+
+  test("keeps multiple contracts distinct and defaults retrieval to the latest", async () => {
+    const client = await connectClient();
+    const firstDraft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const secondDraft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the ECB cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const firstResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: firstDraft,
+    });
+    const firstId = expectStoredPayload(firstResult, firstDraft);
+    const secondResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: secondDraft,
+    });
+    const secondId = expectStoredPayload(secondResult, secondDraft);
+    expect(secondId).not.toBe(firstId);
+
+    await client.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: firstId,
+        unit_number: 1,
+        selected_unit: firstDraft.units[0],
+        definitions: { "Fed cut": "A reduction in the target rate." },
+        followUp: "Do these definitions look right?",
+      },
+    });
+    await client.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: secondId,
+        unit_number: 1,
+        selected_unit: secondDraft.units[0],
+        definitions: { "ECB cut": "A reduction in the target rate." },
+        followUp: "Do these definitions look right?",
+      },
+    });
+
+    const first = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: firstId },
+    });
+    expect(first.structuredContent).toMatchObject({
+      contract_id: firstId,
+      selected_unit: firstDraft.units[0],
+      definitions: { "Fed cut": "A reduction in the target rate." },
+    });
+
+    const thirdDraft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the BoJ raise rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const thirdResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: thirdDraft,
+    });
+    expectStoredPayload(thirdResult, thirdDraft);
+
+    const latest = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: {},
+    });
+    expect(latest.structuredContent).toMatchObject({
+      contract_id: secondId,
+      selected_unit: secondDraft.units[0],
+      definitions: { "ECB cut": "A reduction in the target rate." },
+    });
+  });
+
+  test("does not recall unselected draft candidates", async () => {
+    const client = await connectClient();
+    const draft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
+    const saved = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+    const contractId = expectStoredPayload(saved, draft);
+
+    const retrieved = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(retrieved.isError).toBe(true);
+    expect(
+      (retrieved.content as Array<{ type: string; text: string }>)[0]!.text,
+    ).toContain("No approved event contract was found");
   });
 
   test("submit_defined_terms shows numbered selected unit, em-dash definitions, and follow-up", async () => {
@@ -291,7 +846,7 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
 
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]!.type).toBe("text");
@@ -365,7 +920,7 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]!.text).toContain(
       "**Selected Unit 6: Template market**\n" +
@@ -397,7 +952,7 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
     const content = result.content as Array<{ type: string; text: string }>;
     expect(content[0]!.text).toContain(
       "**Selected Unit 2: Binary market**\n" +
@@ -464,7 +1019,7 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
 
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
@@ -818,7 +1373,7 @@ describe("event-contract tools", () => {
     });
 
     expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
     expect(text).toContain(
@@ -944,7 +1499,7 @@ describe("event-contract tools", () => {
       arguments: input,
     });
 
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
 
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
@@ -1007,7 +1562,7 @@ describe("event-contract tools", () => {
 
     expect(result.isError).toBeUndefined();
     expect(checkedUrls).toEqual([url]);
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
     expect(text).toContain(
@@ -1166,7 +1721,7 @@ describe("event-contract tools", () => {
     });
 
     expect(result.isError).toBeUndefined();
-    expect(result.structuredContent).toEqual(input);
+    expectStoredPayload(result, input);
     const content = result.content as Array<{ type: string; text: string }>;
     const text = content[0]!.text;
     expect(text).toContain(

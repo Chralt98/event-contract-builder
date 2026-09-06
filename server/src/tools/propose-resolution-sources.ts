@@ -5,6 +5,10 @@ import {
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
 import {
+  ApprovedContractStore,
+  optionalContractId,
+} from "../approved-contract-store";
+import {
   renderSourceCoverageAdvice,
   renderSourceProposal,
   renderUnitHeader,
@@ -48,6 +52,7 @@ function closeRanks<T extends { rank: number }>(sources: readonly T[]): T[] {
  * inspect it before approving the hierarchy in Turn 1.
  */
 const proposalShape = {
+  contract_id: optionalContractId,
   unit_number: z
     .number()
     .int()
@@ -111,24 +116,27 @@ const proposalShape = {
     ),
 };
 
-export function registerProposeResolutionSourcesTool(server: McpServer): void {
+export function registerProposeResolutionSourcesTool(
+  server: McpServer,
+  store: ApprovedContractStore,
+): void {
   server.registerTool(
     "propose_resolution_sources",
     {
       title: "Propose Resolution Sources",
       description:
-        "Present the ranked resolution source hierarchy with clickable URLs, for the " +
+        "Store and present the ranked resolution source hierarchy with clickable URLs, for the " +
         "user to approve before the full per-source detail is registered. By " +
         "default include a rank-1 primary source and a rank-2 fallback source. " +
         "A user-requested single rank-1 source is allowed and renders a warning. " +
         "Before rendering, silently keep only candidate URLs whose final response " +
         "is HTTP 200; do not expose the preflight result. " +
         "Call this in the first turn — after identifying the source(s) but before " +
-        "submit_resolution_source.",
+        "submit_resolution_source. Carry contract_id from the definitions result.",
       inputSchema: proposalShape,
       outputSchema: proposalShape,
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         idempotentHint: true,
       },
     },
@@ -172,10 +180,15 @@ export function registerProposeResolutionSourcesTool(server: McpServer): void {
           : undefined;
       const output = {
         ...proposalArgs,
+        contract_id: store.resolveContractId(args.contract_id, {
+          unitNumber: args.unit_number,
+          selectedUnit: args.selected_unit,
+        }),
         selected_unit: parseConnectorDraftUnit(args.selected_unit),
         sources,
         ...(alternative_market ? { alternative_market } : {}),
       };
+      store.save("proposed_resolution_sources", output);
       const sourceWarning = singleSourceWarning(output.sources.length);
       const coverageAdvice = renderSourceCoverageAdvice(
         output.coverage_gaps,

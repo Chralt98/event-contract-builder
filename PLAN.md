@@ -188,13 +188,13 @@ The skills-first shape is:
 
 - `skills/define-resolution-source/SKILL.md` defines the two-turn source
   workflow and uses the agreed definitions as its input context.
-- `propose_resolution_sources` — deterministic, read-only, `inputSchema =
+- `propose_resolution_sources` — deterministic, idempotent, state-recording, `inputSchema =
 outputSchema` with `unit_number`, `selected_unit`, `sources` (a ranked array of
   `rank`/`name`/`publisher`/`url`, `min(1)` with rank 1 primary and, by default,
   rank 2 fallback), and `followUp`. Renders the Turn 1 hierarchy with each URL
   as an explicit Markdown link via `renderSourceProposal`, adds a warning when
   only the primary is supplied, and echoes `structuredContent`.
-- `submit_resolution_source` — deterministic, `inputSchema = outputSchema`
+- `submit_resolution_source` — deterministic, idempotent, state-recording, `inputSchema = outputSchema`
   with `unit_number`, `selected_unit`, `sources` (a ranked array reusing the
   existing `DataSource` schema, `min(1)` with rank 1 primary and, by default,
   rank 2 fallback), and `followUp`. Validates and echoes `structuredContent`;
@@ -359,6 +359,75 @@ Step:
    metadata, retain the aggregate warning, rename the publication label, and
    align tests and workflow documentation — done.
 
+## Approved scope change: chat-scoped approved contract memory
+
+Each validated workflow handoff must retain the event-contract information
+that the user has approved so it can be recalled later in the same chat. The
+four existing approval boundaries are recorded as a single event-contract
+record: the drafted question units, the selected unit and agreed definitions,
+the approved concise source hierarchy, and the approved detailed source
+records. A later retrieval tool exposes the latest approved record in
+structured form and a concise Markdown rendering for model narration.
+
+The first increment is session/chat-lifetime memory held by the running MCP
+server and isolated by the MCP session. The HTTP transport is session-aware for
+this workflow, while Stdio keeps one store for its one client process. Memory
+is not written to a file or external service, and it is lost when the server
+process or session ends. Durable cross-restart storage, authentication, and
+user accounts remain deferred.
+
+The approval tools remain idempotent: retries replace the current value for
+the same contract and stage rather than creating duplicate records. A stable
+contract identifier is carried in structured content so multiple contracts in
+one chat can be distinguished; retrieval defaults to the most recently
+updated contract and accepts an explicit identifier when supplied.
+
+Implementation step:
+
+1. Add the session-scoped approved-contract store and retrieval tool; wire the
+   four workflow tools to save their validated payloads, carry the contract
+   identifier through the handoffs, and add focused isolation, retry, and
+   retrieval tests — done.
+
+## Approved scope change: explicit cross-session contract handoff
+
+Some hosts invoke successive workflow tools through different MCP HTTP
+sessions, even when those calls belong to one user chat. Session-local memory
+alone therefore makes the returned `contract_id` unusable at the next step.
+
+Keep the default no-identifier lookup and the per-session unit-matching
+fallback isolated to the current MCP session. HTTP sessions may additionally
+share a process-lifetime handoff registry, but only an explicitly supplied
+`contract_id` may read or update a record in that registry. The identifier is a
+random, unguessable bearer handoff; it is not authentication, authorization,
+durable storage, or a reason to search the shared registry implicitly. Stdio
+continues to use one local store for its one client process. Documentation and
+tests must make the bearer trade-off and the retained no-identifier isolation
+explicit.
+
+Implementation step:
+
+1. Add an explicit-ID-only process handoff registry for HTTP session stores,
+   preserve isolated implicit lookup, and add the separate-session regression
+   flow plus security/documentation coverage — done.
+
+## Approved scope change: recall only selected and approved contract content
+
+The recall view must not replay the initial candidate list from
+`drafted_questions`. The user-facing result starts with one `Selected Unit`,
+then shows the approved definitions and any approved source hierarchy or
+detailed source records. The selected unit is rendered once; source stages do
+not repeat it. The candidate draft may remain in the internal session record
+for handoff matching, but it is excluded from retrieval Markdown and
+structured content. A record is recallable only after a selected unit has been
+saved by a downstream approval step.
+
+Implementation step:
+
+1. Add an approved-content retrieval projection, update its rendering and
+   schema, and cover omission of candidate drafts plus selected-unit ordering
+   in tests — done.
+
 ## Approved scope change: skills-first plugin architecture
 
 The three semantic workflows are packaged as focused skills with supporting
@@ -370,12 +439,13 @@ references:
 
 Each skill keeps `SKILL.md` concise and routes detailed policies, schemas, and
 examples through `references/`. The MCP server is the controlled execution
-layer and exposes only these deterministic tools:
+layer and exposes these deterministic tools:
 
 - `submit_drafted_questions`
 - `submit_defined_terms`
 - `propose_resolution_sources`
 - `submit_resolution_source`
+- `get_approved_event_contract`
 
 The removed `draft_display_questions`, `define_terms`, and
 `define_resolution_source` prompt-returning tools, their MCP prompts, and their
@@ -587,8 +657,9 @@ Each tool:
 - uses accurate read-only/destructive annotations;
 - is idempotent because ChatGPT may retry calls.
 
-No authentication, persistence, billing, or external data source is included
-in the first ChatGPT App increment.
+No authentication, durable cross-restart persistence, billing, or external data
+source is included in the first ChatGPT App increment. The workflow now has
+session-scoped in-memory approved-contract memory as described above.
 
 ## React widget (`web/`)
 
@@ -715,6 +786,15 @@ Each item below is a separate reviewable step. Complete only one item per turn.
     `publiclyAccessible` metadata from rendered output; retain the aggregate
     unavailable-source warning and label the publication field `Publishing
     Schedule` — done.
+35. Add session-scoped approved-contract memory, carry a stable contract ID
+    through the workflow, expose retrieval, and verify session isolation and
+    retry behavior — done.
+36. Recall only the selected unit and approved definitions/source records;
+    exclude candidate drafts, follow-ups, and unselected alternatives from the
+    retrieval projection — done.
+37. Preserve per-session implicit isolation while allowing explicit
+    `contract_id` bearer handoff between HTTP sessions, and verify the exact
+    cross-session workflow — done.
 
 ## Verification
 
@@ -727,7 +807,7 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 - Run the Stdio entrypoint and verify MCP `initialize` and `tools/list` over
   stdin/stdout without contaminating stdout with application logs.
 - Verify the packaged skills are discoverable and the MCP server exposes only
-  the four deterministic workflow tools.
+  the five deterministic workflow tools.
 - Retrieve the widget resource and confirm its MIME type is
   `text/html;profile=mcp-app`.
 - Connect the HTTPS endpoint from ChatGPT developer mode and verify tool
@@ -739,7 +819,8 @@ Each item below is a separate reviewable step. Complete only one item per turn.
   simplification and template draft-unit addition described above).
 - OAuth 2.1 authentication and user accounts until the provider and
   client-registration strategy are selected.
-- Persistent contract storage.
+- Durable contract storage across server restarts, authentication, and user
+  accounts. The chat-scoped in-memory store described above is now in scope.
 - External market or resolution-source integrations.
 - App monetization and app-directory submission work beyond the metadata
   required to keep the implementation submission-ready.

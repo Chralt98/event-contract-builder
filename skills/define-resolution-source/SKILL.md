@@ -28,8 +28,9 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    definitions in `alternative_market`, silently change the selected question,
    or present a proxy as an exact source for the original intent.
 4. Work out the full source records internally, then call
-   `propose_resolution_sources` with each source's rank, name, publisher, and
-   exact URL plus any applicable `coverage_gaps` and `alternative_market`. An
+   `propose_resolution_sources` with the carried `contract_id` when available,
+   each source's rank, name, publisher, and exact URL plus any applicable
+   `coverage_gaps` and `alternative_market`. An
    `alternative_market` contains `unit_number`, a newly drafted
    `display_question_unit`, a rationale, and candidate source identities. It
    is a display-question proposal, not a definitions map or an already
@@ -52,9 +53,10 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    after its new definitions are agreed.
 7. If the user requests source-hierarchy changes instead, revise and resubmit
    the concise proposal. Wait for approval again.
-8. After approval of the original hierarchy, call `submit_resolution_source` once with the full source
-   records and carry any `coverage_gaps` and `alternative_market` through
-   unchanged. Present its complete returned Markdown faithfully, including every
+8. After approval of the original hierarchy, call `submit_resolution_source`
+   once with the same `contract_id`, the full source records, and carry any
+   `coverage_gaps` and `alternative_market` through unchanged. Present its
+   complete returned Markdown faithfully, including every
    rendered source detail, warning, alternative, and follow-up; the renderer
    still checks source URLs and retains one aggregate unavailable-source warning,
    but intentionally omits transient individual link-check statuses and

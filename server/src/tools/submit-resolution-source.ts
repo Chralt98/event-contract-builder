@@ -6,6 +6,10 @@ import {
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
 import {
+  ApprovedContractStore,
+  optionalContractId,
+} from "../approved-contract-store";
+import {
   renderSourceCoverageAdvice,
   renderSources,
   renderUnitHeader,
@@ -19,6 +23,7 @@ import {
 import { checkUrl } from "../url-check";
 
 const resolutionSourceShape = {
+  contract_id: optionalContractId,
   unit_number: z
     .number()
     .int()
@@ -64,27 +69,36 @@ const resolutionSourceShape = {
     ),
 };
 
-export function registerSubmitResolutionSourceTool(server: McpServer): void {
+export function registerSubmitResolutionSourceTool(
+  server: McpServer,
+  store: ApprovedContractStore,
+): void {
   server.registerTool(
     "submit_resolution_source",
     {
       title: "Submit Resolution Source",
       description:
-        "Validate and register the resolution source hierarchy for a market unit. " +
+        "Validate and store the resolution source hierarchy for a market unit. " +
         "By default pass a rank-1 primary and a rank-2 fallback in the ranked " +
         "array. A user-requested single rank-1 source is valid but emits a " +
-        "warning. Call this once after the hierarchy is approved.",
+        "warning. Call this once after the hierarchy is approved, carrying the " +
+        "contract_id from propose_resolution_sources.",
       inputSchema: resolutionSourceShape,
       outputSchema: resolutionSourceShape,
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         idempotentHint: true,
       },
     },
     async (args) => {
+      const selectedUnit = parseConnectorDraftUnit(args.selected_unit);
       const output = {
         ...args,
-        selected_unit: parseConnectorDraftUnit(args.selected_unit),
+        contract_id: store.resolveContractId(args.contract_id, {
+          unitNumber: args.unit_number,
+          selectedUnit,
+        }),
+        selected_unit: selectedUnit,
       };
       const unitHeader = renderUnitHeader(
         output.selected_unit,
@@ -126,6 +140,8 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
         );
       }
       parts.push(output.followUp);
+
+      store.save("resolution_sources", output);
 
       return {
         content: [

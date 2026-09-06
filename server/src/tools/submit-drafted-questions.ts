@@ -4,9 +4,34 @@ import {
   ConnectorDraftUnit,
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
+import type { DraftUnitT } from "../../../src/schema/display-question";
+import {
+  ApprovedContractStore,
+  optionalContractId,
+} from "../approved-contract-store";
 import { renderDraftUnits } from "../render";
 
+/**
+ * Scalar and categorical drafts describe a family of related concrete
+ * questions. Keep the family usable as a reusable market template as well as
+ * the concrete draft. The skill creates the template; this server-side check
+ * prevents an incomplete payload from being persisted when the model omits it.
+ */
+function assertTemplateCoverage(units: DraftUnitT[]): void {
+  const groupedMarketCount = units.filter(
+    (unit) => unit.type === "scalar" || unit.type === "categorical",
+  ).length;
+  const templateCount = units.filter((unit) => unit.type === "template").length;
+
+  if (templateCount < groupedMarketCount) {
+    throw new Error(
+      "Every scalar or categorical market must include an additional template market.",
+    );
+  }
+}
+
 const draftedQuestionsShape = {
+  contract_id: optionalContractId,
   units: z
     .array(ConnectorDraftUnit)
     .describe(
@@ -24,28 +49,38 @@ const draftedQuestionsShape = {
     ),
 };
 
-export function registerSubmitDraftedQuestionsTool(server: McpServer): void {
+export function registerSubmitDraftedQuestionsTool(
+  server: McpServer,
+  store: ApprovedContractStore,
+): void {
   server.registerTool(
     "submit_drafted_questions",
     {
       title: "Submit Drafted Questions",
       description:
-        "Validate and register a drafted set of display questions, " +
+        "Validate and store a drafted set of display questions, " +
         "organized into binary/scalar/categorical/template units. Call this once " +
         "after the model has drafted questions for a new event, passing " +
-        "the draft as structured units.",
+        "the draft as structured units. A contract_id is returned for later " +
+        "workflow steps; carry it explicitly when a later HTTP call may use a " +
+        "new MCP session.",
       inputSchema: draftedQuestionsShape,
       outputSchema: draftedQuestionsShape,
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         idempotentHint: true,
       },
     },
     (args) => {
+      const parsedUnits = args.units.map(parseConnectorDraftUnit);
+      assertTemplateCoverage(parsedUnits);
+
       const output = {
         ...args,
-        units: args.units.map(parseConnectorDraftUnit),
+        contract_id: store.resolveContractId(args.contract_id),
+        units: parsedUnits,
       };
+      store.save("drafted_questions", output);
 
       return {
         content: [

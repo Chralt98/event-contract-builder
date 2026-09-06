@@ -5,9 +5,14 @@ import {
   ConnectorDraftUnit,
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
+import {
+  ApprovedContractStore,
+  optionalContractId,
+} from "../approved-contract-store";
 import { renderUnitHeader, renderDefinitions } from "../render";
 
 const definedTermsShape = {
+  contract_id: optionalContractId,
   unit_number: z
     .number()
     .int()
@@ -28,28 +33,38 @@ const definedTermsShape = {
     ),
 };
 
-export function registerSubmitDefinedTermsTool(server: McpServer): void {
+export function registerSubmitDefinedTermsTool(
+  server: McpServer,
+  store: ApprovedContractStore,
+): void {
   server.registerTool(
     "submit_defined_terms",
     {
       title: "Submit Defined Terms",
       description:
-        "Validate and register a set of term definitions for the event contract. " +
+        "Validate and store a set of term definitions for the event contract. " +
         "Call this once after defining terms, passing the definitions as a " +
         "term-to-definition map. When the unit came from an alternative-market " +
-        "branch, define its terms from scratch and keep its supplied unit number.",
+        "branch, define its terms from scratch and keep its supplied unit number. " +
+        "Carry contract_id from the prior workflow result when continuing a record.",
       inputSchema: definedTermsShape,
       outputSchema: definedTermsShape,
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         idempotentHint: true,
       },
     },
     (args) => {
+      const selectedUnit = parseConnectorDraftUnit(args.selected_unit);
       const output = {
         ...args,
-        selected_unit: parseConnectorDraftUnit(args.selected_unit),
+        contract_id: store.resolveContractId(args.contract_id, {
+          unitNumber: args.unit_number,
+          selectedUnit,
+        }),
+        selected_unit: selectedUnit,
       };
+      store.save("defined_terms", output);
       const unitHeader = renderUnitHeader(
         output.selected_unit,
         output.unit_number,
