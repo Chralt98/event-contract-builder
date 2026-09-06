@@ -801,9 +801,9 @@ Schedule` — done.
     `get_approved_event_contract`, and cover the approval boundary in tests —
     done.
 39. Treat selection of a drafted unit as its own pending and explicitly
-    approved workflow stage before definitions can be approved; add the
-    selection submission tool, update approval ordering and retrieval tests,
-    and align the host workflow documentation — done.
+    approved workflow stage before definition analysis, submission, or approval
+    can begin; add the selection submission tool, update approval ordering and
+    retrieval tests, and align the host workflow documentation — done.
 
 ## Verification
 
@@ -825,7 +825,8 @@ Schedule` — done.
   pending until the host records explicit user approval, and that retrieval
   exposes only the approved stages.
 - Verify that a selected draft unit remains pending until explicit selection
-  approval and that definitions cannot be approved first.
+  approval and that definitions cannot be analyzed, submitted, or approved
+  first.
 
 ## Deferred
 

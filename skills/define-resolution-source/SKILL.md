@@ -46,10 +46,13 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    preserving source data, then stop. Do not call `submit_resolution_source` in
    the proposal turn.
 6. If the user selects the displayed `alternative_market`, stop the original
-   source workflow and route that exact `display_question_unit` as the new
-   `selected_unit`, together with its `unit_number`, to `define-terms`. Do not
-   submit the original hierarchy or reuse the original definitions; the
-   alternative's source identities are candidates that must be re-evaluated
+   source workflow and start a separate record by submitting the exact
+   `display_question_unit` with its `unit_number` through
+   `submit_selected_unit`, then approving it with
+   `approve_event_contract` at `stage: "selected_unit"`. Only after that
+   approval, route the same unit to `define-terms`. Omit the original contract
+   ID; do not submit the original hierarchy or reuse the original definitions.
+   The alternative's source identities are candidates that must be re-evaluated
    after its new definitions are agreed.
 7. If the user requests source-hierarchy changes instead, revise and resubmit
    the concise proposal. Wait for approval again.

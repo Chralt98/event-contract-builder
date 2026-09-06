@@ -94,8 +94,9 @@ A scalar, categorical, or template group is always selected as a whole, even if 
 `submit_drafted_questions` owns the trader-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown faithfully. Translate only renderer-generated English labels and other fixed UI text into the user's language; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary.
 
 The tool also returns a stable `contract_id` in structured content. Preserve it
-when the user selects a unit and pass it to `submit_defined_terms`; do not show
-the raw structured payload merely to expose the identifier.
+when the user selects a unit and pass it first to `submit_selected_unit` and
+`approve_event_contract`, then carry it into `submit_defined_terms`; do not
+show the raw structured payload merely to expose the identifier.
 
 Use these unit shapes:
 
@@ -121,7 +122,16 @@ The message may select or confirm questions from a prior draft, for example:
 - "use the template market"; or
 - a list of finished questions.
 
-When it does, do not generate or restate questions and do not call `submit_drafted_questions`. Respond only with `Defining the terms in the selected unit now.` and then call the `define-terms` skill with the selected unit; no MCP tool is needed for this handoff.
+When it does, do not generate or restate questions and do not call
+`submit_drafted_questions`. First call `submit_selected_unit` with the exact
+selected unit, its unit number, and the carried `contract_id` when available.
+Because the user's message is an explicit selection, immediately call
+`approve_event_contract` with `stage: "selected_unit"` and the same identifier.
+Only after that approval succeeds, respond with `Defining the terms in the
+selected unit now.` and hand the exact selected unit to `define-terms`; do not
+call `submit_defined_terms` before the selected-unit approval. For a selected
+`alternative_market`, start a separate record by submitting and approving its
+new selected unit, omitting the original contract ID.
 
 If the message is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing. Do not call `submit_drafted_questions` in that case.
 

@@ -132,7 +132,9 @@ export function registerProposeResolutionSourcesTool(
         "Before rendering, silently keep only candidate URLs whose final response " +
         "is HTTP 200; do not expose the preflight result. " +
         "Call this in the first turn — after identifying the source(s) but before " +
-        "submit_resolution_source. Carry contract_id from the definitions result.",
+        "submit_resolution_source. Call it only after the selected unit and " +
+        "definitions have been explicitly approved. Carry contract_id from the " +
+        "definitions result.",
       inputSchema: proposalShape,
       outputSchema: proposalShape,
       annotations: {

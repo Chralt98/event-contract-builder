@@ -58,6 +58,11 @@ Do not define words with one obvious meaning in context. Do not define data sour
 - `definitions`: a term-to-definition map; and
 - `followUp`: one sentence asking whether the user agrees with the definitions or wants any changed.
 
+The host must submit and explicitly approve the selected unit before calling
+`submit_defined_terms`. A user selection is the confirmation required for the
+`selected_unit` approval, but the approval tool call must complete before this
+definition submission.
+
 Present the returned Markdown faithfully. Translate renderer-generated English
 labels and other fixed UI text into the user's language, while preserving every
 term, definition, and the follow-up. Do not paraphrase, reformat, rename fields,
@@ -68,6 +73,8 @@ reorder content, or expose the raw structured payload.
 - If the user has not selected an existing unit, do not define terms; route to the display-question drafting workflow.
 - If multiple units could match the user's selection, ask which unit number to use.
 - If the selected unit or its unit number is unavailable, ask the user to provide it rather than reconstructing it from memory.
+- If the selected unit has not been explicitly approved, stop and return to the
+  selection handoff; do not call `submit_defined_terms`.
 - If an alternative-market selection is missing its complete display-question
   unit or unit number, ask for that handoff rather than reconstructing it from
   definitions or from memory.

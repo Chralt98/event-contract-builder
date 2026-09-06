@@ -333,9 +333,12 @@ percent in June 2026"`. Organize the result into selectable units, then
    `display_question_unit`, a `unit_number`, and at least two independent
    sources. This is a new prediction-market display-question proposal, not a
    definitions map. If the user selects that alternative, pass its exact
-   display-question unit as `selected_unit` with its number to `define-terms`,
-   do not reuse the original definitions or source hierarchy, and re-check its
-   source candidates after the new definitions are agreed.
+   display-question unit as `selected_unit` with its number to
+   `submit_selected_unit`, call `approve_event_contract` with
+   `stage: "selected_unit"`, and only then pass it to `define-terms`. Omit the
+   original contract ID, do not reuse the original definitions or source
+   hierarchy, and re-check its source candidates after the new definitions are
+   agreed.
    If a required fact has no primary source, list it in `coverage_gaps`, state
    that the selected market is not fully source-covered, and offer the same
    kind of new display-question alternative without silently replacing the

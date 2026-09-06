@@ -22,13 +22,16 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
    definitions or source hierarchy. If the unit number or selected unit is
    missing or ambiguous, ask for clarification and stop. A scalar, categorical,
    or template selection always means the complete group, including every
-   template variable and value.
+   template variable and value. Confirm that the host has already submitted
+   and explicitly approved this selected unit; if not, stop and return to the
+   selection handoff without calling `submit_defined_terms`.
 2. Analyze the exact selected unit for terms that a trader or resolution authority could reasonably interpret in more than one way.
 3. Propose concise, dispute-resistant definitions without rewriting the selected questions.
-4. Call `submit_defined_terms` once with the carried `contract_id` when one is
-   available, the unit number, exact selected unit, definitions map, and a
-   follow-up asking whether the definitions should be changed. Preserve the
-   returned identifier for resolution-source review.
+4. After selected-unit approval has succeeded, call `submit_defined_terms`
+   once with the carried `contract_id` when one is available, the unit number,
+   exact selected unit, definitions map, and a follow-up asking whether the
+   definitions should be changed. Preserve the returned identifier for
+   resolution-source review.
 5. Present the tool's complete returned Markdown faithfully and nothing else. It
    is the user-facing glossary: translate renderer-generated English labels and
    other fixed UI text into the user's language, while preserving every term,
@@ -47,5 +50,7 @@ The selected unit is supplied directly to this skill by the host workflow. Do no
   provisional; after its definitions are agreed, route back to
   `define-resolution-source` to re-check them for the new unit.
 - Do not call `submit_defined_terms` when the selected unit is unclear; ask for clarification when necessary. If no genuine ambiguity exists, submit an empty definitions map so the tool can render that result.
+- Do not call `submit_defined_terms` while the selected unit is only pending;
+  the selected-unit approval must be recorded first.
 - If the unit came from a newly selected `alternative_market`, omit the
   original contract ID and start a separate saved record for that unit.

@@ -120,11 +120,14 @@ other fixed UI text into the user's language while preserving source data, then
 stop. Do not call `submit_resolution_source` in Turn 1.
 
 If the user selects the displayed alternative instead of approving the current
-unit's hierarchy, stop this source step and route the alternative's exact
-`display_question_unit` as `selected_unit`, together with its `unit_number`, to
-`define-terms`. Do not submit the original hierarchy or carry over the original
-definitions. The alternative source list is only a candidate set until the new
-definitions are agreed.
+unit's hierarchy, stop this source step and start a separate record by
+submitting and explicitly approving the alternative's exact
+`display_question_unit` with `submit_selected_unit` and
+`approve_event_contract` at `stage: "selected_unit"`. Then route the same unit
+as `selected_unit`, together with its `unit_number`, to `define-terms`, omitting
+the original contract ID. Do not submit the original hierarchy or carry over
+the original definitions. The alternative source list is only a candidate set
+until the new definitions are agreed.
 
 Each URL is rendered as a clickable Markdown link so the user can inspect the
 candidate source before approval. Before rendering, the deterministic proposal
@@ -187,8 +190,11 @@ other fixed UI text into the user's language while preserving source data.
 - If only one source is intentionally selected, keep it at rank 1 and preserve
   the visible warning about having no independent fallback; include a concrete
   nearby/proxy alternative unit with at least two independent sources.
-- If the user selects that alternative display-question unit, route it to
-  `define-terms` as `selected_unit` with its own unit number, redo definitions
-  from scratch for the new unit, and then re-evaluate its candidate sources.
-  Do not register the original hierarchy.
+- If the user selects that alternative display-question unit, start a separate
+  record by submitting and explicitly approving its exact selected unit with
+  `submit_selected_unit` and `approve_event_contract` at
+  `stage: "selected_unit"`. Then route it to `define-terms` as `selected_unit`
+  with its own unit number, omitting the original contract ID. Redo definitions
+  from scratch for the new unit, and then re-evaluate its candidate sources. Do
+  not register the original hierarchy.
 - Do not move into settlement calculation or timing in this step.
