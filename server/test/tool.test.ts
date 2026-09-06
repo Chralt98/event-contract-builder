@@ -43,14 +43,38 @@ describe("event-contract tools", () => {
     return client;
   }
 
+  async function submitAndApproveSelectedUnit(
+    client: Client,
+    contractId: string,
+    unitNumber: number,
+    selectedUnit: object,
+  ) {
+    const submitted = await client.callTool({
+      name: "submit_selected_unit",
+      arguments: {
+        contract_id: contractId,
+        unit_number: unitNumber,
+        selected_unit: selectedUnit,
+      },
+    });
+    expect(submitted.isError).toBeUndefined();
+    const approved = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "selected_unit" },
+    });
+    expect(approved.isError).toBeUndefined();
+  }
+
   test("all tools are listed", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name);
     expect(names).toContain("submit_drafted_questions");
+    expect(names).toContain("submit_selected_unit");
     expect(names).toContain("submit_defined_terms");
     expect(names).toContain("propose_resolution_sources");
     expect(names).toContain("submit_resolution_source");
+    expect(names).toContain("approve_event_contract");
     expect(names).toContain("get_approved_event_contract");
   });
 
@@ -64,9 +88,11 @@ describe("event-contract tools", () => {
     const { tools } = await client.listTools();
     for (const [name, readOnly] of [
       ["submit_drafted_questions", false],
+      ["submit_selected_unit", false],
       ["submit_defined_terms", false],
       ["propose_resolution_sources", false],
       ["submit_resolution_source", false],
+      ["approve_event_contract", false],
       ["get_approved_event_contract", true],
     ] as const) {
       const tool = tools.find((t) => t.name === name)!;
@@ -95,6 +121,7 @@ describe("event-contract tools", () => {
         | undefined;
     const unitSchemas = [
       propertiesFor("submit_drafted_questions")?.units?.items,
+      propertiesFor("submit_selected_unit")?.selected_unit,
       propertiesFor("submit_defined_terms")?.selected_unit,
       propertiesFor("propose_resolution_sources")?.selected_unit,
       propertiesFor("submit_resolution_source")?.selected_unit,
@@ -369,6 +396,37 @@ describe("event-contract tools", () => {
     });
     const contractId = expectStoredPayload(draftResult, draft);
     const selectedUnit = draft.units[0]!;
+    const selectionResult = await client.callTool({
+      name: "submit_selected_unit",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+      },
+    });
+    expectStoredPayload(selectionResult, {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+    });
+
+    const pendingSelection = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pendingSelection.isError).toBe(true);
+
+    const selectionApproval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "selected_unit" },
+    });
+    expect(selectionApproval.isError).toBeUndefined();
+    expect(selectionApproval.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+    });
+
     const definitions = {
       "cut rates":
         "A reduction in the federal funds target rate announced in a single FOMC decision.",
@@ -385,6 +443,30 @@ describe("event-contract tools", () => {
       arguments: definitionsInput,
     });
     expectStoredPayload(definitionsResult, definitionsInput);
+
+    const definitionsBeforeApproval = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(definitionsBeforeApproval.isError).toBeUndefined();
+    expect(definitionsBeforeApproval.structuredContent).not.toHaveProperty(
+      "definitions",
+    );
+
+    const pendingDefinitions = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pendingDefinitions.isError).toBeUndefined();
+    expect(pendingDefinitions.structuredContent).not.toHaveProperty(
+      "definitions",
+    );
+
+    const definitionsApproval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
+    });
+    expect(definitionsApproval.isError).toBeUndefined();
 
     const proposalInput = {
       contract_id: contractId,
@@ -411,6 +493,24 @@ describe("event-contract tools", () => {
       arguments: proposalInput,
     });
     expectStoredPayload(proposalResult, proposalInput);
+
+    const pendingProposal = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pendingProposal.isError).toBeUndefined();
+    expect(pendingProposal.structuredContent).not.toHaveProperty(
+      "proposed_resolution_sources",
+    );
+
+    const proposalApproval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: {
+        contract_id: contractId,
+        stage: "proposed_resolution_sources",
+      },
+    });
+    expect(proposalApproval.isError).toBeUndefined();
 
     const resolutionInput = {
       contract_id: contractId,
@@ -450,6 +550,21 @@ describe("event-contract tools", () => {
     });
     expectStoredPayload(resolutionResult, resolutionInput);
 
+    const pendingResolution = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pendingResolution.isError).toBeUndefined();
+    expect(pendingResolution.structuredContent).not.toHaveProperty(
+      "resolution_sources",
+    );
+
+    const resolutionApproval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "resolution_sources" },
+    });
+    expect(resolutionApproval.isError).toBeUndefined();
+
     const retrieved = await client.callTool({
       name: "get_approved_event_contract",
       arguments: {},
@@ -487,6 +602,44 @@ describe("event-contract tools", () => {
     expect(content[0]!.text.match(/\*\*Selected Unit 1:/g)).toHaveLength(1);
   });
 
+  test("requires explicit selected-unit approval before definitions approval", async () => {
+    const client = await connectClient();
+    const selectedUnit = {
+      type: "binary" as const,
+      question: "Will the Fed cut rates in 2026?",
+    };
+    const draftResult = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [selectedUnit],
+        followUp: "Which unit should we use?",
+      },
+    });
+    const contractId = expectStoredPayload(draftResult, {
+      units: [selectedUnit],
+      followUp: "Which unit should we use?",
+    });
+
+    await client.callTool({
+      name: "submit_defined_terms",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+        definitions: { "cut rates": "A reduction in the target rate." },
+        followUp: "Do these definitions look right?",
+      },
+    });
+    const approval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
+    });
+    expect(approval.isError).toBe(true);
+    expect(
+      (approval.content as Array<{ type: string; text: string }>)[0]!.text,
+    ).toContain("selected_unit must be approved first");
+  });
+
   test("retries replace a stage and clear downstream snapshots", async () => {
     stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
@@ -504,6 +657,7 @@ describe("event-contract tools", () => {
       arguments: draft,
     });
     const contractId = expectStoredPayload(draftResult, draft);
+    await submitAndApproveSelectedUnit(client, contractId, 1, draft.units[0]!);
     const baseDefinitions = {
       "cut rates": "A reduction in the target rate at one policy meeting.",
     };
@@ -516,6 +670,10 @@ describe("event-contract tools", () => {
         definitions: baseDefinitions,
         followUp: "Do these definitions look right?",
       },
+    });
+    await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
     });
     await client.callTool({
       name: "propose_resolution_sources",
@@ -532,6 +690,13 @@ describe("event-contract tools", () => {
           },
         ],
         followUp: "Does this source hierarchy look right?",
+      },
+    });
+    await client.callTool({
+      name: "approve_event_contract",
+      arguments: {
+        contract_id: contractId,
+        stage: "proposed_resolution_sources",
       },
     });
 
@@ -557,6 +722,19 @@ describe("event-contract tools", () => {
       followUp: "Do these revised definitions look right?",
     });
 
+    const pendingRetrieved = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pendingRetrieved.isError).toBeUndefined();
+    expect(pendingRetrieved.structuredContent).not.toHaveProperty(
+      "definitions",
+    );
+
+    await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
+    });
     const retrieved = await client.callTool({
       name: "get_approved_event_contract",
       arguments: { contract_id: contractId },
@@ -591,6 +769,12 @@ describe("event-contract tools", () => {
       arguments: draft,
     });
     const contractId = expectStoredPayload(saved, draft);
+    await submitAndApproveSelectedUnit(
+      firstClient,
+      contractId,
+      1,
+      draft.units[0]!,
+    );
     await firstClient.callTool({
       name: "submit_defined_terms",
       arguments: {
@@ -602,6 +786,10 @@ describe("event-contract tools", () => {
         },
         followUp: "Do these definitions look right?",
       },
+    });
+    await firstClient.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
     });
 
     const leaked = await secondClient.callTool({
@@ -628,84 +816,94 @@ describe("event-contract tools", () => {
     });
   });
 
-  test(
-    "hands off an approved contract across sessions only with explicit contract_id",
-    async () => {
-      const handoffStore = new ApprovedContractHandoffStore();
-      const firstClient = await connectClient(
-        new ApprovedContractStore(handoffStore),
-      );
-      const secondClient = await connectClient(
-        new ApprovedContractStore(handoffStore),
-      );
-      const thirdClient = await connectClient(
-        new ApprovedContractStore(handoffStore),
-      );
-      const draft = {
-        units: [
-          {
-            type: "binary" as const,
-            question: "Will the Fed cut rates in 2026?",
-          },
-          {
-            type: "binary" as const,
-            question: "Will the ECB cut rates in 2026?",
-          },
-        ],
-        followUp: "Which unit should we use?",
-      };
-
-      const draftResult = await firstClient.callTool({
-        name: "submit_drafted_questions",
-        arguments: draft,
-      });
-      const contractId = expectStoredPayload(draftResult, draft);
-
-      const definitionsResult = await secondClient.callTool({
-        name: "submit_defined_terms",
-        arguments: {
-          contract_id: contractId,
-          unit_number: 2,
-          selected_unit: draft.units[1],
-          definitions: {
-            "cut rates": "A reduction in the ECB deposit facility rate.",
-          },
-          followUp: "Do these definitions look right?",
+  test("hands off an approved contract across sessions only with explicit contract_id", async () => {
+    const handoffStore = new ApprovedContractHandoffStore();
+    const firstClient = await connectClient(
+      new ApprovedContractStore(handoffStore),
+    );
+    const secondClient = await connectClient(
+      new ApprovedContractStore(handoffStore),
+    );
+    const thirdClient = await connectClient(
+      new ApprovedContractStore(handoffStore),
+    );
+    const draft = {
+      units: [
+        {
+          type: "binary" as const,
+          question: "Will the Fed cut rates in 2026?",
         },
-      });
-      expect(definitionsResult.isError).toBeUndefined();
-      expect(definitionsResult.structuredContent).toMatchObject({
-        contract_id: contractId,
-        unit_number: 2,
-      });
+        {
+          type: "binary" as const,
+          question: "Will the ECB cut rates in 2026?",
+        },
+      ],
+      followUp: "Which unit should we use?",
+    };
 
-      const recalled = await thirdClient.callTool({
-        name: "get_approved_event_contract",
-        arguments: { contract_id: contractId },
-      });
-      expect(recalled.isError).toBeUndefined();
-      expect(recalled.structuredContent).toMatchObject({
+    const draftResult = await firstClient.callTool({
+      name: "submit_drafted_questions",
+      arguments: draft,
+    });
+    const contractId = expectStoredPayload(draftResult, draft);
+
+    await submitAndApproveSelectedUnit(
+      secondClient,
+      contractId,
+      2,
+      draft.units[1]!,
+    );
+
+    const definitionsResult = await secondClient.callTool({
+      name: "submit_defined_terms",
+      arguments: {
         contract_id: contractId,
         unit_number: 2,
         selected_unit: draft.units[1],
         definitions: {
           "cut rates": "A reduction in the ECB deposit facility rate.",
         },
-      });
+        followUp: "Do these definitions look right?",
+      },
+    });
+    expect(definitionsResult.isError).toBeUndefined();
+    expect(definitionsResult.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: 2,
+    });
 
-      const implicitLookup = await thirdClient.callTool({
-        name: "get_approved_event_contract",
-        arguments: {},
-      });
-      expect(implicitLookup.isError).toBe(true);
-      expect(
-        (implicitLookup.content as Array<{ type: string; text: string }>)[0]!
-          .text,
-      ).toContain(
-        "No approved event-contract information is available in this chat.",
-      );
-    },
-  );
+    const approvalResult = await secondClient.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "defined_terms" },
+    });
+    expect(approvalResult.isError).toBeUndefined();
+
+    const recalled = await thirdClient.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(recalled.isError).toBeUndefined();
+    expect(recalled.structuredContent).toMatchObject({
+      contract_id: contractId,
+      unit_number: 2,
+      selected_unit: draft.units[1],
+      definitions: {
+        "cut rates": "A reduction in the ECB deposit facility rate.",
+      },
+    });
+
+    const implicitLookup = await thirdClient.callTool({
+      name: "get_approved_event_contract",
+      arguments: {},
+    });
+    expect(implicitLookup.isError).toBe(true);
+    expect(
+      (implicitLookup.content as Array<{ type: string; text: string }>)[0]!
+        .text,
+    ).toContain(
+      "No approved event-contract information is available in this chat.",
+    );
+  });
 
   test("keeps multiple contracts distinct and defaults retrieval to the latest", async () => {
     const client = await connectClient();
@@ -739,6 +937,19 @@ describe("event-contract tools", () => {
     const secondId = expectStoredPayload(secondResult, secondDraft);
     expect(secondId).not.toBe(firstId);
 
+    await submitAndApproveSelectedUnit(
+      client,
+      firstId,
+      1,
+      firstDraft.units[0]!,
+    );
+    await submitAndApproveSelectedUnit(
+      client,
+      secondId,
+      1,
+      secondDraft.units[0]!,
+    );
+
     await client.callTool({
       name: "submit_defined_terms",
       arguments: {
@@ -750,6 +961,10 @@ describe("event-contract tools", () => {
       },
     });
     await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: firstId, stage: "defined_terms" },
+    });
+    await client.callTool({
       name: "submit_defined_terms",
       arguments: {
         contract_id: secondId,
@@ -758,6 +973,10 @@ describe("event-contract tools", () => {
         definitions: { "ECB cut": "A reduction in the target rate." },
         followUp: "Do these definitions look right?",
       },
+    });
+    await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: secondId, stage: "defined_terms" },
     });
 
     const first = await client.callTool({

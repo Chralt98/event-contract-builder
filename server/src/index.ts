@@ -6,9 +6,11 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-questions";
+import { registerSubmitSelectedUnitTool } from "./tools/submit-selected-unit";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
 import { registerProposeResolutionSourcesTool } from "./tools/propose-resolution-sources";
 import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
+import { registerApproveEventContractTool } from "./tools/approve-event-contract";
 import { registerGetApprovedEventContractTool } from "./tools/get-approved-event-contract";
 import {
   ApprovedContractHandoffStore,
@@ -35,9 +37,11 @@ export function createServer(store = new ApprovedContractStore()) {
   );
 
   registerSubmitDraftedQuestionsTool(server, store);
+  registerSubmitSelectedUnitTool(server, store);
   registerSubmitDefinedTermsTool(server, store);
   registerProposeResolutionSourcesTool(server, store);
   registerSubmitResolutionSourceTool(server, store);
+  registerApproveEventContractTool(server, store);
   registerGetApprovedEventContractTool(server, store);
 
   return server;

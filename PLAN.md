@@ -785,7 +785,7 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 34. Keep Turn 2 source URL checks while hiding individual statuses and
     `publiclyAccessible` metadata from rendered output; retain the aggregate
     unavailable-source warning and label the publication field `Publishing
-    Schedule` — done.
+Schedule` — done.
 35. Add session-scoped approved-contract memory, carry a stable contract ID
     through the workflow, expose retrieval, and verify session isolation and
     retry behavior — done.
@@ -795,6 +795,15 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 37. Preserve per-session implicit isolation while allowing explicit
     `contract_id` bearer handoff between HTTP sessions, and verify the exact
     cross-session workflow — done.
+38. Separate pending workflow submissions from approved contract memory: retain
+    submitted stages only for handoff, add an explicit approval tool that the
+    host calls after user confirmation, expose only approved stages through
+    `get_approved_event_contract`, and cover the approval boundary in tests —
+    done.
+39. Treat selection of a drafted unit as its own pending and explicitly
+    approved workflow stage before definitions can be approved; add the
+    selection submission tool, update approval ordering and retrieval tests,
+    and align the host workflow documentation — done.
 
 ## Verification
 
@@ -812,6 +821,11 @@ Each item below is a separate reviewable step. Complete only one item per turn.
   `text/html;profile=mcp-app`.
 - Connect the HTTPS endpoint from ChatGPT developer mode and verify tool
   invocation, widget rendering, validation, and conversion.
+- Verify that submitted definitions and detailed resolution sources remain
+  pending until the host records explicit user approval, and that retrieval
+  exposes only the approved stages.
+- Verify that a selected draft unit remains pending until explicit selection
+  approval and that definitions cannot be approved first.
 
 ## Deferred
 

@@ -42,11 +42,14 @@ export function registerSubmitDefinedTermsTool(
     {
       title: "Submit Defined Terms",
       description:
-        "Validate and store a set of term definitions for the event contract. " +
-        "Call this once after defining terms, passing the definitions as a " +
+        "Validate and store a pending set of term definitions for the event " +
+        "contract. Call this once after defining terms, passing the definitions as a " +
         "term-to-definition map. When the unit came from an alternative-market " +
         "branch, define its terms from scratch and keep its supplied unit number. " +
-        "Carry contract_id from the prior workflow result when continuing a record.",
+        "Carry contract_id from the prior workflow result when continuing a record. " +
+        "Submit and explicitly approve the selected unit first. This submission " +
+        "does not imply user approval; call approve_event_contract after the user " +
+        "agrees to the definitions.",
       inputSchema: definedTermsShape,
       outputSchema: definedTermsShape,
       annotations: {

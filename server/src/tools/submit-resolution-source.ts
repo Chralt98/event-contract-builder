@@ -78,11 +78,14 @@ export function registerSubmitResolutionSourceTool(
     {
       title: "Submit Resolution Source",
       description:
-        "Validate and store the resolution source hierarchy for a market unit. " +
+        "Validate and store a pending resolution source hierarchy for a market " +
+        "unit. " +
         "By default pass a rank-1 primary and a rank-2 fallback in the ranked " +
         "array. A user-requested single rank-1 source is valid but emits a " +
         "warning. Call this once after the hierarchy is approved, carrying the " +
-        "contract_id from propose_resolution_sources.",
+        "contract_id from propose_resolution_sources. This submission does not " +
+        "imply approval of the detailed sources; call approve_event_contract " +
+        "after the user agrees to them.",
       inputSchema: resolutionSourceShape,
       outputSchema: resolutionSourceShape,
       annotations: {

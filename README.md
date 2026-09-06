@@ -184,13 +184,15 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 
 ### Tools
 
-| Tool                         | Purpose                                                                                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.                                                                           |
-| `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                                                                    |
-| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives |
-| `submit_resolution_source`   | Validate and render full source details with independence and aggregate advisory URL warnings.                                                          |
-| `get_approved_event_contract` | Retrieve approved workflow content from the current session, or by explicit `contract_id` handoff across HTTP sessions.                              |
+| Tool                          | Purpose                                                                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `submit_drafted_questions`    | Validate and render binary, scalar, categorical, and template question units.                                                           |
+| `submit_selected_unit`        | Validate and store the user's selected unit as pending until explicitly approved.                                                       |
+| `submit_defined_terms`        | Validate and render definitions for a selected unit.                                                                                    |
+| `propose_resolution_sources`  | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives                                   |
+| `submit_resolution_source`    | Validate and render pending full source details with independence and aggregate advisory URL warnings.                                  |
+| `approve_event_contract`      | Record explicit user approval for the selected unit, definitions, the source proposal, or detailed source records.                      |
+| `get_approved_event_contract` | Retrieve only explicitly approved workflow content from the current session, or by explicit `contract_id` handoff across HTTP sessions. |
 
 The `skills/` directory contains four focused capabilities: drafting display
 questions, defining ambiguous terms, selecting resolution sources, and
@@ -281,11 +283,17 @@ percent in June 2026"`. Organize the result into selectable units, then
    next workflow step. This explicit identifier is required when the host may
    invoke the next tool through a new MCP HTTP session.
 
-2. **Select and define** — when the user selects a unit, use the `define-terms`
-   skill to propose precise definitions, pass the carried `contract_id`, then
+2. **Select and define** — when the user selects a unit, call
+   `submit_selected_unit` with the exact selected unit and carry the returned
+   `contract_id`. After the selection is explicit in chat, call
+   `approve_event_contract` with `stage: "selected_unit"`. Then use the
+   `define-terms` skill to propose precise definitions, pass the carried
+   `contract_id`, then
    call `submit_defined_terms` and present its returned Markdown faithfully,
    translating fixed English renderer labels into the user's language while
-   preserving the definitions. Carry the returned identifier forward.
+   preserving the definitions. Carry the returned identifier forward. After
+   the user explicitly agrees, call `approve_event_contract` with
+   `stage: "defined_terms"`.
 
 3. **Choose sources** — after the user agrees to the definitions, use the
    `define-resolution-source` skill. First call `propose_resolution_sources`
@@ -340,20 +348,24 @@ percent in June 2026"`. Organize the result into selectable units, then
    replacement URLs can be supplied.
 
 4. **Submit sources** — after the user approves the hierarchy, call
-   `submit_resolution_source` with the same `contract_id` and full source
+   `approve_event_contract` with `stage: "proposed_resolution_sources"`, then
+   call `submit_resolution_source` with the same `contract_id` and full source
    records and present its returned Markdown faithfully, translating fixed
    English renderer labels into the user's language while preserving source
-   data. Revise the hierarchy if the user requests it. If the user selects an
-   alternative market, omit the original ID so its definitions and sources
-   start a separate saved record.
+   data. The detailed source submission remains pending until the user
+   explicitly approves it; then call `approve_event_contract` with
+   `stage: "resolution_sources"`. Revise the hierarchy if the user requests
+   it. If the user selects an alternative market, omit the original ID so its
+   definitions and sources start a separate saved record.
 
 5. **Recall** — when the user asks to see the approved event-contract
    information later in the chat, call `get_approved_event_contract`. Omit
    `contract_id` only when the call remains in the same MCP session; otherwise
    pass the explicit identifier from the prior tool result. The identifier is a
    random bearer handoff rather than an authentication credential. The tool
-   returns the selected unit, approved definitions, and approved source
-   records; it does not replay the candidate draft or workflow follow-ups.
+   returns only the selected unit, definitions, and source records whose stages
+   were explicitly approved; it does not replay pending submissions, the
+   candidate draft, or workflow follow-ups.
 
 6. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
    before trading or when auditing a proposed contract. It makes ordinary

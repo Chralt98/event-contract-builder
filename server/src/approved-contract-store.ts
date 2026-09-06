@@ -20,6 +20,11 @@ const draftedQuestionsRecord = z.object({
   followUp: z.string(),
 });
 
+const selectedUnitRecord = z.object({
+  unit_number: z.number().int(),
+  selected_unit: ConnectorDraftUnit,
+});
+
 const definedTermsRecord = z.object({
   unit_number: z.number().int(),
   selected_unit: ConnectorDraftUnit,
@@ -52,13 +57,26 @@ const resolutionSourcesRecord = z.object({
   followUp: z.string(),
 });
 
+export const approvalStageSchema = z.enum([
+  "selected_unit",
+  "defined_terms",
+  "proposed_resolution_sources",
+  "resolution_sources",
+]);
+
+export type ApprovalStage = z.infer<typeof approvalStageSchema>;
+
+const approvedStagesSchema = z.array(approvalStageSchema).default([]);
+
 /** Complete internal record retained for workflow handoff and retries. */
 export const approvedContractSchema = z.object({
   contract_id: ContractId,
   drafted_questions: draftedQuestionsRecord.optional(),
+  selected_unit: selectedUnitRecord.optional(),
   defined_terms: definedTermsRecord.optional(),
   proposed_resolution_sources: sourceProposalRecord.optional(),
   resolution_sources: resolutionSourcesRecord.optional(),
+  approved_stages: approvedStagesSchema,
 });
 
 export type ApprovedContractRecord = z.infer<typeof approvedContractSchema>;
@@ -83,6 +101,7 @@ export type ApprovedContractRecall = z.infer<
 
 export type ApprovedContractStage =
   | "drafted_questions"
+  | "selected_unit"
   | "defined_terms"
   | "proposed_resolution_sources"
   | "resolution_sources";
@@ -162,7 +181,12 @@ export class ApprovedContractStore {
     const next: Record<string, unknown> = {
       ...(current ?? { contract_id: contractId }),
       [stage]: stagePayload,
+      approved_stages: (current?.approved_stages ?? []).filter(
+        (approvedStage) =>
+          !approvalStagesInvalidatedBy(stage).has(approvedStage),
+      ),
     };
+    assertStageMatchesSelectedUnit(current, stage, stagePayload);
 
     // A changed upstream approval invalidates the downstream snapshots that
     // were derived from it. This also keeps retries idempotent and coherent.
@@ -171,11 +195,48 @@ export class ApprovedContractStore {
     }
 
     const record = approvedContractSchema.parse(next);
-    this.records.set(contractId, structuredClone(record));
-    this.handoffStore?.save(record);
-    const existingIndex = this.recency.indexOf(contractId);
-    if (existingIndex >= 0) this.recency.splice(existingIndex, 1);
-    this.recency.push(contractId);
+    this.persist(record);
+    return structuredClone(record);
+  }
+
+  /**
+   * Record an explicit user approval for a pending workflow stage. Submission
+   * tools only create pending handoff snapshots; this is the sole promotion
+   * path into approved contract memory.
+   */
+  approve(
+    stage: ApprovalStage,
+    explicitContractId?: string,
+  ): ApprovedContractRecord {
+    const current = this.get(explicitContractId);
+    if (!current) {
+      throw new Error(
+        explicitContractId
+          ? `No event-contract record was found for contract_id ${explicitContractId}.`
+          : "No event-contract record is available to approve in this chat.",
+      );
+    }
+    if (!current[stage]) {
+      throw new Error(
+        `Cannot approve ${stage}: that workflow stage has not been submitted.`,
+      );
+    }
+    assertStageMatchesSelectedUnit(current, stage, current[stage]);
+
+    const requiredStage = requiredApprovalStage(stage);
+    if (requiredStage && !current.approved_stages.includes(requiredStage)) {
+      throw new Error(
+        `Cannot approve ${stage}: ${requiredStage} must be approved first.`,
+      );
+    }
+
+    const record = approvedContractSchema.parse({
+      ...current,
+      approved_stages: current.approved_stages.includes(stage)
+        ? current.approved_stages
+        : [...current.approved_stages, stage],
+    });
+    this.persist(record);
     return structuredClone(record);
   }
 
@@ -202,6 +263,14 @@ export class ApprovedContractStore {
     const record = this.records.get(id);
     return record ? structuredClone(record) : undefined;
   }
+
+  private persist(record: ApprovedContractRecord): void {
+    this.records.set(record.contract_id, structuredClone(record));
+    this.handoffStore?.save(record);
+    const existingIndex = this.recency.indexOf(record.contract_id);
+    if (existingIndex >= 0) this.recency.splice(existingIndex, 1);
+    this.recency.push(record.contract_id);
+  }
 }
 
 /**
@@ -212,30 +281,45 @@ export class ApprovedContractStore {
 export function projectApprovedContract(
   record: ApprovedContractRecord,
 ): ApprovedContractRecall | undefined {
+  const definedTerms = record.approved_stages.includes("defined_terms")
+    ? record.defined_terms
+    : undefined;
+  const proposedResolutionSources = record.approved_stages.includes(
+    "proposed_resolution_sources",
+  )
+    ? record.proposed_resolution_sources
+    : undefined;
+  const resolutionSources = record.approved_stages.includes(
+    "resolution_sources",
+  )
+    ? record.resolution_sources
+    : undefined;
+  const selectedUnit = record.approved_stages.includes("selected_unit")
+    ? record.selected_unit
+    : undefined;
   const selectedStage =
-    record.defined_terms ??
-    record.proposed_resolution_sources ??
-    record.resolution_sources;
+    resolutionSources ??
+    proposedResolutionSources ??
+    definedTerms ??
+    selectedUnit;
   if (!selectedStage) return undefined;
 
   return approvedContractRecallSchema.parse({
     contract_id: record.contract_id,
     unit_number: selectedStage.unit_number,
     selected_unit: selectedStage.selected_unit,
-    ...(record.defined_terms
-      ? { definitions: record.defined_terms.definitions }
-      : {}),
-    ...(record.proposed_resolution_sources
+    ...(definedTerms ? { definitions: definedTerms.definitions } : {}),
+    ...(proposedResolutionSources
       ? {
           proposed_resolution_sources: {
-            sources: record.proposed_resolution_sources.sources,
+            sources: proposedResolutionSources.sources,
           },
         }
       : {}),
-    ...(record.resolution_sources
+    ...(resolutionSources
       ? {
           resolution_sources: {
-            sources: record.resolution_sources.sources,
+            sources: resolutionSources.sources,
           },
         }
       : {}),
@@ -244,6 +328,7 @@ export function projectApprovedContract(
 
 function hasSelectedUnit(record: ApprovedContractRecord): boolean {
   return Boolean(
+    record.selected_unit ??
     record.defined_terms ??
     record.proposed_resolution_sources ??
     record.resolution_sources,
@@ -255,6 +340,13 @@ function downstreamStages(
 ): ApprovedContractStage[] {
   switch (stage) {
     case "drafted_questions":
+      return [
+        "selected_unit",
+        "defined_terms",
+        "proposed_resolution_sources",
+        "resolution_sources",
+      ];
+    case "selected_unit":
       return [
         "defined_terms",
         "proposed_resolution_sources",
@@ -269,6 +361,67 @@ function downstreamStages(
   }
 }
 
+function approvalStagesInvalidatedBy(
+  stage: ApprovedContractStage,
+): Set<ApprovalStage> {
+  const stages =
+    stage === "drafted_questions"
+      ? [
+          "selected_unit",
+          "defined_terms",
+          "proposed_resolution_sources",
+          "resolution_sources",
+        ]
+      : [stage, ...downstreamStages(stage)];
+  return new Set(
+    stages.filter(
+      (candidate): candidate is ApprovalStage =>
+        approvalStageSchema.safeParse(candidate).success,
+    ),
+  );
+}
+
+function requiredApprovalStage(
+  stage: ApprovalStage,
+): ApprovalStage | undefined {
+  switch (stage) {
+    case "selected_unit":
+      return undefined;
+    case "defined_terms":
+      return "selected_unit";
+    case "proposed_resolution_sources":
+      return "defined_terms";
+    case "resolution_sources":
+      return "proposed_resolution_sources";
+  }
+}
+
+function assertStageMatchesSelectedUnit(
+  current: ApprovedContractRecord | undefined,
+  stage: ApprovedContractStage,
+  payload: unknown,
+): void {
+  if (
+    !current?.selected_unit ||
+    stage === "drafted_questions" ||
+    stage === "selected_unit"
+  ) {
+    return;
+  }
+
+  if (!isRecord(payload)) return;
+  const unitNumber = payload["unit_number"];
+  const selectedUnit = payload["selected_unit"];
+  if (
+    unitNumber !== current.selected_unit.unit_number ||
+    !valuesEqual(selectedUnit, current.selected_unit.selected_unit)
+  ) {
+    throw new Error(
+      `Cannot save or approve ${stage}: it does not match the selected unit.`,
+    );
+  }
+}
+
 function recordContainsUnit(
   record: ApprovedContractRecord,
   identity: ContractIdentity,
@@ -276,6 +429,7 @@ function recordContainsUnit(
   if (identity.selectedUnit === undefined) return false;
 
   const candidates: unknown[] = [
+    record.selected_unit?.selected_unit,
     record.defined_terms?.selected_unit,
     record.proposed_resolution_sources?.selected_unit,
     record.resolution_sources?.selected_unit,
