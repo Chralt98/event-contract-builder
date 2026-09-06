@@ -8,7 +8,7 @@ description into a prediction-market event contract.
 Early development; the public API and tool set may change before v1.0.0.
 
 The packaged skills are the semantic workflow layer for drafting questions,
-defining terms, and selecting resolution sources. The MCP server is the
+defining terms, and selecting independent resolution sources. The MCP server is the
 deterministic execution layer that validates and renders their structured
 outputs. The schema library (`src/schema`) models the eventual full
 event-contract specification — see [Library (schema)](#library-schema) below.
@@ -168,6 +168,7 @@ Do not replace the placeholder in this README or commit the token.
 #### 3. Start the public endpoint in Terminal 2
 
 The server is already running on port 8787 in Terminal 1. In Terminal 2, run:
+
 ```sh
 bun run dev:server:ngrok
 ```
@@ -178,12 +179,12 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 
 ### Tools
 
-| Tool                         | Purpose                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------ |
-| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.  |
-| `submit_defined_terms`       | Validate and render definitions for a selected unit.                           |
-| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs.     |
-| `submit_resolution_source`   | Validate and render full source details with advisory URL reachability checks. |
+| Tool                         | Purpose                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `submit_drafted_questions`   | Validate and render binary, scalar, categorical, and template question units.                          |
+| `submit_defined_terms`       | Validate and render definitions for a selected unit.                                                   |
+| `propose_resolution_sources` | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives. |
+| `submit_resolution_source`   | Validate and render full source details with independence and advisory URL checks.                     |
 
 The `skills/` directory contains four focused capabilities: drafting display
 questions, defining ambiguous terms, selecting resolution sources, and
@@ -300,6 +301,23 @@ percent in June 2026"`. Organize the result into selectable units, then
      "followUp": "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
    }
    ```
+
+   The fallback must be independently produced by a different source agency;
+   a second page, dataset, mirror, re-publication, or alias of the same agency
+   does not qualify. If no independent fallback exists, keep only the rank-1
+   primary when the user accepts that risk. The tools show a warning that no
+   independent fallback was found or approved. The skill should also include a
+   nearby or proxy `alternative_market` containing a newly drafted
+   `display_question_unit`, a `unit_number`, and at least two independent
+   sources. This is a new prediction-market display-question proposal, not a
+   definitions map. If the user selects that alternative, pass its exact
+   display-question unit as `selected_unit` with its number to `define-terms`,
+   do not reuse the original definitions or source hierarchy, and re-check its
+   source candidates after the new definitions are agreed.
+   If a required fact has no primary source, list it in `coverage_gaps`, state
+   that the selected market is not fully source-covered, and offer the same
+   kind of new display-question alternative without silently replacing the
+   selected question.
 
 4. **Submit sources** — after the user approves the hierarchy, call
    `submit_resolution_source` with the full source records and present its

@@ -5,8 +5,14 @@ import {
   ConnectorDraftUnit,
   parseConnectorDraftUnit,
 } from "../connector-draft-unit";
-import { renderUnitHeader, renderSources } from "../render";
 import {
+  renderSourceCoverageAdvice,
+  renderSources,
+  renderUnitHeader,
+} from "../render";
+import { alternativeMarketSchema } from "../source-alternative";
+import {
+  sourceIndependenceError,
   singleSourceWarning,
   sourceHierarchyRankError,
 } from "../source-hierarchy";
@@ -28,15 +34,33 @@ const resolutionSourceShape = {
     .superRefine((sources, ctx) => {
       const error = sourceHierarchyRankError(sources);
       if (error) ctx.addIssue({ code: "custom", message: error });
+      const independenceError = sourceIndependenceError(sources);
+      if (independenceError) {
+        ctx.addIssue({ code: "custom", message: independenceError });
+      }
     })
     .describe(
-      "The ranked resolution source hierarchy; default to rank 1 as the primary and rank 2 as the fallback. A single rank-1 source is allowed but emits a warning.",
+      "The ranked resolution source hierarchy; default to a rank-1 primary and a rank-2 fallback from a different independent source agency. A second page, dataset, mirror, or re-publication from the same agency is not an independent fallback. A single rank-1 source is allowed but emits a warning.",
+    ),
+  coverage_gaps: z
+    .array(z.string().min(3))
+    .min(1)
+    .max(12)
+    .optional()
+    .describe(
+      "Facts required by the selected market for which no authoritative primary source was found. Omit when every required fact has primary coverage.",
+    ),
+  alternative_market: alternativeMarketSchema
+    .optional()
+    .describe(
+      "A newly drafted nearby or proxy display-question unit with at least two independent source agencies, required by the workflow when source coverage is incomplete or no independent fallback can be found. This is a question proposal, not term definitions; only pass it as selected_unit to define-terms after the user chooses it.",
     ),
   followUp: z
     .string()
     .describe(
       "A follow-up question asking the user whether the source hierarchy is " +
-        "right or would like to change anything.",
+        "right or would like to change anything. If a fallback or primary " +
+        "coverage is missing, state that gap and offer the nearby/proxy alternative.",
     ),
 };
 
@@ -77,6 +101,10 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
       const reachability = new Map(checks.map(([url, r]) => [url, r.label]));
       const hasProblems = checks.some(([, r]) => r.severity !== "ok");
       const sourceWarning = singleSourceWarning(output.sources.length);
+      const coverageAdvice = renderSourceCoverageAdvice(
+        output.coverage_gaps,
+        output.alternative_market,
+      );
 
       const parts = [
         unitHeader,
@@ -84,6 +112,7 @@ export function registerSubmitResolutionSourceTool(server: McpServer): void {
         "### Resolution Source Hierarchy",
         renderSources(output.sources, reachability),
         ...(sourceWarning ? [sourceWarning] : []),
+        ...(coverageAdvice ? [coverageAdvice] : []),
         "---",
       ];
       if (hasProblems) {

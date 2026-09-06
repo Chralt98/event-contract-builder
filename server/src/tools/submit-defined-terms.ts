@@ -12,10 +12,10 @@ const definedTermsShape = {
     .number()
     .int()
     .describe(
-      "The 1-based number of the selected unit as shown in the prior draft.",
+      "The 1-based number of the selected unit as shown in the prior draft or supplied by an alternative-market handoff.",
     ),
   selected_unit: ConnectorDraftUnit.describe(
-    "The selected market unit being defined — same structure as a unit from submit_drafted_questions.",
+    "The selected market unit being defined — same structure as a unit from submit_drafted_questions or an alternative-market handoff.",
   ),
   definitions: Definitions.describe(
     "Map from each ambiguous term to its precise, unambiguous definition.",
@@ -36,7 +36,8 @@ export function registerSubmitDefinedTermsTool(server: McpServer): void {
       description:
         "Validate and register a set of term definitions for the event contract. " +
         "Call this once after defining terms, passing the definitions as a " +
-        "term-to-definition map.",
+        "term-to-definition map. When the unit came from an alternative-market " +
+        "branch, define its terms from scratch and keep its supplied unit number.",
       inputSchema: definedTermsShape,
       outputSchema: definedTermsShape,
       annotations: {

@@ -381,6 +381,37 @@ describe("event-contract tools", () => {
     );
   });
 
+  test("submit_defined_terms accepts a selected alternative display-question handoff", async () => {
+    const input = {
+      unit_number: 2,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will the national metric reach the threshold by June 2026?",
+      },
+      definitions: {
+        "national metric":
+          "The nationally reported measure published by the named reporting agency.",
+      },
+      followUp: "Do these definitions fit the alternative market?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_defined_terms",
+      arguments: input,
+    });
+
+    expect(result.structuredContent).toEqual(input);
+    const content = result.content as Array<{ type: string; text: string }>;
+    expect(content[0]!.text).toContain(
+      "**Selected Unit 2: Binary market**\n" +
+        "- Will the national metric reach the threshold by June 2026?",
+    );
+    expect(content[0]!.text).toContain(
+      "Do these definitions fit the alternative market?",
+    );
+  });
+
   test("propose_resolution_sources advertises an output schema", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
@@ -389,7 +420,15 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("sources");
+    expect(tool.outputSchema?.properties).toHaveProperty("coverage_gaps");
+    expect(tool.outputSchema?.properties).toHaveProperty("alternative_market");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    const alternativeSchema = tool.outputSchema?.properties
+      ?.alternative_market as JsonSchema | undefined;
+    expect(alternativeSchema?.properties).toHaveProperty(
+      "display_question_unit",
+    );
+    expect(alternativeSchema?.properties).not.toHaveProperty("selected_unit");
     const sourcesSchema = tool.outputSchema?.properties?.sources as
       | JsonSchema
       | undefined;
@@ -536,6 +575,117 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain(
       "the market will have no pre-approved fallback resolution source.",
     );
+    expect(content[0]!.text).toContain(
+      "No independent fallback source was found or approved for this market.",
+    );
+    expect(content[0]!.text).toContain(
+      "Alternative: consider a nearby proxy or revised market question",
+    );
+  });
+
+  test("propose_resolution_sources rejects repeated publishers as non-independent", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will the metric reach the threshold by June 2026?",
+        },
+        sources: [
+          {
+            rank: 1,
+            name: "Agency Alpha official series",
+            publisher: "Agency Alpha",
+            url: "https://alpha.example/series",
+          },
+          {
+            rank: 2,
+            name: "Agency Alpha mirror",
+            publisher: " agency alpha ",
+            url: "https://alpha.example/mirror",
+          },
+        ],
+        followUp: "Does this source hierarchy look right?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("propose_resolution_sources renders source coverage gaps and a two-source alternative", async () => {
+    const input = {
+      unit_number: 1,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will the metric reach the threshold by June 2026?",
+      },
+      sources: [
+        {
+          rank: 1,
+          name: "Primary metric report",
+          publisher: "Primary Statistics Agency",
+          url: "https://primary.example/metric",
+        },
+      ],
+      coverage_gaps: ["the regional breakdown"],
+      alternative_market: {
+        unit_number: 2,
+        display_question_unit: {
+          type: "binary" as const,
+          question:
+            "Will the national metric reach the threshold by June 2026?",
+        },
+        rationale:
+          "The national version stays close to the user's intent and is published independently by two agencies.",
+        sources: [
+          {
+            name: "National agency series",
+            publisher: "National Statistics Agency",
+            url: "https://national.example/metric",
+          },
+          {
+            name: "Independent research series",
+            publisher: "Independent Research Institute",
+            url: "https://research.example/metric",
+          },
+        ],
+      },
+      followUp:
+        "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "propose_resolution_sources",
+      arguments: input,
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toEqual(input);
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+    expect(text).toContain(
+      "⚠ No authoritative primary source was found for: the regional breakdown.",
+    );
+    expect(text).toContain(
+      "Alternative required: propose a nearby or proxy market with at least two independent resolution sources",
+    );
+    expect(text).toContain("### Nearby Alternative Display Question");
+    expect(text).not.toContain("### Definitions");
+    expect(text).toContain(
+      "**Alternative Unit 2: Binary market**\n" +
+        "- Will the national metric reach the threshold by June 2026?",
+    );
+    expect(text).toContain(
+      "- If selected: treat this display-question proposal as Unit 2, then continue with define-terms from scratch; re-check these source candidates after the new definitions are agreed.",
+    );
+    expect(text).toContain(
+      "- Independent resolution sources:\n" +
+        "  - **National agency series** (National Statistics Agency)",
+    );
   });
 
   test("propose_resolution_sources requires contiguous primary and fallback ranks", async () => {
@@ -578,7 +728,15 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("sources");
+    expect(tool.outputSchema?.properties).toHaveProperty("coverage_gaps");
+    expect(tool.outputSchema?.properties).toHaveProperty("alternative_market");
     expect(tool.outputSchema?.properties).toHaveProperty("followUp");
+    const alternativeSchema = tool.outputSchema?.properties
+      ?.alternative_market as JsonSchema | undefined;
+    expect(alternativeSchema?.properties).toHaveProperty(
+      "display_question_unit",
+    );
+    expect(alternativeSchema?.properties).not.toHaveProperty("selected_unit");
     const sourcesSchema = tool.outputSchema?.properties?.sources as
       | JsonSchema
       | undefined;
@@ -804,6 +962,131 @@ describe("event-contract tools", () => {
     );
     expect(content[0]!.text).toContain(
       "the market will have no pre-approved fallback resolution source.",
+    );
+    expect(content[0]!.text).toContain(
+      "No independent fallback source was found or approved for this market.",
+    );
+    expect(content[0]!.text).toContain(
+      "Alternative: consider a nearby proxy or revised market question",
+    );
+  });
+
+  test("submit_resolution_source rejects a repeated source URL even across publishers", async () => {
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_resolution_source",
+      arguments: {
+        unit_number: 1,
+        selected_unit: {
+          type: "binary",
+          question: "Will the metric reach the threshold by June 2026?",
+        },
+        sources: [
+          {
+            id: "primary-metric",
+            rank: 1,
+            controlsFor: ["the metric"],
+            name: "Primary metric report",
+            publisher: "Primary Statistics Agency",
+            url: "https://example.test/metric",
+            publicationSchedule: "Monthly publication on a fixed schedule.",
+            publiclyAccessible: true,
+            independenceNote:
+              "The agency publishes the value independently of all market participants.",
+          },
+          {
+            id: "secondary-metric",
+            rank: 2,
+            controlsFor: ["the metric"],
+            name: "Secondary metric report",
+            publisher: "Independent Research Institute",
+            url: "https://example.test/metric",
+            publicationSchedule: "Monthly publication on a fixed schedule.",
+            publiclyAccessible: true,
+            independenceNote:
+              "The institute publishes its own independent estimate without market influence.",
+          },
+        ],
+        followUp: "Does this source hierarchy look right?",
+      },
+    });
+
+    expect(result.isError).toBe(true);
+  });
+
+  test("submit_resolution_source renders coverage gaps and an alternative market", async () => {
+    stubFetch(() => new Response(null, { status: 200 }));
+    const input = {
+      unit_number: 1,
+      selected_unit: {
+        type: "binary" as const,
+        question: "Will the metric reach the threshold by June 2026?",
+      },
+      sources: [
+        {
+          id: "primary-metric",
+          rank: 1,
+          controlsFor: ["the metric"],
+          name: "Primary metric report",
+          publisher: "Primary Statistics Agency",
+          url: "https://primary.example/metric",
+          publicationSchedule: "Monthly publication on a fixed schedule.",
+          publiclyAccessible: true,
+          independenceNote:
+            "The agency publishes the value independently of all market participants.",
+        },
+      ],
+      coverage_gaps: ["the regional breakdown"],
+      alternative_market: {
+        unit_number: 2,
+        display_question_unit: {
+          type: "binary" as const,
+          question:
+            "Will the national metric reach the threshold by June 2026?",
+        },
+        rationale:
+          "The national version stays close to the user's intent and is published independently by two agencies.",
+        sources: [
+          {
+            name: "National agency series",
+            publisher: "National Statistics Agency",
+            url: "https://national.example/metric",
+          },
+          {
+            name: "Independent research series",
+            publisher: "Independent Research Institute",
+            url: "https://research.example/metric",
+          },
+        ],
+      },
+      followUp:
+        "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
+    };
+    const client = await connectClient();
+
+    const result = await client.callTool({
+      name: "submit_resolution_source",
+      arguments: input,
+    });
+
+    expect(result.isError).toBeUndefined();
+    expect(result.structuredContent).toEqual(input);
+    const content = result.content as Array<{ type: string; text: string }>;
+    const text = content[0]!.text;
+    expect(text).toContain(
+      "⚠ No authoritative primary source was found for: the regional breakdown.",
+    );
+    expect(text).toContain(
+      "Alternative required: propose a nearby or proxy market with at least two independent resolution sources",
+    );
+    expect(text).toContain("### Nearby Alternative Display Question");
+    expect(text).not.toContain("### Definitions");
+    expect(text).toContain(
+      "[https://research.example/metric](https://research.example/metric)",
+    );
+    expect(text).toContain(
+      "If selected: treat this display-question proposal as Unit 2, then continue with define-terms from scratch",
     );
   });
 

@@ -4,6 +4,8 @@ import type {
   DefinitionsT,
 } from "../../src/schema/display-question";
 import type { DataSource } from "../../src/schema/resolution";
+import { parseConnectorDraftUnit } from "./connector-draft-unit";
+import type { AlternativeMarketT } from "./source-alternative";
 
 type DataSourceT = z.infer<typeof DataSource>;
 
@@ -85,6 +87,63 @@ export function renderSourceProposal(
         `- URL: [${s.url}](${s.url})`,
     )
     .join("\n\n");
+}
+
+/**
+ * Renders explicit source-coverage gaps and, when supplied, a newly drafted
+ * nearby/proxy display-question unit with at least two independent source
+ * identities.
+ */
+export function renderSourceCoverageAdvice(
+  coverageGaps: string[] | undefined,
+  alternativeMarket: AlternativeMarketT | undefined,
+): string | undefined {
+  const parts: string[] = [];
+
+  if (coverageGaps?.length) {
+    parts.push(
+      "### Source Coverage Warning\n" +
+        "⚠ No authoritative primary source was found for: " +
+        coverageGaps.join("; ") +
+        ". The selected market is not fully source-covered as written. " +
+        "Alternative required: propose a nearby or proxy market with at least " +
+        "two independent resolution sources before locking it.",
+    );
+  }
+
+  if (alternativeMarket) {
+    const alternativeUnit = parseConnectorDraftUnit(
+      alternativeMarket.display_question_unit,
+    );
+    parts.push(
+      "### Nearby Alternative Display Question\n" +
+        renderAlternativeUnitHeader(
+          alternativeUnit,
+          alternativeMarket.unit_number,
+        ) +
+        "\n" +
+        `- Rationale: ${alternativeMarket.rationale}\n` +
+        `- If selected: treat this display-question proposal as Unit ${alternativeMarket.unit_number}, then continue with define-terms from scratch; re-check these source candidates after the new definitions are agreed.\n` +
+        "- Independent resolution sources:\n" +
+        alternativeMarket.sources
+          .map(
+            (source) =>
+              `  - **${source.name}** (${source.publisher}) — ` +
+              `[${source.url}](${source.url})`,
+          )
+          .join("\n"),
+    );
+  }
+
+  return parts.length ? parts.join("\n\n") : undefined;
+}
+
+/** Renders an alternative unit without confusing it with the current unit. */
+export function renderAlternativeUnitHeader(
+  unit: DraftUnitT,
+  unitNumber: number,
+): string {
+  return `**Alternative Unit ${unitNumber}: ${unitLabel(unit)}**\n${unitBullets(unit)}`;
 }
 
 /**

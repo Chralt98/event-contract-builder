@@ -1,6 +1,6 @@
 # Drafting specification
 
-Read this reference when the user is asking for new prediction-market display questions or when deciding whether a message is a selection of an existing draft.
+Read this reference when the user is asking for new prediction-market display questions, when a resolution-source review needs a nearby/proxy question, or when deciding whether a message is a selection of an existing draft.
 
 ## Role and goal
 
@@ -32,6 +32,28 @@ Every concrete question must:
 Drop formal qualifiers, regulatory language, and verbose phrasing. Rephrase or reject input that describes only a past or ongoing state without a forward-looking resolution date.
 
 Do not invent a missing event, date, threshold, option, or factual outcome. Infer sensible ranges or options only when the event and time period are clear and the user did not provide them.
+
+## Resolution-source alternatives
+
+When the resolution-source workflow reports that the selected market has no
+independent fallback or lacks primary coverage for a required fact, draft a new
+display-question unit from the original user intent and the stated coverage
+constraint. The question may be:
+
+- a close reformulation that changes the unresolvable detail while keeping the
+  intent;
+- an indirect proxy that measures the intent through a reliably published
+  observable; or
+- a better-specified market suggestion that can be resolved by at least two
+  independent source agencies.
+
+The result must contain only new trader-facing question text (or a complete
+question group/template unit). It is not a definitions map and is not selected
+until the user explicitly chooses it. The source workflow presents it as
+`alternative_market.display_question_unit`; only after selection is it passed
+to `define-terms` as `selected_unit`. Never silently replace the original
+question, and do not carry the original unit's definitions into the
+alternative.
 
 ## Template-unit rules
 
@@ -120,4 +142,3 @@ Because those questions form a reusable threshold family, append a template unit
 - Will the Fed make exactly 1 rate cut in 2026?
 - Will the Fed make exactly 2 rate cuts in 2026?
 - Will the Fed make 3 or more rate cuts in 2026?
-

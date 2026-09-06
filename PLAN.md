@@ -274,6 +274,50 @@ Steps (done):
 1. Add `url` to the proposal schema and rendered Markdown; align the
    resolution-source skill, server instructions, README, and focused tool tests.
 
+## Approved scope change: independent source coverage and intent-preserving alternatives
+
+The resolution-source workflow must distinguish genuinely independent sources
+from a second page, mirror, or dataset published by the same source agency. A
+ranked hierarchy must therefore prefer distinct publishers/source agencies and
+must not present two sources from the same agency as independent fallback
+coverage. When the selected market has no independent fallback, or a fact in
+the agreed definitions has no authoritative primary source, the step must say
+so explicitly while keeping the primary-only hierarchy valid when the user
+accepts the risk. It must also offer a nearby alternative: a proxy market, a
+question whose intent is captured more directly by available sources, or a
+better-specified suggestion with at least two independent resolution sources.
+
+The existing deterministic tools remain responsible for structural validation
+and visible warnings; semantic source discovery and selecting the best proxy
+remain responsibilities of the packaged skill. A source set with a repeated
+publisher/source agency is invalid rather than being described as independent.
+
+Step:
+
+1. Enforce distinct source publishers in both resolution-source tools, render
+   explicit missing-independent-fallback and missing-primary-coverage
+   warnings/alternative guidance, and align the packaged skill, source
+   reference, MCP instructions, README, and focused tests.
+
+## Approved scope change: selectable alternative-market question branch
+
+An `alternative_market` suggestion must be a genuinely new prediction-market
+display-question proposal, not a redefinition of the selected unit. It carries
+a newly drafted, connector-safe `display_question_unit` that preserves the
+user's intent closely, expresses it as a proxy, or improves the proposal. The
+unit may contain a grouped set of display questions or a template. The user
+may select the alternative; only then does that exact question unit enter
+`define-terms`. No terms or source hierarchy are pre-resolved for the
+alternative, and the candidate sources remain provisional until its own terms
+are agreed.
+
+Step:
+
+1. Represent alternative markets as new selectable display-question units,
+   render an explicit selection handoff, route the chosen question set through
+   `define-terms`, and add focused schema, tool, skill, documentation, and
+   handoff tests.
+
 ## Approved scope change: skills-first plugin architecture
 
 The three semantic workflows are packaged as focused skills with supporting
@@ -594,14 +638,19 @@ Each item below is a separate reviewable step. Complete only one item per turn.
 25. Add clickable source URLs to `propose_resolution_sources` and align its
     workflow guidance, documentation, and focused tests — done.
 26. Add the standalone `reduce-semantic-risk` skill and align the packaged
-   plugin metadata and user-facing documentation — done.
+    plugin metadata and user-facing documentation — done.
 27. Add a maintained ngrok HTTP publication helper for an unauthenticated
-   public HTTPS test endpoint, and document it alongside the retained Secure
-   MCP Tunnel instructions — done.
+    public HTTPS test endpoint, and document it alongside the retained Secure
+    MCP Tunnel instructions — done.
 28. Default to a rank-1 primary and rank-2 fallback in the proposal and
     submission source tools, align the workflow guidance and tests — done.
 29. Allow an intentional primary-only hierarchy with an explicit warning while
     keeping two sources as the default — done.
+30. Enforce independent source publishers and communicate missing fallback or
+    primary coverage with intent-preserving alternative-market guidance — done.
+31. Represent alternative markets as new selectable display-question units,
+    route a selected alternative through term definition before re-evaluating
+    its resolution sources, and add the corresponding tests — done.
 
 ## Verification
 
