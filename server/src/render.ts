@@ -191,17 +191,15 @@ export function renderApprovedContract(
     );
   }
 
-  if (contract.proposed_resolution_sources) {
+  if (contract.resolution_sources) {
+    parts.push(
+      "### Resolution Sources",
+      renderSources(contract.resolution_sources.sources),
+    );
+  } else if (contract.proposed_resolution_sources) {
     parts.push(
       "### Proposed Resolution Sources",
       renderSourceProposal(contract.proposed_resolution_sources.sources),
-    );
-  }
-
-  if (contract.resolution_sources) {
-    parts.push(
-      "### Detailed Resolution Sources",
-      renderSources(contract.resolution_sources.sources),
     );
   }
 

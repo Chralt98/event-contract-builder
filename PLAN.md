@@ -410,6 +410,34 @@ Implementation step:
    identifier through the handoffs, and add focused isolation, retry, and
    retrieval tests — done.
 
+## Approved scope change: concise approved-contract source heading
+
+Approved contract memory continues to store both the approved source proposal
+and the approved detailed source records. In the user-facing approved-contract
+rendering, the detailed source section is labeled `Resolution Sources` rather
+than `Detailed Resolution Sources`; the internal field names and structured
+retrieval shape remain unchanged.
+
+Implementation step:
+
+1. Rename the approved-contract detailed-source heading in the renderer and
+   focused retrieval test while preserving proposed-source storage and output.
+
+## Approved scope change: conditional proposed-source rendering
+
+Approved contract memory continues to store the proposed source hierarchy for
+workflow traceability and structured retrieval. The user-facing approved
+contract renders the proposed hierarchy only while no detailed source records
+have been approved. Once detailed sources exist, the proposal section is
+omitted and only the detailed records are rendered under the `Resolution
+Sources` heading.
+
+Implementation step:
+
+1. Render proposed sources only when detailed sources are absent, while
+   preserving the stored `proposed_resolution_sources` field and its
+   structured retrieval output.
+
 ## Approved scope change: explicit cross-session contract handoff
 
 Some hosts invoke successive workflow tools through different MCP HTTP
@@ -829,6 +857,14 @@ Schedule` — done.
     distinguishes exact event locators, canonical source hubs, and supporting
     methodology references, while preserving the existing `url` schema and
     reachability checks — done.
+41. Rename the user-facing approved-contract detailed-source heading to
+    `Resolution Sources` while retaining the separately stored proposed source
+    hierarchy and its structured retrieval field — done.
+42. Suppress proposed-source rendering from approved-contract Markdown while
+    retaining the proposed hierarchy in structured approved-contract memory — done.
+43. Render approved proposed sources only before detailed sources are approved;
+    after detailed approval, render only the detailed sources as `Resolution
+    Sources` while retaining both stored fields — done.
 
 ## Verification
 

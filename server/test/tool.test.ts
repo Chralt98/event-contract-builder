@@ -511,6 +511,13 @@ describe("event-contract tools", () => {
       },
     });
     expect(proposalApproval.isError).toBeUndefined();
+    const proposalApprovalText = (
+      proposalApproval.content as Array<{ type: string; text: string }>
+    )[0]!.text;
+    expect(proposalApprovalText).toContain(
+      "### Proposed Resolution Sources",
+    );
+    expect(proposalApprovalText).not.toContain("### Resolution Sources");
 
     const resolutionInput = {
       contract_id: contractId,
@@ -591,8 +598,11 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain("### Approved Definitions");
     expect(content[0]!.text).not.toContain("### Drafted Questions");
     expect(content[0]!.text).not.toContain("### Defined Terms");
-    expect(content[0]!.text).toContain("### Proposed Resolution Sources");
-    expect(content[0]!.text).toContain("### Detailed Resolution Sources");
+    expect(content[0]!.text).not.toContain("### Proposed Resolution Sources");
+    expect(content[0]!.text).toContain("### Resolution Sources");
+    expect(content[0]!.text).not.toContain(
+      "### Detailed Resolution Sources",
+    );
     expect(content[0]!.text).toContain("**cut rates**");
     expect(content[0]!.text).toContain("Federal Reserve decisions");
     expect(content[0]!.text).not.toContain("Will the ECB cut rates in 2026?");
