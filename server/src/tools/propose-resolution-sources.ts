@@ -78,7 +78,7 @@ const proposalShape = {
         url: z
           .url()
           .describe(
-            "Exact source URL shown as a clickable link in the proposal.",
+            "Source locator URL shown as a clickable link; prefer a known durable event-specific results/data page, otherwise use the publisher's stable canonical results, data, or topic hub. Use methodology or press-release pages only as supporting references.",
           ),
       }),
     )
@@ -92,7 +92,7 @@ const proposalShape = {
       }
     })
     .describe(
-      "The ranked source hierarchy with clickable URLs; default to a rank-1 primary and a rank-2 fallback from a different independent source agency. A second page, dataset, mirror, or re-publication from the same agency is not an independent fallback. A single rank-1 source is allowed but emits a warning.",
+      "The ranked source hierarchy with clickable URLs selected under the URL locator policy: prefer a known durable event-specific results/data page, otherwise use the publisher's stable canonical results, data, or topic hub. Default to a rank-1 primary and a rank-2 fallback from a different independent source agency. A second page, dataset, mirror, or re-publication from the same agency is not an independent fallback. A single rank-1 source is allowed but emits a warning.",
     ),
   coverage_gaps: z
     .array(z.string().min(3))

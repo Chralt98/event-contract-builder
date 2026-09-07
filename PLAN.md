@@ -343,6 +343,27 @@ Step:
    HTTP-200 links in the visible/structured proposal, align the workflow
    guidance and focused tests — done.
 
+## Approved scope change: resolution-source URL locator policy
+
+The URL attached to a resolution source is an inspection locator, not a claim
+that the linked page already contains the future market's final value. URL
+selection therefore follows a specificity ladder: use a durable event-specific
+results page when the exact locator is known; otherwise use the source's stable
+canonical results or topic hub. Do not use a historical page for another event,
+an ephemeral session/tracking URL, or a methodology/press-release page as the
+binding data locator. Methodology pages may be retained only as supporting
+references for source identity or publication practice.
+
+An HTTP-200 reachability check confirms that a link is available, but does not
+establish that it is authoritative or appropriate for the market. The current
+`url` field remains sufficient; this scope change is guidance-only and does not
+alter the public schema or renderer.
+
+Implementation step:
+
+1. Generalize the resolution-source skill, MCP instructions, README guidance,
+   and focused documentation/tests for the URL locator policy.
+
 ## Approved scope change: concise source-detail rendering
 
 The Turn 2 `submit_resolution_source` output should keep checking every source
@@ -804,6 +825,10 @@ Schedule` — done.
     approved workflow stage before definition analysis, submission, or approval
     can begin; add the selection submission tool, update approval ordering and
     retrieval tests, and align the host workflow documentation — done.
+40. Generalize resolution-source URL selection into a specificity ladder that
+    distinguishes exact event locators, canonical source hubs, and supporting
+    methodology references, while preserving the existing `url` schema and
+    reachability checks — done.
 
 ## Verification
 

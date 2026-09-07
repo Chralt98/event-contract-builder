@@ -29,7 +29,8 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    or present a proxy as an exact source for the original intent.
 4. Work out the full source records internally, then call
    `propose_resolution_sources` with the carried `contract_id` when available,
-   each source's rank, name, publisher, and exact URL plus any applicable
+   each source's rank, name, publisher, and a URL selected under the URL locator
+   policy below plus any applicable
    `coverage_gaps` and `alternative_market`. An
    `alternative_market` contains `unit_number`, a newly drafted
    `display_question_unit`, a rationale, and candidate source identities. It
@@ -69,6 +70,29 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
 
 The selected unit and agreed definitions are supplied directly to this skill by the host workflow. Do not call a separate prompt-returning tool; use only the deterministic proposal and submission tools described above.
 
+## URL locator policy
+
+The source `url` is a user-facing inspection locator. It identifies the
+publisher and gives the user a place to verify the source; it does not assert
+that the linked page already contains the future market's final value.
+
+Choose the most specific durable locator available:
+
+1. Use an event-specific results page when the exact page is known, stable, and
+   intended to publish the fact that settles this market.
+2. Otherwise use the publisher's stable canonical results, data, or topic hub
+   where the future publication is expected to appear.
+3. Use a methodology page, press release, or documentation page only as a
+   supporting reference for source identity or publication practice, never as
+   the binding data locator when a results/data locator is available.
+
+Never use a page for a different historical event, an ephemeral session or
+tracking URL, or a guessed future path. A reachability check confirms only
+that the link is available; it does not establish authority, relevance, or
+that the page contains the required fact. If no event-specific page exists,
+the canonical hub is the correct locator rather than an unrelated historical
+page.
+
 ## Boundaries
 
 - Resolve sources against the agreed definitions, not the raw question wording.
@@ -79,7 +103,7 @@ The selected unit and agreed definitions are supplied directly to this skill by 
   distinct agencies, and explain uncertainty rather than overstating
   independence.
 - Treat a selected template as one complete unit: cover every allowed variable value without choosing a value or rewriting the template.
-- Do not invent URLs, dataset identifiers, publication details, or source facts. Ask or stop when the exact locator is uncertain.
+- Do not invent URLs, dataset identifiers, publication details, or source facts. Use the URL locator policy when an event-specific locator is unavailable; ask or stop only when no stable official locator can be established.
 - Default to at least two sources: rank 1 is the primary source and rank 2 is
   the independent fallback used for a pre-specified primary-source failure. A
   user may explicitly choose only the rank-1 primary; that is valid but the

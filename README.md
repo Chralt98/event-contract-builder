@@ -297,7 +297,8 @@ percent in June 2026"`. Organize the result into selectable units, then
 
 3. **Choose sources** — after the user agrees to the definitions, use the
    `define-resolution-source` skill. First call `propose_resolution_sources`
-   with the carried `contract_id`, ranked names, publishers, and exact URLs:
+   with the carried `contract_id`, ranked names, publishers, and source URLs
+   selected under the URL locator policy:
 
    ```json
    {
@@ -323,6 +324,16 @@ percent in June 2026"`. Organize the result into selectable units, then
      "followUp": "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
    }
    ```
+
+   The source URL is a user-facing inspection locator, not a guarantee that
+   the future market value is already published at that address. Prefer a
+   known, durable event-specific results or data page. If that page is not yet
+   known, use the publisher's stable canonical results, data, or topic hub
+   where the future publication is expected. Methodology pages, press releases,
+   and documentation are supporting references only. Never use a historical
+   page for a different event, a guessed future path, or an ephemeral tracking
+   URL. The background HTTP-200 check confirms reachability, not authority or
+   content suitability.
 
    The fallback must be independently produced by a different source agency;
    a second page, dataset, mirror, re-publication, or alias of the same agency

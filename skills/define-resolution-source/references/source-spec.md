@@ -33,7 +33,7 @@ Each source should be:
   re-publication, or alternate label from the same agency is not an independent
   source;
 - **Scheduled:** published on a known cadence so later timing can be anchored to it; and
-- **Specific:** linked to the exact series or dataset, not merely a homepage. Include the publisher's `datasetId` when one exists.
+- **Fit-for-purpose locator:** linked to the exact durable event page when known; otherwise linked to the publisher's stable canonical results, data, or topic hub. Include the publisher's `datasetId` when one exists.
 
 Default to at least one primary source and one lower-ranked, independent
 fallback source. The primary is rank 1 and the fallback is rank 2; add further
@@ -49,6 +49,27 @@ fallback was found or approved. The proposal must also offer a nearby or proxy
 market as a complete selectable unit with at least two independent sources.
 Never use a vague “or similar” fallback.
 
+## URL locator policy
+
+The `url` is a user-facing inspection locator for the source. It should help a
+user identify and verify the publisher without pretending that a future value
+is already available at that address.
+
+Select the most specific durable URL available:
+
+1. Prefer a known, stable event-specific results or data page that is intended
+   to publish the fact being resolved.
+2. If that page is not yet known or does not exist, use the source's canonical
+   results, data, or topic hub where the future publication is expected.
+3. Keep methodology pages, press releases, and documentation as supporting
+   references only; do not use them as the binding data locator when a suitable
+   results/data page or hub exists.
+
+Do not use a historical page for a different event, a guessed future path, an
+ephemeral session URL, or a URL carrying tracking parameters. The HTTP-200
+preflight checks reachability only; it does not prove that the page is
+authoritative, relevant, or populated with the required fact.
+
 ## Constraints
 
 - Every fact the question turns on must be covered by one or more sources' `controlsFor` fields.
@@ -60,7 +81,7 @@ Never use a vague “or similar” fallback.
   `sources` array must contain at least two independent source agencies.
 - Ranks must be unique and start at 1; rank 1 is the primary source that binds first.
 - Give each source a stable, unique `id` slug.
-- Do not invent URLs or dataset identifiers. If the exact locator is uncertain, ask the user rather than guessing.
+- Do not invent URLs or dataset identifiers. Apply the URL locator policy when an event-specific locator is uncertain; ask the user or leave the source unresolved only when no stable official locator can be established.
 - Do not specify how a settlement value is calculated from a source.
 - Do not specify deadlines, observation windows, or resolution periods; those are later steps.
 
@@ -103,7 +124,7 @@ Call `propose_resolution_sources` with:
 - `selected_unit`: the exact selected unit;
 - `sources`: by default, a ranked array containing a rank-1 primary and rank-2
   independent fallback, with each source's `rank`, `name`, `publisher`, and
-  exact `url`. Use distinct source agencies. If the user explicitly chooses
+  URL selected under the URL locator policy. Use distinct source agencies. If the user explicitly chooses
   primary-only, pass one rank-1 source; the tool will render the warning that
   no independent fallback was found or approved. Include `coverage_gaps` and
   `alternative_market` whenever applicable. The alternative's new display
@@ -183,7 +204,7 @@ other fixed UI text into the user's language while preserving source data.
 
 - If the selected unit, unit number, or agreed definitions are missing, stop and request them.
 - If the user has not approved the proposed hierarchy, do not call `submit_resolution_source`.
-- If the exact URL or dataset identifier cannot be established, do not guess; ask the user or leave the source unresolved.
+- If no event-specific URL is known, apply the URL locator policy and use the best stable official hub available. Do not guess a future path or invent a dataset identifier; ask the user or leave the source unresolved only when no stable official locator can be established.
 - If a source cannot cover a fact the unit resolves on, expose the gap and
   offer the alternative rather than submitting an apparently complete source
   set. Do not silently rewrite the selected question.

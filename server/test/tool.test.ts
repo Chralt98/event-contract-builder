@@ -1203,6 +1203,10 @@ describe("event-contract tools", () => {
       | JsonSchema
       | undefined;
     expect(sourcesSchema?.items?.properties).toHaveProperty("url");
+    expect(
+      (sourcesSchema?.items?.properties?.url as JsonSchema | undefined)
+        ?.description,
+    ).toContain("Source locator URL");
     expect(sourcesSchema?.minItems).toBe(1);
   });
 

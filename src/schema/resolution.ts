@@ -65,7 +65,11 @@ export const DataSource = z.object({
     .describe("Facts/features this source authoritatively establishes"),
   name: z.string().min(3),
   publisher: z.string().min(2).describe("Organization that produces the data"),
-  url: z.url(),
+  url: z
+    .url()
+    .describe(
+      "User-facing source locator: prefer a known durable event-specific results/data page; otherwise use the publisher's stable canonical results, data, or topic hub. Methodology and press-release pages are supporting references only.",
+    ),
   /** Series/dataset identifier if the publisher uses one (e.g. CUSR0000SA0). */
   datasetId: z.string().optional(),
   publicationSchedule: z
