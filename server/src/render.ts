@@ -73,25 +73,6 @@ export function renderDefinitions(definitions: DefinitionsT): string {
 }
 
 /**
- * Renders a concise source hierarchy proposal (Turn 1): one
- * `**N. Name** (Publisher)` heading and an explicit Markdown URL link per source
- * in rank order. The detailed per-attribute view is produced later by
- * `renderSources`, so the proposal stays easy to scan.
- */
-export function renderSourceProposal(
-  sources: { rank: number; name: string; publisher: string; url: string }[],
-): string {
-  return [...sources]
-    .sort((a, b) => a.rank - b.rank)
-    .map(
-      (s) =>
-        `**${s.rank}. ${s.name}** (${s.publisher})\n` +
-        `- URL: [${s.url}](${s.url})`,
-    )
-    .join("\n\n");
-}
-
-/**
  * Renders explicit source-coverage gaps and, when supplied, a newly drafted
  * nearby/proxy display-question unit with at least two independent source
  * identities.
@@ -329,11 +310,6 @@ export function renderApprovedContract(
     parts.push(
       "### Resolution Sources",
       renderSources(contract.resolution_sources.sources),
-    );
-  } else if (contract.proposed_resolution_sources) {
-    parts.push(
-      "### Proposed Resolution Sources",
-      renderSourceProposal(contract.proposed_resolution_sources.sources),
     );
   }
 

@@ -20,7 +20,6 @@ import {
   singleSourceWarning,
   sourceHierarchyRankError,
 } from "../source-hierarchy";
-import { checkUrl } from "../url-check";
 
 const resolutionSourceShape = {
   contract_id: optionalContractId,
@@ -76,16 +75,16 @@ export function registerSubmitResolutionSourceTool(
   server.registerTool(
     "submit_resolution_source",
     {
-      title: "Submit Resolution Source",
+      title: "Resolution Source Hierarchy",
       description:
-        "Validate and store a pending resolution source hierarchy for a market " +
-        "unit. " +
+        "Validate and store the detailed Resolution Source Hierarchy for a " +
+        "market unit. " +
         "By default pass a rank-1 primary and a rank-2 fallback in the ranked " +
         "array. A user-requested single rank-1 source is valid but emits a " +
-        "warning. Call this once after the hierarchy is approved, carrying the " +
-        "contract_id from propose_resolution_sources. This submission does not " +
-        "imply approval of the detailed sources; call approve_event_contract " +
-        "after the user agrees to them.",
+        "warning. Call this once after timing and definitions are approved, " +
+        "carrying the contract_id from the definitions result. This submission " +
+        "does not imply approval of the detailed sources; call " +
+        "approve_event_contract after the user agrees to them.",
       inputSchema: resolutionSourceShape,
       outputSchema: resolutionSourceShape,
       annotations: {
@@ -108,18 +107,6 @@ export function registerSubmitResolutionSourceTool(
         output.unit_number,
       );
 
-      // Advisory only: validate every source URL in parallel. Keep individual
-      // reachability results out of the user-facing Markdown, but retain one
-      // aggregate warning when a source is unavailable.
-      const checks = await Promise.all(
-        output.sources.map(
-          async (source) => [source, await checkUrl(source.url)] as const,
-        ),
-      );
-      const hasProblems =
-        checks.some(([, result]) => result.severity !== "ok") ||
-        output.sources.some((source) => !source.publiclyAccessible);
-
       const sourceWarning = singleSourceWarning(output.sources.length);
       const coverageAdvice = renderSourceCoverageAdvice(
         output.coverage_gaps,
@@ -135,13 +122,6 @@ export function registerSubmitResolutionSourceTool(
         ...(coverageAdvice ? [coverageAdvice] : []),
         "---",
       ];
-      if (hasProblems) {
-        parts.push(
-          "⚠ One or more resolution sources are not publicly accessible or " +
-            "could not be automatically verified — review the source URLs " +
-            "before locking in the hierarchy.",
-        );
-      }
       parts.push(output.followUp);
 
       store.save("resolution_sources", output);

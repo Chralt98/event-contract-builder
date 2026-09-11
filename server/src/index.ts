@@ -9,7 +9,6 @@ import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-quest
 import { registerSubmitSelectedUnitTool } from "./tools/submit-selected-unit";
 import { registerSubmitTimingTool } from "./tools/submit-timing";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
-import { registerProposeResolutionSourcesTool } from "./tools/propose-resolution-sources";
 import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
 import { registerApproveEventContractTool } from "./tools/approve-event-contract";
 import { registerGetApprovedEventContractTool } from "./tools/get-approved-event-contract";
@@ -41,7 +40,6 @@ export function createServer(store = new ApprovedContractStore()) {
   registerSubmitSelectedUnitTool(server, store);
   registerSubmitTimingTool(server, store);
   registerSubmitDefinedTermsTool(server, store);
-  registerProposeResolutionSourcesTool(server, store);
   registerSubmitResolutionSourceTool(server, store);
   registerApproveEventContractTool(server, store);
   registerGetApprovedEventContractTool(server, store);

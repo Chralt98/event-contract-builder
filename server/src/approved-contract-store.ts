@@ -35,22 +35,6 @@ const definedTermsRecord = z.object({
   followUp: z.string(),
 });
 
-const sourceIdentity = z.object({
-  rank: z.number().int().min(1),
-  name: z.string().min(3),
-  publisher: z.string().min(2),
-  url: z.url(),
-});
-
-const sourceProposalRecord = z.object({
-  unit_number: z.number().int(),
-  selected_unit: ConnectorDraftUnit,
-  sources: z.array(sourceIdentity).min(1),
-  coverage_gaps: z.array(z.string().min(3)).min(1).max(12).optional(),
-  alternative_market: alternativeMarketSchema.optional(),
-  followUp: z.string(),
-});
-
 const resolutionSourcesRecord = z.object({
   unit_number: z.number().int(),
   selected_unit: ConnectorDraftUnit,
@@ -64,7 +48,6 @@ export const approvalStageSchema = z.enum([
   "selected_unit",
   "timing",
   "defined_terms",
-  "proposed_resolution_sources",
   "resolution_sources",
 ]);
 
@@ -79,7 +62,6 @@ export const approvedContractSchema = z.object({
   selected_unit: selectedUnitRecord.optional(),
   timing: timingRecord.optional(),
   defined_terms: definedTermsRecord.optional(),
-  proposed_resolution_sources: sourceProposalRecord.optional(),
   resolution_sources: resolutionSourcesRecord.optional(),
   approved_stages: approvedStagesSchema,
 });
@@ -93,9 +75,6 @@ export const approvedContractRecallSchema = z.object({
   selected_unit: ConnectorDraftUnit,
   timing: timingDataSchema.optional(),
   definitions: Definitions.optional(),
-  proposed_resolution_sources: z
-    .object({ sources: z.array(sourceIdentity).min(1) })
-    .optional(),
   resolution_sources: z
     .object({ sources: z.array(DataSource).min(1) })
     .optional(),
@@ -110,7 +89,6 @@ export type ApprovedContractStage =
   | "selected_unit"
   | "timing"
   | "defined_terms"
-  | "proposed_resolution_sources"
   | "resolution_sources";
 
 /**
@@ -302,11 +280,6 @@ export function projectApprovedContract(
   const timing = record.approved_stages.includes("timing")
     ? record.timing
     : undefined;
-  const proposedResolutionSources = record.approved_stages.includes(
-    "proposed_resolution_sources",
-  )
-    ? record.proposed_resolution_sources
-    : undefined;
   const resolutionSources = record.approved_stages.includes(
     "resolution_sources",
   )
@@ -317,7 +290,6 @@ export function projectApprovedContract(
     : undefined;
   const selectedStage =
     resolutionSources ??
-    proposedResolutionSources ??
     definedTerms ??
     timing ??
     selectedUnit;
@@ -349,13 +321,6 @@ export function projectApprovedContract(
     selected_unit: selectedStage.selected_unit,
     ...(approvedTiming ? { timing: approvedTiming } : {}),
     ...(definedTerms ? { definitions: definedTerms.definitions } : {}),
-    ...(proposedResolutionSources
-      ? {
-          proposed_resolution_sources: {
-            sources: proposedResolutionSources.sources,
-          },
-        }
-      : {}),
     ...(resolutionSources
       ? {
           resolution_sources: {
@@ -371,7 +336,6 @@ function hasSelectedUnit(record: ApprovedContractRecord): boolean {
     record.selected_unit ??
     record.timing ??
     record.defined_terms ??
-    record.proposed_resolution_sources ??
     record.resolution_sources,
   );
 }
@@ -385,21 +349,17 @@ function downstreamStages(
         "selected_unit",
         "timing",
         "defined_terms",
-        "proposed_resolution_sources",
         "resolution_sources",
       ];
     case "selected_unit":
       return [
         "timing",
         "defined_terms",
-        "proposed_resolution_sources",
         "resolution_sources",
       ];
     case "timing":
-      return ["defined_terms", "proposed_resolution_sources", "resolution_sources"];
+      return ["defined_terms", "resolution_sources"];
     case "defined_terms":
-      return ["proposed_resolution_sources", "resolution_sources"];
-    case "proposed_resolution_sources":
       return ["resolution_sources"];
     case "resolution_sources":
       return [];
@@ -415,7 +375,6 @@ function approvalStagesInvalidatedBy(
           "selected_unit",
           "timing",
           "defined_terms",
-          "proposed_resolution_sources",
           "resolution_sources",
         ]
       : [stage, ...downstreamStages(stage)];
@@ -437,10 +396,8 @@ function requiredApprovalStage(
       return "selected_unit";
     case "defined_terms":
       return "timing";
-    case "proposed_resolution_sources":
-      return "defined_terms";
     case "resolution_sources":
-      return "proposed_resolution_sources";
+      return "defined_terms";
   }
 }
 
@@ -479,7 +436,6 @@ function recordContainsUnit(
   const candidates: unknown[] = [
     record.selected_unit?.selected_unit,
     record.defined_terms?.selected_unit,
-    record.proposed_resolution_sources?.selected_unit,
     record.resolution_sources?.selected_unit,
     record.timing?.selected_unit,
   ];

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../src/index.ts";
@@ -7,9 +7,6 @@ import {
   ApprovedContractStore,
 } from "../src/approved-contract-store.ts";
 
-/** Stub global fetch so resolution-source URL checks never touch the network. */
-let fetchSpy: ReturnType<typeof spyOn> | undefined;
-
 type JsonSchema = {
   description?: string;
   enum?: string[];
@@ -17,20 +14,6 @@ type JsonSchema = {
   minItems?: number;
   properties?: Record<string, JsonSchema>;
 };
-
-function stubFetch(fn: (url: string) => Response) {
-  fetchSpy = spyOn(globalThis, "fetch").mockImplementation(((
-    input: unknown,
-  ) => {
-    const url = typeof input === "string" ? input : (input as Request).url;
-    return Promise.resolve(fn(url));
-  }) as typeof fetch);
-}
-
-afterEach(() => {
-  fetchSpy?.mockRestore();
-  fetchSpy = undefined;
-});
 
 describe("event-contract tools", () => {
   async function connectClient(store = new ApprovedContractStore()) {
@@ -114,7 +97,7 @@ describe("event-contract tools", () => {
     expect(names).toContain("submit_timing");
     expect(names).not.toContain("propose_timing");
     expect(names).toContain("submit_defined_terms");
-    expect(names).toContain("propose_resolution_sources");
+    expect(names).not.toContain("propose_resolution_sources");
     expect(names).toContain("submit_resolution_source");
     expect(names).toContain("approve_event_contract");
     expect(names).toContain("get_approved_event_contract");
@@ -133,7 +116,6 @@ describe("event-contract tools", () => {
       ["submit_selected_unit", false],
       ["submit_timing", false],
       ["submit_defined_terms", false],
-      ["propose_resolution_sources", false],
       ["submit_resolution_source", false],
       ["approve_event_contract", false],
       ["get_approved_event_contract", true],
@@ -166,7 +148,6 @@ describe("event-contract tools", () => {
       propertiesFor("submit_drafted_questions")?.units?.items,
       propertiesFor("submit_selected_unit")?.selected_unit,
       propertiesFor("submit_defined_terms")?.selected_unit,
-      propertiesFor("propose_resolution_sources")?.selected_unit,
       propertiesFor("submit_resolution_source")?.selected_unit,
     ];
 
@@ -670,7 +651,7 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
     expect(tool.outputSchema?.properties).toHaveProperty("timing");
     expect(tool.outputSchema?.properties).toHaveProperty("definitions");
-    expect(tool.outputSchema?.properties).toHaveProperty(
+    expect(tool.outputSchema?.properties).not.toHaveProperty(
       "proposed_resolution_sources",
     );
     expect(tool.outputSchema?.properties).toHaveProperty("resolution_sources");
@@ -680,7 +661,6 @@ describe("event-contract tools", () => {
   });
 
   test("stores every workflow stage and recalls only approved contract content", async () => {
-    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
     const draft = {
       units: [
@@ -775,55 +755,6 @@ describe("event-contract tools", () => {
     });
     expect(definitionsApproval.isError).toBeUndefined();
 
-    const proposalInput = {
-      contract_id: contractId,
-      unit_number: 1,
-      selected_unit: selectedUnit,
-      sources: [
-        {
-          rank: 1,
-          name: "Federal Reserve decisions",
-          publisher: "Federal Reserve Board",
-          url: "https://fed.example/decisions",
-        },
-        {
-          rank: 2,
-          name: "Rate decision archive",
-          publisher: "Independent Rates Institute",
-          url: "https://rates.example/archive",
-        },
-      ],
-      followUp: "Does this source hierarchy look right?",
-    };
-    const proposalResult = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: proposalInput,
-    });
-    expectStoredPayload(proposalResult, proposalInput);
-
-    const pendingProposal = await client.callTool({
-      name: "get_approved_event_contract",
-      arguments: { contract_id: contractId },
-    });
-    expect(pendingProposal.isError).toBeUndefined();
-    expect(pendingProposal.structuredContent).not.toHaveProperty(
-      "proposed_resolution_sources",
-    );
-
-    const proposalApproval = await client.callTool({
-      name: "approve_event_contract",
-      arguments: {
-        contract_id: contractId,
-        stage: "proposed_resolution_sources",
-      },
-    });
-    expect(proposalApproval.isError).toBeUndefined();
-    const proposalApprovalText = (
-      proposalApproval.content as Array<{ type: string; text: string }>
-    )[0]!.text;
-    expect(proposalApprovalText).toContain("### Proposed Resolution Sources");
-    expect(proposalApprovalText).not.toContain("### Resolution Sources");
-
     const resolutionInput = {
       contract_id: contractId,
       unit_number: 1,
@@ -891,9 +822,6 @@ describe("event-contract tools", () => {
         event_deadline: "2026-12-31T23:59:59Z",
       },
       definitions: definitionsInput.definitions,
-      proposed_resolution_sources: {
-        sources: proposalInput.sources,
-      },
       resolution_sources: {
         sources: resolutionInput.sources,
       },
@@ -908,14 +836,12 @@ describe("event-contract tools", () => {
     expect(content[0]!.text).toContain("### Approved Definitions");
     expect(content[0]!.text).not.toContain("### Drafted Questions");
     expect(content[0]!.text).not.toContain("### Defined Terms");
-    expect(content[0]!.text).not.toContain("### Proposed Resolution Sources");
     expect(content[0]!.text).toContain("### Resolution Sources");
     expect(content[0]!.text).not.toContain("### Detailed Resolution Sources");
     expect(content[0]!.text).toContain("**cut rates**");
     expect(content[0]!.text).toContain("Federal Reserve decisions");
     expect(content[0]!.text).not.toContain("Will the ECB cut rates in 2026?");
     expect(content[0]!.text).not.toContain(definitionsInput.followUp);
-    expect(content[0]!.text).not.toContain(proposalInput.followUp);
     expect(content[0]!.text).not.toContain(resolutionInput.followUp);
     expect(content[0]!.text.match(/\*\*Selected Unit 1:/g)).toHaveLength(1);
   });
@@ -972,7 +898,6 @@ describe("event-contract tools", () => {
   });
 
   test("retries replace a stage and clear downstream snapshots", async () => {
-    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
     const draft = {
       units: [
@@ -1007,18 +932,24 @@ describe("event-contract tools", () => {
       arguments: { contract_id: contractId, stage: "defined_terms" },
     });
     await client.callTool({
-      name: "propose_resolution_sources",
+      name: "submit_resolution_source",
       arguments: {
         contract_id: contractId,
         unit_number: 1,
         selected_unit: draft.units[0],
         sources: [
           {
+            id: "federal-reserve-decisions",
             rank: 1,
+            controlsFor: ["rate decision"],
             name: "Federal Reserve decisions",
             publisher: "Federal Reserve Board",
             url: "https://fed.example/decisions",
-          },
+            publicationSchedule: "Published after each scheduled policy meeting.",
+            publiclyAccessible: true,
+            independenceNote:
+              "The public agency publishes decisions independently of market participants.",
+          }
         ],
         followUp: "Does this source hierarchy look right?",
       },
@@ -1027,7 +958,7 @@ describe("event-contract tools", () => {
       name: "approve_event_contract",
       arguments: {
         contract_id: contractId,
-        stage: "proposed_resolution_sources",
+        stage: "resolution_sources",
       },
     });
 
@@ -1079,7 +1010,6 @@ describe("event-contract tools", () => {
     const record = retrieved.structuredContent as Record<string, unknown>;
     expect(record["drafted_questions"]).toBeUndefined();
     expect(record["defined_terms"]).toBeUndefined();
-    expect(record["proposed_resolution_sources"]).toBeUndefined();
     expect(record["resolution_sources"]).toBeUndefined();
   });
 
@@ -1513,475 +1443,6 @@ describe("event-contract tools", () => {
     );
   });
 
-  test("propose_resolution_sources advertises an output schema", async () => {
-    const client = await connectClient();
-    const { tools } = await client.listTools();
-    const tool = tools.find((t) => t.name === "propose_resolution_sources")!;
-    expect(tool.outputSchema).toBeDefined();
-    expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
-    expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
-    expect(tool.outputSchema?.properties).toHaveProperty("sources");
-    expect(tool.outputSchema?.properties).toHaveProperty("coverage_gaps");
-    expect(tool.outputSchema?.properties).toHaveProperty("alternative_market");
-    expect(tool.outputSchema?.properties).toHaveProperty("followUp");
-    const alternativeSchema = tool.outputSchema?.properties
-      ?.alternative_market as JsonSchema | undefined;
-    expect(alternativeSchema?.properties).toHaveProperty(
-      "display_question_unit",
-    );
-    expect(alternativeSchema?.properties).not.toHaveProperty("selected_unit");
-    const sourcesSchema = tool.outputSchema?.properties?.sources as
-      | JsonSchema
-      | undefined;
-    expect(sourcesSchema?.items?.properties).toHaveProperty("url");
-    expect(
-      (sourcesSchema?.items?.properties?.url as JsonSchema | undefined)
-        ?.description,
-    ).toContain("Source locator URL");
-    expect(sourcesSchema?.minItems).toBe(1);
-  });
-
-  test("propose_resolution_sources renders clickable source URLs in rank order and echoes structured content", async () => {
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-      },
-      sources: [
-        {
-          rank: 2,
-          name: "FRED CPI series",
-          publisher: "Federal Reserve Bank of St. Louis",
-          url: "https://fred.stlouisfed.org/series/CPIAUCNS",
-        },
-        {
-          rank: 1,
-          name: "BLS Consumer Price Index",
-          publisher: "U.S. Bureau of Labor Statistics",
-          url: "https://www.bls.gov/cpi/",
-        },
-      ],
-      followUp:
-        "Does this source hierarchy look right, or should we add, remove, or reorder any source?",
-    };
-    stubFetch(() => new Response(null, { status: 200 }));
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: input,
-    });
-
-    expectStoredPayload(result, input);
-
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain(
-      "**Selected Unit 1: Binary market**\n- Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-    );
-    expect(text).toContain(
-      "---\n\n### Resolution Source Hierarchy\n\n" +
-        "**1. BLS Consumer Price Index** (U.S. Bureau of Labor Statistics)\n" +
-        "- URL: [https://www.bls.gov/cpi/](https://www.bls.gov/cpi/)",
-    );
-    // Rank 1 renders before rank 2 regardless of input order.
-    const primaryIdx = text.indexOf("**1. BLS Consumer Price Index**");
-    const fallbackIdx = text.indexOf("**2. FRED CPI series**");
-    expect(primaryIdx).toBeGreaterThanOrEqual(0);
-    expect(fallbackIdx).toBeGreaterThan(primaryIdx);
-    expect(text).toContain(
-      "- URL: [https://fred.stlouisfed.org/series/CPIAUCNS]" +
-        "(https://fred.stlouisfed.org/series/CPIAUCNS)",
-    );
-    // Full per-source detail still does not leak into the concise proposal.
-    expect(text).not.toContain("- Establishes:");
-    expect(text).toContain("---\n\n" + input.followUp);
-  });
-
-  test("propose_resolution_sources silently keeps only links verified with HTTP 200", async () => {
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-      },
-      sources: [
-        {
-          rank: 1,
-          name: "BLS Consumer Price Index",
-          publisher: "U.S. Bureau of Labor Statistics",
-          url: "https://www.bls.gov/cpi/",
-        },
-        {
-          rank: 2,
-          name: "Stale CPI mirror",
-          publisher: "Independent Data Archive",
-          url: "https://archive.example/cpi",
-        },
-      ],
-      followUp: "Does this source hierarchy look right?",
-    };
-    stubFetch((url) =>
-      url.includes("archive.example")
-        ? new Response(null, { status: 204 })
-        : new Response(null, { status: 200 }),
-    );
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: input,
-    });
-
-    expect(result.isError).toBeUndefined();
-    expect(
-      (result.structuredContent as { sources: unknown[] }).sources,
-    ).toEqual([input.sources[0]]);
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain(
-      "- URL: [https://www.bls.gov/cpi/](https://www.bls.gov/cpi/)",
-    );
-    expect(text).not.toContain("archive.example");
-    expect(text).not.toContain("Link check");
-    expect(text).not.toContain("204");
-  });
-
-  test("propose_resolution_sources returns no proposal when no URL returns HTTP 200", async () => {
-    stubFetch(
-      () => new Response(null, { status: 404, statusText: "Not Found" }),
-    );
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-        },
-        sources: [
-          {
-            rank: 1,
-            name: "Unavailable CPI source",
-            publisher: "Unavailable Statistics Agency",
-            url: "https://unavailable.example/cpi",
-          },
-        ],
-        followUp: "Which source should be used?",
-      },
-    });
-
-    expect(result.isError).toBe(true);
-    const content = result.content as Array<{ type: string; text: string }>;
-    expect(content[0]!.text).toBe(
-      "No resolution-source proposal is available.",
-    );
-    expect(content[0]!.text).not.toContain("404");
-    expect(content[0]!.text).not.toContain("unavailable.example");
-    expect(result.structuredContent).toBeUndefined();
-  });
-
-  test("propose_resolution_sources omits an alternative with fewer than two verified links", async () => {
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will the metric reach the threshold by June 2026?",
-      },
-      sources: [
-        {
-          rank: 1,
-          name: "Primary metric report",
-          publisher: "Primary Statistics Agency",
-          url: "https://primary.example/metric",
-        },
-        {
-          rank: 2,
-          name: "Independent metric report",
-          publisher: "Independent Statistics Agency",
-          url: "https://independent.example/metric",
-        },
-      ],
-      coverage_gaps: ["the regional breakdown"],
-      alternative_market: {
-        unit_number: 2,
-        display_question_unit: {
-          type: "binary" as const,
-          question:
-            "Will the national metric reach the threshold by June 2026?",
-        },
-        rationale:
-          "The national version stays close to the user's intent and is published independently by two agencies.",
-        sources: [
-          {
-            name: "National agency series",
-            publisher: "National Statistics Agency",
-            url: "https://national.example/metric",
-          },
-          {
-            name: "Unavailable research series",
-            publisher: "Independent Research Institute",
-            url: "https://research.example/unavailable",
-          },
-        ],
-      },
-      followUp: "Would you prefer the nearby alternative market?",
-    };
-    stubFetch((url) =>
-      url.includes("unavailable")
-        ? new Response(null, { status: 404 })
-        : new Response(null, { status: 200 }),
-    );
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: input,
-    });
-
-    expect(result.isError).toBeUndefined();
-    expect(
-      (result.structuredContent as { alternative_market?: unknown })
-        .alternative_market,
-    ).toBeUndefined();
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain("⚠ No authoritative primary source was found for:");
-    expect(text).not.toContain("Nearby Alternative Display Question");
-    expect(text).not.toContain("research.example/unavailable");
-  });
-
-  test("propose_resolution_sources rejects an empty source list", async () => {
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-        },
-        sources: [],
-        followUp: "Which source?",
-      },
-    });
-
-    expect(result.isError).toBe(true);
-  });
-
-  test("propose_resolution_sources requires a valid source URL", async () => {
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-        },
-        sources: [
-          {
-            rank: 1,
-            name: "BLS Consumer Price Index",
-            publisher: "U.S. Bureau of Labor Statistics",
-            url: "not-a-url",
-          },
-          {
-            rank: 2,
-            name: "FRED CPI series",
-            publisher: "Federal Reserve Bank of St. Louis",
-            url: "https://fred.stlouisfed.org/series/CPIAUCNS",
-          },
-        ],
-        followUp: "Does this source hierarchy look right?",
-      },
-    });
-
-    expect(result.isError).toBe(true);
-  });
-
-  test("propose_resolution_sources allows a primary-only hierarchy with a warning", async () => {
-    stubFetch(() => new Response(null, { status: 200 }));
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-        },
-        sources: [
-          {
-            rank: 1,
-            name: "BLS Consumer Price Index",
-            publisher: "U.S. Bureau of Labor Statistics",
-            url: "https://www.bls.gov/cpi/",
-          },
-        ],
-        followUp: "Which source?",
-      },
-    });
-
-    expect(result.isError).toBeUndefined();
-    const content = result.content as Array<{ type: string; text: string }>;
-    expect(content[0]!.text).toContain(
-      "⚠ Warning: Only one resolution source is supplied.",
-    );
-    expect(content[0]!.text).toContain(
-      "the market will have no pre-approved fallback resolution source.",
-    );
-    expect(content[0]!.text).toContain(
-      "No independent fallback source was found or approved for this market.",
-    );
-    expect(content[0]!.text).toContain(
-      "Alternative: consider a nearby proxy or revised market question",
-    );
-  });
-
-  test("propose_resolution_sources rejects repeated publishers as non-independent", async () => {
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will the metric reach the threshold by June 2026?",
-        },
-        sources: [
-          {
-            rank: 1,
-            name: "Agency Alpha official series",
-            publisher: "Agency Alpha",
-            url: "https://alpha.example/series",
-          },
-          {
-            rank: 2,
-            name: "Agency Alpha mirror",
-            publisher: " agency alpha ",
-            url: "https://alpha.example/mirror",
-          },
-        ],
-        followUp: "Does this source hierarchy look right?",
-      },
-    });
-
-    expect(result.isError).toBe(true);
-  });
-
-  test("propose_resolution_sources renders source coverage gaps and a two-source alternative", async () => {
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will the metric reach the threshold by June 2026?",
-      },
-      sources: [
-        {
-          rank: 1,
-          name: "Primary metric report",
-          publisher: "Primary Statistics Agency",
-          url: "https://primary.example/metric",
-        },
-      ],
-      coverage_gaps: ["the regional breakdown"],
-      alternative_market: {
-        unit_number: 2,
-        display_question_unit: {
-          type: "binary" as const,
-          question:
-            "Will the national metric reach the threshold by June 2026?",
-        },
-        rationale:
-          "The national version stays close to the user's intent and is published independently by two agencies.",
-        sources: [
-          {
-            name: "National agency series",
-            publisher: "National Statistics Agency",
-            url: "https://national.example/metric",
-          },
-          {
-            name: "Independent research series",
-            publisher: "Independent Research Institute",
-            url: "https://research.example/metric",
-          },
-        ],
-      },
-      followUp:
-        "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
-    };
-    stubFetch(() => new Response(null, { status: 200 }));
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: input,
-    });
-
-    expect(result.isError).toBeUndefined();
-    expectStoredPayload(result, input);
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain(
-      "⚠ No authoritative primary source was found for: the regional breakdown.",
-    );
-    expect(text).toContain(
-      "Alternative required: propose a nearby or proxy market with at least two independent resolution sources",
-    );
-    expect(text).toContain("### Nearby Alternative Display Question");
-    expect(text).not.toContain("### Definitions");
-    expect(text).toContain(
-      "**Alternative Unit 2: Binary market**\n" +
-        "- Will the national metric reach the threshold by June 2026?",
-    );
-    expect(text).toContain(
-      "- If selected: treat this display-question proposal as Unit 2, then continue with define-timing and define-terms from scratch; re-check these source candidates after the new timing and definitions are agreed.",
-    );
-    expect(text).toContain(
-      "- Independent resolution sources:\n" +
-        "  - **National agency series** (National Statistics Agency)",
-    );
-  });
-
-  test("propose_resolution_sources requires contiguous primary and fallback ranks", async () => {
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "propose_resolution_sources",
-      arguments: {
-        unit_number: 1,
-        selected_unit: {
-          type: "binary",
-          question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-        },
-        sources: [
-          {
-            rank: 1,
-            name: "BLS Consumer Price Index",
-            publisher: "U.S. Bureau of Labor Statistics",
-            url: "https://www.bls.gov/cpi/",
-          },
-          {
-            rank: 3,
-            name: "FRED CPI series",
-            publisher: "Federal Reserve Bank of St. Louis",
-            url: "https://fred.stlouisfed.org/series/CPIAUCNS",
-          },
-        ],
-        followUp: "Which source?",
-      },
-    });
-
-    expect(result.isError).toBe(true);
-  });
 
   test("submit_resolution_source advertises an output schema", async () => {
     const client = await connectClient();
@@ -2044,8 +1505,6 @@ describe("event-contract tools", () => {
       followUp:
         "Does this source hierarchy look right, or should we adjust it?",
     };
-    stubFetch(() => new Response(null, { status: 200 }));
-
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -2079,57 +1538,7 @@ describe("event-contract tools", () => {
     expect(text).toContain("---\n\n" + input.followUp);
   });
 
-  test("submit_resolution_source checks URLs without exposing check status or access metadata", async () => {
-    const url = "https://unavailable.example/cpi";
-    const checkedUrls: string[] = [];
-    const input = {
-      unit_number: 1,
-      selected_unit: {
-        type: "binary" as const,
-        question: "Will U.S. CPI rise 3%+ year-over-year in June 2026?",
-      },
-      sources: [
-        {
-          id: "unavailable-cpi",
-          rank: 1,
-          controlsFor: ["headline CPI value"],
-          name: "Unavailable CPI source",
-          publisher: "Statistics Agency",
-          url,
-          publicationSchedule: "Monthly publication.",
-          publiclyAccessible: false,
-          independenceNote: "The agency publishes the official value.",
-        },
-      ],
-      followUp: "Does this source hierarchy look right?",
-    };
-    stubFetch((checkedUrl) => {
-      checkedUrls.push(checkedUrl);
-      return new Response(null, { status: 404, statusText: "Not Found" });
-    });
-    const client = await connectClient();
-
-    const result = await client.callTool({
-      name: "submit_resolution_source",
-      arguments: input,
-    });
-
-    expect(result.isError).toBeUndefined();
-    expect(checkedUrls).toEqual([url]);
-    expectStoredPayload(result, input);
-    const content = result.content as Array<{ type: string; text: string }>;
-    const text = content[0]!.text;
-    expect(text).toContain(
-      "⚠ One or more resolution sources are not publicly accessible or could not be automatically verified",
-    );
-    expect(text).not.toContain("404");
-    expect(text).not.toContain("Link check");
-    expect(text).not.toContain("Publicly accessible");
-    expect(text).not.toContain("publiclyAccessible");
-  });
-
   test("submit_resolution_source allows a primary-only hierarchy with a warning", async () => {
-    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({
@@ -2266,7 +1675,6 @@ describe("event-contract tools", () => {
       followUp:
         "The regional breakdown lacks a primary source. Would you prefer the nearby alternative market?",
     };
-    stubFetch(() => new Response(null, { status: 200 }));
     const client = await connectClient();
 
     const result = await client.callTool({

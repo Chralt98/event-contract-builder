@@ -31,8 +31,8 @@ export function registerApproveEventContractTool(
         "Record an explicit user approval for one pending event-contract " +
         "workflow stage. Call this only after the user has confirmed that " +
         "stage in chat; submit_* tools do not imply approval. Approve stages " +
-        "in order: selected_unit, timing, defined_terms, " +
-        "proposed_resolution_sources, then resolution_sources.",
+        "in order: selected_unit, timing, defined_terms, then " +
+        "resolution_sources.",
       inputSchema: approvalShape,
       outputSchema: approvalOutputSchema,
       annotations: {

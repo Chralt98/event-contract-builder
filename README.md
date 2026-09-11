@@ -190,9 +190,8 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 | `submit_selected_unit`        | Validate and store the user's selected unit as pending until explicitly approved.                                                       |
 | `submit_timing`               | Validate, store, and render the pending final event, trading, and expiration timing submission from `define-timing`.                    |
 | `submit_defined_terms`        | Validate and render definitions for a selected unit.                                                                                    |
-| `propose_resolution_sources`  | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives                                   |
-| `submit_resolution_source`    | Validate and render pending full source details with independence and aggregate advisory URL warnings.                                  |
-| `approve_event_contract`      | Record explicit user approval for the selected unit, timing, definitions, the source proposal, or detailed source records.             |
+| `submit_resolution_source`    | Validate and render the complete Resolution Source Hierarchy with independent-source validation.                                       |
+| `approve_event_contract`      | Record explicit user approval for the selected unit, timing, definitions, or detailed source records.                                 |
 | `get_approved_event_contract` | Retrieve only explicitly approved workflow content, including timing, from the current session or an explicit `contract_id` handoff.    |
 
 The `skills/` directory contains five focused capabilities: drafting display
@@ -306,13 +305,13 @@ percent in June 2026"`. Organize the result into selectable units, then
    the user explicitly agrees, call `approve_event_contract` with
    `stage: "defined_terms"`.
 
-3. **Choose sources** — after the user agrees to the definitions, use the
-   `define-resolution-source` skill with the approved timing. Check source
-   publication schedules against the approved event boundary and expiration;
-   return to `define-timing` if the hierarchy is incompatible. First call
-   `propose_resolution_sources`
-   with the carried `contract_id`, ranked names, publishers, and source URLs
-   selected under the URL locator policy:
+3. **Choose and submit sources** — after the user agrees to the definitions,
+   use the `define-resolution-source` skill with the approved timing. Check
+   source publication schedules against the approved event boundary and
+   expiration; return to `define-timing` if the hierarchy is incompatible.
+   Call `submit_resolution_source` once with the carried `contract_id`, exact
+   selected unit, full ranked source records, and source URLs selected under
+   the URL locator policy:
 
    ```json
    {
@@ -323,16 +322,26 @@ percent in June 2026"`. Organize the result into selectable units, then
      },
      "sources": [
        {
+         "id": "bls-cpi",
          "rank": 1,
          "name": "Consumer Price Index",
          "publisher": "U.S. Bureau of Labor Statistics",
-         "url": "https://www.bls.gov/cpi/"
+         "url": "https://www.bls.gov/cpi/",
+         "publicationSchedule": "Published monthly.",
+         "controlsFor": ["CPI year-over-year rate"],
+         "publiclyAccessible": true,
+         "independenceNote": "The public agency publishes the index independently of market participants."
        },
        {
+         "id": "fred-cpi",
          "rank": 2,
          "name": "FRED CPI series",
          "publisher": "Federal Reserve Bank of St. Louis",
-         "url": "https://fred.stlouisfed.org/series/CPIAUCNS"
+         "url": "https://fred.stlouisfed.org/series/CPIAUCNS",
+         "publicationSchedule": "Updated as the source series is released.",
+         "controlsFor": ["Fallback CPI year-over-year rate"],
+         "publiclyAccessible": true,
+         "independenceNote": "The Federal Reserve Bank of St. Louis publishes the public series independently of market participants."
        }
      ],
      "followUp": "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
@@ -346,8 +355,8 @@ percent in June 2026"`. Organize the result into selectable units, then
    where the future publication is expected. Methodology pages, press releases,
    and documentation are supporting references only. Never use a historical
    page for a different event, a guessed future path, or an ephemeral tracking
-   URL. The background HTTP-200 check confirms reachability, not authority or
-   content suitability.
+   URL. The tool does not verify or fetch the URL; users should inspect each
+   locator and confirm that it is appropriate before locking the hierarchy.
 
    The fallback must be independently produced by a different source agency;
    a second page, dataset, mirror, re-publication, or alias of the same agency
@@ -370,22 +379,17 @@ percent in June 2026"`. Organize the result into selectable units, then
    kind of new display-question alternative without silently replacing the
    selected question.
 
-   Before rendering this proposal, the tool checks every clickable main and
-   alternative source URL in the background and keeps only links whose final
-   response is HTTP `200`. It does not show those preflight statuses or failure
-   details. If no main source passes, the tool returns no source proposal so
-   replacement URLs can be supplied.
+   The tool renders the detailed `Resolution Source Hierarchy` directly. URL
+   locators are stored for user inspection and are not fetched or verified by
+   the MCP server.
 
-4. **Submit sources** — after the user approves the hierarchy, call
-   `approve_event_contract` with `stage: "proposed_resolution_sources"`, then
-   call `submit_resolution_source` with the same `contract_id` and full source
-   records and present its returned Markdown faithfully, translating fixed
-   English renderer labels into the user's language while preserving source
-   data. The detailed source submission remains pending until the user
-   explicitly approves it; then call `approve_event_contract` with
-   `stage: "resolution_sources"`. Revise the hierarchy if the user requests
-   it. If the user selects an alternative market, omit the original ID so its
-   definitions and sources start a separate saved record.
+4. **Approve sources** — present the complete returned Markdown faithfully,
+   translating fixed English renderer labels into the user's language while
+   preserving source data. The source submission remains pending until the
+   user explicitly approves it; then call `approve_event_contract` with
+   `stage: "resolution_sources"`. Revise and resubmit the hierarchy if the
+   user requests it. If the user selects an alternative market, omit the
+   original ID so its definitions and sources start a separate saved record.
 
 5. **Recall** — when the user asks to see the approved event-contract
    information later in the chat, call `get_approved_event_contract`. Omit
