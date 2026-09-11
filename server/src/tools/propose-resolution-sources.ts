@@ -105,7 +105,7 @@ const proposalShape = {
   alternative_market: alternativeMarketSchema
     .optional()
     .describe(
-      "A newly drafted nearby or proxy display-question unit with at least two independent source agencies, required by the workflow when source coverage is incomplete or no independent fallback can be found. This is a question proposal, not term definitions; only pass it as selected_unit to define-terms after the user chooses it.",
+      "A newly drafted nearby or proxy display-question unit with at least two independent source agencies, required by the workflow when source coverage is incomplete or no independent fallback can be found. This is a question proposal, not term definitions; only pass it as selected_unit to define-timing, then define-terms, after the user chooses it.",
     ),
   followUp: z
     .string()
@@ -132,9 +132,9 @@ export function registerProposeResolutionSourcesTool(
         "Before rendering, silently keep only candidate URLs whose final response " +
         "is HTTP 200; do not expose the preflight result. " +
         "Call this in the first turn — after identifying the source(s) but before " +
-        "submit_resolution_source. Call it only after the selected unit and " +
-        "definitions have been explicitly approved. Carry contract_id from the " +
-        "definitions result.",
+        "submit_resolution_source. Call it only after the selected unit, timing, " +
+        "and definitions have been explicitly approved. Carry contract_id from " +
+        "the definitions result.",
       inputSchema: proposalShape,
       outputSchema: proposalShape,
       annotations: {

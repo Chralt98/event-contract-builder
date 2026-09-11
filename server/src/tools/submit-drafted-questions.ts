@@ -44,8 +44,9 @@ const draftedQuestionsShape = {
     .describe(
       "The required follow-up line asking which unit to use for further " +
         "specification, or how the draft should be revised. Include a hint " +
-        "about the next step: once the user is satisfied and selects a unit, " +
-        "the specific words and terms in that question will be defined.",
+        "about the next steps: after the user selects a unit, first propose " +
+        "and review its timing; only after timing is approved should the " +
+        "specific words and terms in that question be defined.",
     ),
 };
 

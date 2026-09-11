@@ -58,7 +58,8 @@ The result must contain only new trader-facing question text (or a complete
 question group/template unit). It is not a definitions map and is not selected
 until the user explicitly chooses it. The source workflow presents it as
 `alternative_market.display_question_unit`; only after selection is it passed
-to `define-terms` as `selected_unit`. Never silently replace the original
+to `define-timing`, and then to `define-terms` after timing approval, as
+`selected_unit`. Never silently replace the original
 question, and do not carry the original unit's definitions into the
 alternative.
 
@@ -107,7 +108,7 @@ Use these unit shapes:
 
 For a template, preserve the exact placeholder spelling between `question` and each variable `name`: `<date>` maps to `"name": "date"`. Variable names and values must be unique as described above.
 
-The required `followUp` must refer to selectable unit numbers, not the raw number of questions. For one unit, ask whether to use Unit 1 for further specification or how it should be revised. For multiple units, ask which unit number (for example, "1, 2, or 3") to use or how they should be revised.
+The required `followUp` must refer to selectable unit numbers, not the raw number of questions. For one unit, ask whether to use Unit 1 for further specification or how it should be revised. For multiple units, ask which unit number (for example, "1, 2, or 3") to use or how they should be revised. Its next-step hint must identify timing proposal and review as the immediate next stage; terms are defined only after timing is approved.
 
 Do not paraphrase, reformat, renumber, or add to the Markdown returned by `submit_drafted_questions`.
 
@@ -127,11 +128,11 @@ When it does, do not generate or restate questions and do not call
 selected unit, its unit number, and the carried `contract_id` when available.
 Because the user's message is an explicit selection, immediately call
 `approve_event_contract` with `stage: "selected_unit"` and the same identifier.
-Only after that approval succeeds, respond with `Defining the terms in the
-selected unit now.` and hand the exact selected unit to `define-terms`; do not
-call `submit_defined_terms` before the selected-unit approval. For a selected
-`alternative_market`, start a separate record by submitting and approving its
-new selected unit, omitting the original contract ID.
+Only after that approval succeeds, hand the exact selected unit to
+`define-timing`; do not call `submit_defined_terms` before timing is explicitly
+approved. For a selected `alternative_market`, start a separate record by
+submitting and approving its new selected unit, then run `define-timing`,
+omitting the original contract ID.
 
 If the message is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing. Do not call `submit_drafted_questions` in that case.
 

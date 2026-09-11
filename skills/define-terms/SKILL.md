@@ -5,11 +5,12 @@ description: Identify genuinely ambiguous terms in a selected prediction-market 
 
 # Purpose
 
-Use this skill after a user selects, confirms, or chooses a display-question
-unit from an existing draft or selects the new display-question unit offered
-inside an `alternative_market` by the resolution-source step. It expects the
-exact selected unit and its 1-based unit number, and produces a glossary of only
-the terms that need clarification.
+Use this skill after a user selects, confirms, and approves timing for a
+display-question unit from an existing draft or selects the new
+display-question unit offered inside an `alternative_market` by the
+resolution-source step. It expects the exact selected unit, its 1-based unit
+number, and the approved timing, and produces a glossary of only the terms that
+need clarification.
 
 Read [references/definition-spec.md](references/definition-spec.md) before analyzing a unit. It contains the ambiguity criteria, exclusions, definition rules, and `submit_defined_terms` contract.
 
@@ -23,8 +24,9 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
    missing or ambiguous, ask for clarification and stop. A scalar, categorical,
    or template selection always means the complete group, including every
    template variable and value. Confirm that the host has already submitted
-   and explicitly approved this selected unit; if not, stop and return to the
-   selection handoff without calling `submit_defined_terms`.
+   and explicitly approved this selected unit and its timing; if not, stop and
+   return to the selection or timing handoff without calling
+   `submit_defined_terms`.
 2. Analyze the exact selected unit for terms that a trader or resolution authority could reasonably interpret in more than one way.
 3. Propose concise, dispute-resistant definitions without rewriting the selected questions.
 4. After selected-unit approval has succeeded, call `submit_defined_terms`
@@ -50,7 +52,7 @@ The selected unit is supplied directly to this skill by the host workflow. Do no
   provisional; after its definitions are agreed, route back to
   `define-resolution-source` to re-check them for the new unit.
 - Do not call `submit_defined_terms` when the selected unit is unclear; ask for clarification when necessary. If no genuine ambiguity exists, submit an empty definitions map so the tool can render that result.
-- Do not call `submit_defined_terms` while the selected unit is only pending;
-  the selected-unit approval must be recorded first.
+- Do not call `submit_defined_terms` while the selected unit or timing is only
+  pending; both approvals must be complete first.
 - If the unit came from a newly selected `alternative_market`, omit the
   original contract ID and start a separate saved record for that unit.

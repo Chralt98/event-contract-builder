@@ -7,6 +7,7 @@ import type { DataSource } from "../../src/schema/resolution";
 import type { ApprovedContractRecall } from "./approved-contract-store";
 import { parseConnectorDraftUnit } from "./connector-draft-unit";
 import type { AlternativeMarketT } from "./source-alternative";
+import { type ParsedTimingPayloadT, type TimingDataT } from "./timing";
 
 type DataSourceT = z.infer<typeof DataSource>;
 
@@ -124,7 +125,7 @@ export function renderSourceCoverageAdvice(
         ) +
         "\n" +
         `- Rationale: ${alternativeMarket.rationale}\n` +
-        `- If selected: treat this display-question proposal as Unit ${alternativeMarket.unit_number}, then continue with define-terms from scratch; re-check these source candidates after the new definitions are agreed.\n` +
+        `- If selected: treat this display-question proposal as Unit ${alternativeMarket.unit_number}, then continue with define-timing and define-terms from scratch; re-check these source candidates after the new timing and definitions are agreed.\n` +
         "- Independent resolution sources:\n" +
         alternativeMarket.sources
           .map(
@@ -167,6 +168,135 @@ export function renderSources(sources: DataSourceT[]): string {
     .join("\n\n");
 }
 
+function formatLocalTimestamp(timestamp: string, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  const values = Object.fromEntries(
+    parts
+      .filter(({ type }) => type !== "literal")
+      .map(({ type, value }) => [type, value]),
+  ) as Record<string, string>;
+  return `${values.year}-${values.month}-${values.day} ${values.hour}:${values.minute}:${values.second}`;
+}
+
+function timelineEntry(
+  timestamp: string,
+  timeZone: string,
+  label: string,
+): string {
+  return [
+    `${formatLocalTimestamp(timestamp, timeZone)} ${timeZone}`,
+    `UTC: ${timestamp}`,
+    label,
+  ].join("\n");
+}
+
+function renderTimingTimeline(timing: TimingDataT): string {
+  const entries = [
+    timelineEntry(
+      timing.trading.start,
+      timing.trading.time_zone,
+      "Trading opens",
+    ),
+    timelineEntry(
+      timing.trading.end,
+      timing.trading.time_zone,
+      "Trading closes",
+    ),
+  ];
+
+  if (timing.timing_type === "point_in_time") {
+    entries.push(
+      timelineEntry(timing.event_deadline!, timing.time_zone, "Event deadline"),
+    );
+  } else {
+    entries.push(
+      timelineEntry(
+        timing.observation_start!,
+        timing.time_zone,
+        "Observation starts",
+      ),
+      timelineEntry(
+        timing.observation_end!,
+        timing.time_zone,
+        "Observation ends",
+      ),
+    );
+  }
+
+  entries.push(
+    timelineEntry(
+      timing.expiration.datetime,
+      timing.expiration.time_zone,
+      "Contract expires",
+    ),
+  );
+
+  return ["```text", entries.join("\n        │\n"), "```"].join("\n");
+}
+
+function renderTimingKeyRules(timing: TimingDataT): string {
+  const observationWindow =
+    timing.timing_type === "point_in_time"
+      ? "N/A"
+      : `${timing.observation_start} → ${timing.observation_end}`;
+  const boundary =
+    timing.timing_type === "point_in_time"
+      ? timing.boundary.end
+      : `start ${timing.boundary.start}, end ${timing.boundary.end}`;
+  const eventType =
+    timing.timing_type === "point_in_time"
+      ? "Point-in-time event"
+      : "Measurement";
+
+  return [
+    "**Key rules**",
+    "",
+    "| Item | Proposed value |",
+    "|---|---|",
+    `| Event type | ${eventType} |`,
+    `| Observation window | ${observationWindow} |`,
+    `| Boundary | ${boundary} |`,
+    `| Evidence rule | ${timing.evidence_rule} |`,
+    `| Time zone | ${timing.time_zone} |`,
+  ].join("\n");
+}
+
+/** Renders the complete timing body in the recommended proposal shape. */
+function renderTimingBody(
+  timing: TimingDataT,
+  heading = "**Timing proposal**",
+): string {
+  return [
+    heading,
+    renderTimingTimeline(timing),
+    renderTimingKeyRules(timing),
+  ].join("\n\n");
+}
+
+/** Renders the final timing submission in the recommended proposal shape. */
+export function renderTimingSubmission(
+  timing: ParsedTimingPayloadT,
+  unit: DraftUnitT,
+  unitNumber: number,
+): string {
+  return [
+    renderUnitHeader(unit, unitNumber),
+    "---",
+    renderTimingBody(timing),
+    "---",
+    timing.followUp,
+  ].join("\n\n");
+}
+
 /**
  * Renders only the approved contract content. The initial candidate draft,
  * workflow follow-ups, and unselected source alternatives are intentionally
@@ -183,6 +313,10 @@ export function renderApprovedContract(
       contract.unit_number,
     ),
   ];
+
+  if (contract.timing) {
+    parts.push("### Approved Timing", renderTimingBody(contract.timing));
+  }
 
   if (contract.definitions) {
     parts.push(

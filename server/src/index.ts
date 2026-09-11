@@ -7,6 +7,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { registerSubmitDraftedQuestionsTool } from "./tools/submit-drafted-questions";
 import { registerSubmitSelectedUnitTool } from "./tools/submit-selected-unit";
+import { registerSubmitTimingTool } from "./tools/submit-timing";
 import { registerSubmitDefinedTermsTool } from "./tools/submit-defined-terms";
 import { registerProposeResolutionSourcesTool } from "./tools/propose-resolution-sources";
 import { registerSubmitResolutionSourceTool } from "./tools/submit-resolution-source";
@@ -38,6 +39,7 @@ export function createServer(store = new ApprovedContractStore()) {
 
   registerSubmitDraftedQuestionsTool(server, store);
   registerSubmitSelectedUnitTool(server, store);
+  registerSubmitTimingTool(server, store);
   registerSubmitDefinedTermsTool(server, store);
   registerProposeResolutionSourcesTool(server, store);
   registerSubmitResolutionSourceTool(server, store);

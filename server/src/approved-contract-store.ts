@@ -4,6 +4,7 @@ import { Definitions } from "../../src/schema/display-question";
 import { DataSource } from "../../src/schema/resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { alternativeMarketSchema } from "./source-alternative";
+import { timingDataSchema, timingPayloadSchema } from "./timing";
 
 /** The identifier shared by all stages of one event-contract workflow. */
 export const ContractId = z
@@ -24,6 +25,8 @@ const selectedUnitRecord = z.object({
   unit_number: z.number().int(),
   selected_unit: ConnectorDraftUnit,
 });
+
+const timingRecord = timingPayloadSchema;
 
 const definedTermsRecord = z.object({
   unit_number: z.number().int(),
@@ -59,6 +62,7 @@ const resolutionSourcesRecord = z.object({
 
 export const approvalStageSchema = z.enum([
   "selected_unit",
+  "timing",
   "defined_terms",
   "proposed_resolution_sources",
   "resolution_sources",
@@ -73,6 +77,7 @@ export const approvedContractSchema = z.object({
   contract_id: ContractId,
   drafted_questions: draftedQuestionsRecord.optional(),
   selected_unit: selectedUnitRecord.optional(),
+  timing: timingRecord.optional(),
   defined_terms: definedTermsRecord.optional(),
   proposed_resolution_sources: sourceProposalRecord.optional(),
   resolution_sources: resolutionSourcesRecord.optional(),
@@ -86,6 +91,7 @@ export const approvedContractRecallSchema = z.object({
   contract_id: ContractId,
   unit_number: z.number().int(),
   selected_unit: ConnectorDraftUnit,
+  timing: timingDataSchema.optional(),
   definitions: Definitions.optional(),
   proposed_resolution_sources: z
     .object({ sources: z.array(sourceIdentity).min(1) })
@@ -102,6 +108,7 @@ export type ApprovedContractRecall = z.infer<
 export type ApprovedContractStage =
   | "drafted_questions"
   | "selected_unit"
+  | "timing"
   | "defined_terms"
   | "proposed_resolution_sources"
   | "resolution_sources";
@@ -264,6 +271,14 @@ export class ApprovedContractStore {
     return record ? structuredClone(record) : undefined;
   }
 
+  /** Require an earlier workflow stage to have been explicitly approved. */
+  requireApprovedStage(contractId: string, stage: ApprovalStage): void {
+    const record = this.get(contractId);
+    if (!record?.approved_stages.includes(stage)) {
+      throw new Error(`${stage} must be approved first.`);
+    }
+  }
+
   private persist(record: ApprovedContractRecord): void {
     this.records.set(record.contract_id, structuredClone(record));
     this.handoffStore?.save(record);
@@ -284,6 +299,9 @@ export function projectApprovedContract(
   const definedTerms = record.approved_stages.includes("defined_terms")
     ? record.defined_terms
     : undefined;
+  const timing = record.approved_stages.includes("timing")
+    ? record.timing
+    : undefined;
   const proposedResolutionSources = record.approved_stages.includes(
     "proposed_resolution_sources",
   )
@@ -301,13 +319,35 @@ export function projectApprovedContract(
     resolutionSources ??
     proposedResolutionSources ??
     definedTerms ??
+    timing ??
     selectedUnit;
   if (!selectedStage) return undefined;
+
+  const approvedTiming = timing
+    ? {
+        timing_type: timing.timing_type,
+        ...(timing.event_deadline
+          ? { event_deadline: timing.event_deadline }
+          : {}),
+        ...(timing.observation_start
+          ? { observation_start: timing.observation_start }
+          : {}),
+        ...(timing.observation_end
+          ? { observation_end: timing.observation_end }
+          : {}),
+        boundary: timing.boundary,
+        time_zone: timing.time_zone,
+        evidence_rule: timing.evidence_rule,
+        trading: timing.trading,
+        expiration: timing.expiration,
+      }
+    : undefined;
 
   return approvedContractRecallSchema.parse({
     contract_id: record.contract_id,
     unit_number: selectedStage.unit_number,
     selected_unit: selectedStage.selected_unit,
+    ...(approvedTiming ? { timing: approvedTiming } : {}),
     ...(definedTerms ? { definitions: definedTerms.definitions } : {}),
     ...(proposedResolutionSources
       ? {
@@ -329,6 +369,7 @@ export function projectApprovedContract(
 function hasSelectedUnit(record: ApprovedContractRecord): boolean {
   return Boolean(
     record.selected_unit ??
+    record.timing ??
     record.defined_terms ??
     record.proposed_resolution_sources ??
     record.resolution_sources,
@@ -342,16 +383,20 @@ function downstreamStages(
     case "drafted_questions":
       return [
         "selected_unit",
+        "timing",
         "defined_terms",
         "proposed_resolution_sources",
         "resolution_sources",
       ];
     case "selected_unit":
       return [
+        "timing",
         "defined_terms",
         "proposed_resolution_sources",
         "resolution_sources",
       ];
+    case "timing":
+      return ["defined_terms", "proposed_resolution_sources", "resolution_sources"];
     case "defined_terms":
       return ["proposed_resolution_sources", "resolution_sources"];
     case "proposed_resolution_sources":
@@ -368,6 +413,7 @@ function approvalStagesInvalidatedBy(
     stage === "drafted_questions"
       ? [
           "selected_unit",
+          "timing",
           "defined_terms",
           "proposed_resolution_sources",
           "resolution_sources",
@@ -387,8 +433,10 @@ function requiredApprovalStage(
   switch (stage) {
     case "selected_unit":
       return undefined;
-    case "defined_terms":
+    case "timing":
       return "selected_unit";
+    case "defined_terms":
+      return "timing";
     case "proposed_resolution_sources":
       return "defined_terms";
     case "resolution_sources":
@@ -433,6 +481,7 @@ function recordContainsUnit(
     record.defined_terms?.selected_unit,
     record.proposed_resolution_sources?.selected_unit,
     record.resolution_sources?.selected_unit,
+    record.timing?.selected_unit,
   ];
 
   const unitNumber = identity.unitNumber;

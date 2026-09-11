@@ -1,6 +1,6 @@
 # Resolution-source specification
 
-Read this reference when identifying and ranking sources for a selected prediction-market unit after its definitions have been agreed.
+Read this reference when identifying and ranking sources for a selected prediction-market unit after its timing and definitions have been agreed.
 
 ## Role and goal
 
@@ -17,6 +17,10 @@ The input must contain:
 - `unit_number`: the 1-based number from the prior draft;
 - `selected_unit`: the exact binary, scalar, categorical, or template market unit; and
 - `definitions`: the agreed term-to-definition map for that unit.
+
+The approved timing from `define-timing` is also required workflow context. Use
+it to test whether source publication schedules fit the event deadline or
+observation window and expiration datetime.
 
 Resolve against the agreed definitions rather than the raw question wording. If the definitions are absent or not approved, stop and return to the term-definition workflow.
 
@@ -83,7 +87,8 @@ authoritative, relevant, or populated with the required fact.
 - Give each source a stable, unique `id` slug.
 - Do not invent URLs or dataset identifiers. Apply the URL locator policy when an event-specific locator is uncertain; ask the user or leave the source unresolved only when no stable official locator can be established.
 - Do not specify how a settlement value is calculated from a source.
-- Do not specify deadlines, observation windows, or resolution periods; those are later steps.
+- Do not specify or silently revise deadlines, observation windows, or
+  expiration periods; those must already be approved in `define-timing`.
 
 ## Coverage gaps and alternatives
 
@@ -115,6 +120,11 @@ Work out the full records internally, but reveal the hierarchy in two turns. The
 
 ### Turn 1: propose the hierarchy
 
+Before proposing sources, verify that the approved timing is available. If a
+candidate source cannot publish the qualifying evidence within the approved
+timing, stop and return to `define-timing` with the concrete publication-
+schedule conflict; do not compensate by silently moving expiration.
+
 Call `propose_resolution_sources` with:
 
 - `contract_id`: the stable identifier returned by the draft/definition tool
@@ -129,7 +139,7 @@ Call `propose_resolution_sources` with:
   no independent fallback was found or approved. Include `coverage_gaps` and
   `alternative_market` whenever applicable. The alternative's new display
   question unit and unit number are shown as a selectable handoff to
-  `define-terms`; and
+  `define-timing`, then `define-terms` after timing approval; and
 - `followUp`: one sentence asking whether the hierarchy is correct or should
   be changed, for example: “Does this source hierarchy look right, or should we
   add, remove, or reorder any source?” When a warning or gap is present, the
@@ -145,10 +155,11 @@ unit's hierarchy, stop this source step and start a separate record by
 submitting and explicitly approving the alternative's exact
 `display_question_unit` with `submit_selected_unit` and
 `approve_event_contract` at `stage: "selected_unit"`. Then route the same unit
-as `selected_unit`, together with its `unit_number`, to `define-terms`, omitting
-the original contract ID. Do not submit the original hierarchy or carry over
-the original definitions. The alternative source list is only a candidate set
-until the new definitions are agreed.
+as `selected_unit`, together with its `unit_number`, to `define-timing` and
+then to `define-terms` after timing approval, omitting the original contract
+ID. Do not submit the original hierarchy or carry over the original
+definitions. The alternative source list is only a candidate set until the
+new timing and definitions are agreed.
 
 Each URL is rendered as a clickable Markdown link so the user can inspect the
 candidate source before approval. Before rendering, the deterministic proposal
@@ -214,8 +225,9 @@ other fixed UI text into the user's language while preserving source data.
 - If the user selects that alternative display-question unit, start a separate
   record by submitting and explicitly approving its exact selected unit with
   `submit_selected_unit` and `approve_event_contract` at
-  `stage: "selected_unit"`. Then route it to `define-terms` as `selected_unit`
-  with its own unit number, omitting the original contract ID. Redo definitions
-  from scratch for the new unit, and then re-evaluate its candidate sources. Do
-  not register the original hierarchy.
-- Do not move into settlement calculation or timing in this step.
+  `stage: "selected_unit"`. Then route it to `define-timing`, followed by
+  `define-terms` after timing approval, with its own unit number and omitting
+  the original contract ID. Redo timing and definitions from scratch for the
+  new unit, and then re-evaluate its candidate sources. Do not register the
+  original hierarchy.
+- Do not move into settlement calculation or redefine timing in this step.

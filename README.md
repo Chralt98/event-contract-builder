@@ -188,21 +188,22 @@ in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `submit_drafted_questions`    | Validate and render binary, scalar, categorical, and template question units.                                                           |
 | `submit_selected_unit`        | Validate and store the user's selected unit as pending until explicitly approved.                                                       |
+| `submit_timing`               | Validate, store, and render the pending final event, trading, and expiration timing submission from `define-timing`.                    |
 | `submit_defined_terms`        | Validate and render definitions for a selected unit.                                                                                    |
 | `propose_resolution_sources`  | Validate and render a concise ranked source hierarchy with clickable URLs and selectable alternatives                                   |
 | `submit_resolution_source`    | Validate and render pending full source details with independence and aggregate advisory URL warnings.                                  |
-| `approve_event_contract`      | Record explicit user approval for the selected unit, definitions, the source proposal, or detailed source records.                      |
-| `get_approved_event_contract` | Retrieve only explicitly approved workflow content from the current session, or by explicit `contract_id` handoff across HTTP sessions. |
+| `approve_event_contract`      | Record explicit user approval for the selected unit, timing, definitions, the source proposal, or detailed source records.             |
+| `get_approved_event_contract` | Retrieve only explicitly approved workflow content, including timing, from the current session or an explicit `contract_id` handoff.    |
 
-The `skills/` directory contains four focused capabilities: drafting display
-questions, defining ambiguous terms, selecting resolution sources, and
-reducing semantic risk. It is intended to be packaged with the MCP server as
-one plugin.
+The `skills/` directory contains five focused capabilities: drafting display
+questions, defining timing, defining ambiguous terms, selecting resolution
+sources, and reducing semantic risk. It is intended to be packaged with the
+MCP server as one plugin.
 
 ### Plugin package
 
 This repository is also a ChatGPT/Codex plugin package. The manifest at
-`.codex-plugin/plugin.json` discovers the four packaged skills, and
+`.codex-plugin/plugin.json` discovers the five packaged skills, and
 `.mcp.json` connects the plugin to the local HTTP MCP endpoint. Start the
 server before importing the package into a local host:
 
@@ -283,20 +284,33 @@ percent in June 2026"`. Organize the result into selectable units, then
    next workflow step. This explicit identifier is required when the host may
    invoke the next tool through a new MCP HTTP session.
 
-2. **Select and define** — when the user selects a unit, call
+2. **Select, approve timing, and define** — when the user selects a unit, call
    `submit_selected_unit` with the exact selected unit and carry the returned
    `contract_id`. After the selection is explicit in chat, call
    `approve_event_contract` with `stage: "selected_unit"`. Then use the
-   `define-terms` skill to propose precise definitions, pass the carried
-   `contract_id`, then
-   call `submit_defined_terms` and present its returned Markdown faithfully,
+   `define-timing` skill before defining terms or selecting sources. It derives
+   the event deadline or observation window when possible, records exact ISO
+   8601 UTC timestamps with named IANA time zones and inclusive/exclusive
+   boundaries, asks whether occurrence time, publication time, or both control,
+   and suggests trading start/end and expiration together. After the user
+   confirms the conversational proposal, call `submit_timing` with the complete
+   final timing fields and present its returned Markdown. The conversational
+   confirmation is the timing approval; immediately call
+   `approve_event_contract` with `stage: "timing"` without asking for a second
+   timing confirmation, then pass the approved timing unchanged downstream.
+   Then use the `define-terms` skill to
+   propose precise definitions, pass the carried `contract_id`, call
+   `submit_defined_terms`, and present its returned Markdown faithfully,
    translating fixed English renderer labels into the user's language while
    preserving the definitions. Carry the returned identifier forward. After
    the user explicitly agrees, call `approve_event_contract` with
    `stage: "defined_terms"`.
 
 3. **Choose sources** — after the user agrees to the definitions, use the
-   `define-resolution-source` skill. First call `propose_resolution_sources`
+   `define-resolution-source` skill with the approved timing. Check source
+   publication schedules against the approved event boundary and expiration;
+   return to `define-timing` if the hierarchy is incompatible. First call
+   `propose_resolution_sources`
    with the carried `contract_id`, ranked names, publishers, and source URLs
    selected under the URL locator policy:
 
@@ -346,9 +360,10 @@ percent in June 2026"`. Organize the result into selectable units, then
    definitions map. If the user selects that alternative, pass its exact
    display-question unit as `selected_unit` with its number to
    `submit_selected_unit`, call `approve_event_contract` with
-   `stage: "selected_unit"`, and only then pass it to `define-terms`. Omit the
-   original contract ID, do not reuse the original definitions or source
-   hierarchy, and re-check its source candidates after the new definitions are
+   `stage: "selected_unit"`, then run `define-timing` and obtain explicit
+   timing approval before passing it to `define-terms`. Omit the original
+   contract ID, do not reuse the original definitions or source hierarchy, and
+   re-check its source candidates after the new timing and definitions are
    agreed.
    If a required fact has no primary source, list it in `coverage_gaps`, state
    that the selected market is not fully source-covered, and offer the same

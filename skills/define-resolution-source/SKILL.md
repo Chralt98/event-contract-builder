@@ -1,6 +1,6 @@
 ---
 name: define-resolution-source
-description: Identify and rank independent authoritative settlement sources for a selected prediction-market unit after its terms are agreed; surface source gaps and offer intent-preserving alternatives before settlement-method and timing steps.
+description: Identify and rank independent authoritative settlement sources for a selected prediction-market unit after its timing and terms are agreed; surface source gaps and offer intent-preserving alternatives before settlement-method steps.
 ---
 
 # Purpose
@@ -11,7 +11,7 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
 
 ## Workflow
 
-1. Confirm that the selected unit, unit number, and agreed definitions are present. If definitions are missing or not approved, route back to `define-terms` and stop.
+1. Confirm that the selected unit, unit number, approved timing, and agreed definitions are present. If timing or definitions are missing or not approved, route back to `define-timing` or `define-terms` and stop.
 2. Map every fact required by the agreed definitions to a source before
    proposing the hierarchy. Prefer a rank-1 primary and a rank-2 fallback from
    genuinely independent source agencies. Do not count a second page, dataset,
@@ -51,8 +51,9 @@ Read [references/source-spec.md](references/source-spec.md) before sourcing a un
    `display_question_unit` with its `unit_number` through
    `submit_selected_unit`, then approving it with
    `approve_event_contract` at `stage: "selected_unit"`. Only after that
-   approval, route the same unit to `define-terms`. Omit the original contract
-   ID; do not submit the original hierarchy or reuse the original definitions.
+   approval, route the same unit to `define-timing` and then, after timing is
+   approved, to `define-terms`. Omit the original contract ID; do not submit
+   the original hierarchy or reuse the original definitions.
    The alternative's source identities are candidates that must be re-evaluated
    after its new definitions are agreed.
 7. If the user requests source-hierarchy changes instead, revise and resubmit
@@ -96,6 +97,9 @@ page.
 ## Boundaries
 
 - Resolve sources against the agreed definitions, not the raw question wording.
+- Use the approved timing when evaluating source publication schedules. Do not
+  move the event deadline, observation window, trading end, or expiration
+  silently; return to `define-timing` if the source hierarchy is incompatible.
 - Cover every fact the unit resolves on; do not leave any fact unsourced.
 - Treat source-agency independence as substantive: different URLs or dataset
   labels do not make the same publisher, upstream provider, mirror, or
@@ -122,7 +126,7 @@ page.
   unit. Do not carry over the original unit's definitions or source hierarchy;
   re-run resolution-source selection after the alternative's definitions are
   approved.
-- Do not define settlement calculations, methodology locking, deadlines, or observation windows; those belong to later steps.
+- Do not define settlement calculations, methodology locking, deadlines, or observation windows; timing must already be approved by `define-timing`.
 - Do not use this skill itself to draft questions or define ambiguous terms.
   When source coverage requires an alternative, use the
   `draft-display-question` skill for the new display-question wording and

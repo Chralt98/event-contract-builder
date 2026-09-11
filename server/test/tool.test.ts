@@ -11,6 +11,7 @@ import {
 let fetchSpy: ReturnType<typeof spyOn> | undefined;
 
 type JsonSchema = {
+  description?: string;
   enum?: string[];
   items?: JsonSchema;
   minItems?: number;
@@ -63,6 +64,45 @@ describe("event-contract tools", () => {
       arguments: { contract_id: contractId, stage: "selected_unit" },
     });
     expect(approved.isError).toBeUndefined();
+    await submitAndApproveTiming(client, contractId, unitNumber, selectedUnit);
+  }
+
+  async function submitAndApproveTiming(
+    client: Client,
+    contractId: string,
+    unitNumber: number,
+    selectedUnit: object,
+  ) {
+    const timing = {
+      contract_id: contractId,
+      unit_number: unitNumber,
+      selected_unit: selectedUnit,
+      timing_type: "point_in_time" as const,
+      event_deadline: "2026-12-31T23:59:59Z",
+      boundary: { end: "inclusive" as const },
+      time_zone: "UTC",
+      evidence_rule: "occurrence" as const,
+      trading: {
+        start: "2026-01-01T00:00:00Z",
+        end: "2026-12-30T23:59:59Z",
+        time_zone: "UTC",
+      },
+      expiration: {
+        datetime: "2027-01-02T00:00:00Z",
+        time_zone: "UTC",
+      },
+      followUp: "Do you approve this complete timing proposal?",
+    };
+    const submission = await client.callTool({
+      name: "submit_timing",
+      arguments: timing,
+    });
+    expect(submission.isError).toBeUndefined();
+    const approval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "timing" },
+    });
+    expect(approval.isError).toBeUndefined();
   }
 
   test("all tools are listed", async () => {
@@ -71,6 +111,8 @@ describe("event-contract tools", () => {
     const names = tools.map((t) => t.name);
     expect(names).toContain("submit_drafted_questions");
     expect(names).toContain("submit_selected_unit");
+    expect(names).toContain("submit_timing");
+    expect(names).not.toContain("propose_timing");
     expect(names).toContain("submit_defined_terms");
     expect(names).toContain("propose_resolution_sources");
     expect(names).toContain("submit_resolution_source");
@@ -89,6 +131,7 @@ describe("event-contract tools", () => {
     for (const [name, readOnly] of [
       ["submit_drafted_questions", false],
       ["submit_selected_unit", false],
+      ["submit_timing", false],
       ["submit_defined_terms", false],
       ["propose_resolution_sources", false],
       ["submit_resolution_source", false],
@@ -140,6 +183,21 @@ describe("event-contract tools", () => {
         "oneOf",
       );
     }
+  });
+
+  test("drafted-question follow-up guidance puts timing before terms", async () => {
+    const client = await connectClient();
+    const { tools } = await client.listTools();
+    const properties = tools.find(
+      (tool) => tool.name === "submit_drafted_questions",
+    )!.inputSchema?.properties as Record<string, JsonSchema>;
+    const description = properties.followUp?.description;
+
+    expect(description).toContain("first propose and review its timing");
+    expect(description).toContain("only after timing is approved");
+    expect(description).not.toContain(
+      "about the next step: once the user is satisfied and selects a unit",
+    );
   });
 
   test("submit_drafted_questions validates and echoes a structured draft", async () => {
@@ -356,6 +414,253 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema?.properties).toHaveProperty("contract_id");
   });
 
+  test("submit_timing advertises the complete timing payload schema", async () => {
+    const client = await connectClient();
+    const { tools } = await client.listTools();
+    const tool = tools.find((t) => t.name === "submit_timing")!;
+    expect(tool.outputSchema).toBeDefined();
+    for (const property of [
+      "unit_number",
+      "selected_unit",
+      "timing_type",
+      "event_deadline",
+      "observation_start",
+      "observation_end",
+      "boundary",
+      "time_zone",
+      "evidence_rule",
+      "trading",
+      "expiration",
+      "followUp",
+      "contract_id",
+    ]) {
+      expect(tool.outputSchema?.properties).toHaveProperty(property);
+    }
+  });
+
+  test("submit_timing renders the complete timing submission in proposal shape", async () => {
+    const client = await connectClient();
+    const selectedUnit = {
+      type: "binary" as const,
+      question: "Will the Fed cut rates in 2026?",
+    };
+    const draft = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [selectedUnit],
+        followUp: "Which unit should we use?",
+      },
+    });
+    const contractId = expectStoredPayload(draft, {
+      units: [selectedUnit],
+      followUp: "Which unit should we use?",
+    });
+    await submitAndApproveSelectedUnit(client, contractId, 1, selectedUnit);
+
+    const timing = {
+      contract_id: contractId,
+      unit_number: 1,
+      selected_unit: selectedUnit,
+      timing_type: "point_in_time" as const,
+      event_deadline: "2026-12-31T23:59:59Z",
+      boundary: { end: "inclusive" as const },
+      time_zone: "Europe/Berlin",
+      evidence_rule: "both" as const,
+      trading: {
+        start: "2026-01-01T00:00:00Z",
+        end: "2026-12-30T23:59:59Z",
+        time_zone: "Europe/Berlin",
+      },
+      expiration: {
+        datetime: "2027-01-02T00:00:00Z",
+        time_zone: "Europe/Berlin",
+      },
+      followUp: "Do you approve this complete timing proposal?",
+    };
+    const submission = await client.callTool({
+      name: "submit_timing",
+      arguments: timing,
+    });
+    expect(submission.isError).toBeUndefined();
+    expect(submission.structuredContent).toMatchObject(timing);
+    const proposalText = (
+      submission.content as Array<{ type: string; text: string }>
+    )[0]!.text;
+    expect(proposalText).toContain("**Timing proposal**");
+    expect(proposalText).toContain("Trading opens");
+    expect(proposalText).toContain("Trading closes");
+    expect(proposalText).toContain("Event deadline");
+    expect(proposalText).toContain("Contract expires");
+    expect(proposalText).toContain("**Key rules**");
+    expect(proposalText).toContain("| Event type | Point-in-time event |");
+    expect(proposalText).toContain("| Evidence rule | both |");
+    expect(proposalText).toContain(
+      "---\n\nDo you approve this complete timing proposal?",
+    );
+    expect(proposalText).not.toContain("### Submitted Timing");
+    expect(proposalText).not.toContain("### Definitions");
+
+    const pending = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(pending.isError).toBeUndefined();
+    expect(pending.structuredContent).not.toHaveProperty("timing");
+
+    const approval = await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "timing" },
+    });
+    expect(approval.isError).toBeUndefined();
+
+    const recalled = await client.callTool({
+      name: "get_approved_event_contract",
+      arguments: { contract_id: contractId },
+    });
+    expect(recalled.structuredContent).toMatchObject({
+      contract_id: contractId,
+      timing: {
+        timing_type: timing.timing_type,
+        event_deadline: timing.event_deadline,
+        boundary: timing.boundary,
+        time_zone: timing.time_zone,
+        evidence_rule: timing.evidence_rule,
+        trading: timing.trading,
+        expiration: timing.expiration,
+      },
+    });
+    expect(
+      (recalled.structuredContent as Record<string, unknown>).timing,
+    ).not.toHaveProperty("followUp");
+    expect(
+      (recalled.content as Array<{ type: string; text: string }>)[0]!.text,
+    ).toContain("### Approved Timing");
+  });
+
+  test("submit_timing requires selected-unit approval", async () => {
+    const client = await connectClient();
+    const selectedUnit = {
+      type: "binary" as const,
+      question: "Will the Fed cut rates in 2026?",
+    };
+    const draft = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [selectedUnit],
+        followUp: "Which unit should we use?",
+      },
+    });
+    const contractId = expectStoredPayload(draft, {
+      units: [selectedUnit],
+      followUp: "Which unit should we use?",
+    });
+    const submission = await client.callTool({
+      name: "submit_timing",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+        timing_type: "point_in_time",
+        event_deadline: "2026-12-31T23:59:59Z",
+        boundary: { end: "inclusive" },
+        time_zone: "UTC",
+        evidence_rule: "occurrence",
+        trading: {
+          start: "2026-01-01T00:00:00Z",
+          end: "2026-12-30T23:59:59Z",
+          time_zone: "UTC",
+        },
+        expiration: {
+          datetime: "2027-01-02T00:00:00Z",
+          time_zone: "UTC",
+        },
+        followUp: "Do you approve this timing?",
+      },
+    });
+    expect(submission.isError).toBe(true);
+    expect(
+      (submission.content as Array<{ type: string; text: string }>)[0]!.text,
+    ).toContain("selected_unit must be approved first");
+  });
+
+  test("submit_timing preserves measurement boundaries and rejects invalid ordering", async () => {
+    const client = await connectClient();
+    const selectedUnit = {
+      type: "binary" as const,
+      question: "Will CPI exceed 3 percent during 2026?",
+    };
+    const draft = await client.callTool({
+      name: "submit_drafted_questions",
+      arguments: {
+        units: [selectedUnit],
+        followUp: "Which unit should we use?",
+      },
+    });
+    const contractId = expectStoredPayload(draft, {
+      units: [selectedUnit],
+      followUp: "Which unit should we use?",
+    });
+    await submitAndApproveSelectedUnit(client, contractId, 1, selectedUnit);
+
+    const valid = await client.callTool({
+      name: "submit_timing",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+        timing_type: "measurement",
+        observation_start: "2026-01-01T00:00:00Z",
+        observation_end: "2026-12-31T23:59:59Z",
+        boundary: { start: "inclusive", end: "exclusive" },
+        time_zone: "Europe/Berlin",
+        evidence_rule: "publication",
+        trading: {
+          start: "2026-01-01T00:00:00Z",
+          end: "2026-12-30T23:59:59Z",
+          time_zone: "Europe/Berlin",
+        },
+        expiration: {
+          datetime: "2027-01-02T00:00:00Z",
+          time_zone: "Europe/Berlin",
+        },
+        followUp: "Do you approve this measurement timing?",
+      },
+    });
+    expect(valid.isError).toBeUndefined();
+    expect(valid.structuredContent).toMatchObject({
+      timing_type: "measurement",
+      observation_start: "2026-01-01T00:00:00Z",
+      observation_end: "2026-12-31T23:59:59Z",
+      boundary: { start: "inclusive", end: "exclusive" },
+    });
+
+    const invalid = await client.callTool({
+      name: "submit_timing",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+        timing_type: "measurement",
+        observation_start: "2026-12-31T23:59:59Z",
+        observation_end: "2026-01-01T00:00:00Z",
+        boundary: { start: "inclusive", end: "exclusive" },
+        time_zone: "UTC",
+        evidence_rule: "occurrence",
+        trading: {
+          start: "2026-01-01T00:00:00Z",
+          end: "2026-12-30T23:59:59Z",
+          time_zone: "UTC",
+        },
+        expiration: {
+          datetime: "2027-01-02T00:00:00Z",
+          time_zone: "UTC",
+        },
+        followUp: "Do you approve this timing?",
+      },
+    });
+    expect(invalid.isError).toBe(true);
+  });
+
   test("recall schema exposes only approved contract content", async () => {
     const client = await connectClient();
     const { tools } = await client.listTools();
@@ -363,6 +668,7 @@ describe("event-contract tools", () => {
     expect(tool.outputSchema).toBeDefined();
     expect(tool.outputSchema?.properties).toHaveProperty("unit_number");
     expect(tool.outputSchema?.properties).toHaveProperty("selected_unit");
+    expect(tool.outputSchema?.properties).toHaveProperty("timing");
     expect(tool.outputSchema?.properties).toHaveProperty("definitions");
     expect(tool.outputSchema?.properties).toHaveProperty(
       "proposed_resolution_sources",
@@ -426,6 +732,7 @@ describe("event-contract tools", () => {
       unit_number: 1,
       selected_unit: selectedUnit,
     });
+    await submitAndApproveTiming(client, contractId, 1, selectedUnit);
 
     const definitions = {
       "cut rates":
@@ -514,9 +821,7 @@ describe("event-contract tools", () => {
     const proposalApprovalText = (
       proposalApproval.content as Array<{ type: string; text: string }>
     )[0]!.text;
-    expect(proposalApprovalText).toContain(
-      "### Proposed Resolution Sources",
-    );
+    expect(proposalApprovalText).toContain("### Proposed Resolution Sources");
     expect(proposalApprovalText).not.toContain("### Resolution Sources");
 
     const resolutionInput = {
@@ -581,6 +886,10 @@ describe("event-contract tools", () => {
       contract_id: contractId,
       unit_number: definitionsInput.unit_number,
       selected_unit: definitionsInput.selected_unit,
+      timing: {
+        timing_type: "point_in_time",
+        event_deadline: "2026-12-31T23:59:59Z",
+      },
       definitions: definitionsInput.definitions,
       proposed_resolution_sources: {
         sources: proposalInput.sources,
@@ -595,14 +904,13 @@ describe("event-contract tools", () => {
     expect(structured["followUp"]).toBeUndefined();
     const content = retrieved.content as Array<{ type: string; text: string }>;
     expect(content[0]!.text).toContain("### Selected Unit");
+    expect(content[0]!.text).toContain("### Approved Timing");
     expect(content[0]!.text).toContain("### Approved Definitions");
     expect(content[0]!.text).not.toContain("### Drafted Questions");
     expect(content[0]!.text).not.toContain("### Defined Terms");
     expect(content[0]!.text).not.toContain("### Proposed Resolution Sources");
     expect(content[0]!.text).toContain("### Resolution Sources");
-    expect(content[0]!.text).not.toContain(
-      "### Detailed Resolution Sources",
-    );
+    expect(content[0]!.text).not.toContain("### Detailed Resolution Sources");
     expect(content[0]!.text).toContain("**cut rates**");
     expect(content[0]!.text).toContain("Federal Reserve decisions");
     expect(content[0]!.text).not.toContain("Will the ECB cut rates in 2026?");
@@ -612,7 +920,7 @@ describe("event-contract tools", () => {
     expect(content[0]!.text.match(/\*\*Selected Unit 1:/g)).toHaveLength(1);
   });
 
-  test("requires explicit selected-unit approval before definitions approval", async () => {
+  test("requires explicit timing approval before definitions approval", async () => {
     const client = await connectClient();
     const selectedUnit = {
       type: "binary" as const,
@@ -628,6 +936,19 @@ describe("event-contract tools", () => {
     const contractId = expectStoredPayload(draftResult, {
       units: [selectedUnit],
       followUp: "Which unit should we use?",
+    });
+
+    await client.callTool({
+      name: "submit_selected_unit",
+      arguments: {
+        contract_id: contractId,
+        unit_number: 1,
+        selected_unit: selectedUnit,
+      },
+    });
+    await client.callTool({
+      name: "approve_event_contract",
+      arguments: { contract_id: contractId, stage: "selected_unit" },
     });
 
     await client.callTool({
@@ -647,7 +968,7 @@ describe("event-contract tools", () => {
     expect(approval.isError).toBe(true);
     expect(
       (approval.content as Array<{ type: string; text: string }>)[0]!.text,
-    ).toContain("selected_unit must be approved first");
+    ).toContain("timing must be approved first");
   });
 
   test("retries replace a stage and clear downstream snapshots", async () => {
@@ -1622,7 +1943,7 @@ describe("event-contract tools", () => {
         "- Will the national metric reach the threshold by June 2026?",
     );
     expect(text).toContain(
-      "- If selected: treat this display-question proposal as Unit 2, then continue with define-terms from scratch; re-check these source candidates after the new definitions are agreed.",
+      "- If selected: treat this display-question proposal as Unit 2, then continue with define-timing and define-terms from scratch; re-check these source candidates after the new timing and definitions are agreed.",
     );
     expect(text).toContain(
       "- Independent resolution sources:\n" +
@@ -1969,7 +2290,7 @@ describe("event-contract tools", () => {
       "[https://research.example/metric](https://research.example/metric)",
     );
     expect(text).toContain(
-      "If selected: treat this display-question proposal as Unit 2, then continue with define-terms from scratch",
+      "If selected: treat this display-question proposal as Unit 2, then continue with define-timing and define-terms from scratch",
     );
   });
 

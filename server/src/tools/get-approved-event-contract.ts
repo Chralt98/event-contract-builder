@@ -20,8 +20,8 @@ export function registerGetApprovedEventContractTool(
     {
       title: "Get Approved Event Contract",
       description:
-        "Retrieve the approved selected unit, definitions, and resolution source " +
-        "records saved during this chat; candidate drafts and workflow prompts " +
+        "Retrieve the approved selected unit, timing, definitions, and resolution " +
+        "source records saved during this chat; candidate drafts and workflow prompts " +
         "are not returned. " +
         "Omit contract_id for the most recently updated contract only in the " +
         "current MCP session, or provide the stable identifier returned by a " +
