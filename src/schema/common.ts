@@ -105,14 +105,25 @@ export const Slug = z
  * vocabulary (see docs/cnl-grammar.md). Structural checks only — must start
  * with a capital letter, end with a period, and contain no hedging terms.
  */
-export const CnlSentence = z
+const CnlSentenceShape = z
   .string()
-  .min(20)
+  .min(3)
   .max(600)
   .regex(
     /^[A-Z].*\.$/s,
-    "Must be a complete sentence (capitalized, ending in a period)",
-  )
-  .describe(
-    "A single precise sentence in the controlled vocabulary; vague terms are rejected; CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
+    "Must be a complete sentence (capitalized, ending with a period)",
   );
+
+export const CnlSentence = CnlSentenceShape.min(20).describe(
+  "A single precise sentence in the controlled vocabulary; vague terms are rejected; CNL sentences must not contain hedging/vague terms (approximately, roughly, significant, etc.)",
+);
+
+/**
+ * Concise deterministic disposition used by pre-adjudicated edge cases.
+ * Unlike explanatory CNL prose, values such as "Resolve No." are complete
+ * and unambiguous on their own, so they do not need the general 20-character
+ * minimum applied to CnlSentence.
+ */
+export const CnlDisposition = CnlSentenceShape.describe(
+  "A concise deterministic edge-case disposition, capitalized and ending with a period",
+);

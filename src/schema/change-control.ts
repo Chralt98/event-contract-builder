@@ -15,7 +15,7 @@ export const ImmutableSection = z
     "meta.productName",
     "underlying",
     "outcome",
-    "resolution.criterion",
+    "resolution.resolutionRule",
     "resolution.observationWindow",
     "resolution.sources",
     "resolution.materiality",

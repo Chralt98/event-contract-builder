@@ -35,7 +35,7 @@ export const PayoutVectorRow = z.object({
     .string()
     .min(5)
     .describe(
-      "Expression over outcome states, e.g. 'YES' or 'criterion holds'",
+      "Expression over outcome states, e.g. 'YES' or 'resolution rule holds'",
     ),
   yesPays: z.number().min(0),
   noPays: z.number().min(0),
@@ -53,7 +53,7 @@ export const BinaryPayout = PayoutBase.extend({
     .max(10)
     .describe("Structured payout table mapping conditions to YES/NO payouts"),
 }).describe(
-  "Binary contract: fixed payout if the criterion holds, otherwise noPays (usually 0)",
+  "Binary contract: fixed payout if the resolution rule holds, otherwise noPays (usually 0)",
 );
 
 export const Payout = z

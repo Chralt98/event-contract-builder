@@ -8,7 +8,7 @@ monitoring is planned; there are no monitoring jobs or probability estimates yet
 | Open-source project                                                                  | Hosted service and private operations                                             |
 | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
 | Full event-contract library and CNL utilities                                        | HTTP and stdio servers                                                            |
-| Four skills and references                                                           | Tool handlers and rendering                                                       |
+| Five skills and references                                                           | Tool handlers and rendering                                                       |
 | Plugin packaging and development refresh                                             | Approval workflow, session state and internal records                             |
 | `event-contract-builder/foresight`: schemas, types, descriptors, server instructions | Backend integration tests and deployment tooling                                  |
 | Structural validation and interface tests                                            | Future data ingestion, monitoring, probability calculations, accounts and billing |

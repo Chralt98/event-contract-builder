@@ -3,6 +3,7 @@ export * from "./resolution";
 export * from "./connector-draft-unit";
 export * from "./source-alternative";
 export * from "./source-validation";
+export * from "./resolution-criteria";
 export * from "./workflow";
 export * from "./tools";
 export * from "./instructions";

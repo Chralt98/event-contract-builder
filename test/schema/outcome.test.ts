@@ -6,8 +6,8 @@ describe("Outcome", () => {
     const result = Outcome.parse({
       type: "binary",
       values: ["Yes", "No"],
-      yesDefinition: "The resolution criterion holds as stated in the canonical statement",
-      noDefinition: "The resolution criterion does not hold",
+      yesDefinition: "The resolution rule holds",
+      noDefinition: "The resolution rule does not hold",
     });
     expect(result.type).toBe("binary");
     expect(result.values).toEqual(["Yes", "No"]);

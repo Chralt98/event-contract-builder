@@ -4,7 +4,6 @@ import { describe, expect, test } from "bun:test";
 // stale dist/ and silently test old behavior.
 import {
   EventContractSpec,
-  renderCanonicalStatement,
   renderContingencyStatement,
   type EventContractSpecT,
 } from "../src";
@@ -71,20 +70,8 @@ function makeUnderlying() {
 
 function makeResolution() {
   return {
-    criterion: {
-      kind: "threshold" as const,
-      metric: {
-        name: "US CPI year-over-year rate",
-        unit: "percent",
-        extraction:
-          "Read the annual percent change from the CPI-U all-items series (CUSR0000SA0) in the BLS CPI Summary table.",
-        revisionPolicy: "first-published-value" as const,
-        precision: 1,
-      },
-      comparator: "greater-than-or-equal" as const,
-      threshold: 3,
-    },
-    canonicalStatement: "", // filled by render
+    resolutionRule:
+      "Resolve YES when the official BLS CPI Summary reports a CPI-U all-items year-over-year rate of at least 3 percent for the reference month; otherwise resolve NO.",
     observationWindow: {
       start: "2026-01-01T00:00:00Z",
       end: "2026-12-31T23:59:59Z",
@@ -242,12 +229,12 @@ function makePayout() {
     yesPays: 1,
     noPays: 0,
     payoutVector: [
-      { condition: "Criterion holds", yesPays: 1, noPays: 0 },
-      { condition: "Criterion does not hold", yesPays: 0, noPays: 1 },
+      { condition: "Resolution rule holds", yesPays: 1, noPays: 0 },
+      { condition: "Resolution rule does not hold", yesPays: 0, noPays: 1 },
     ],
     notionalValue: 1,
     finalSettlementFormula:
-      "YES pays 1.00 USD if the resolution criterion holds as stated in the canonical statement; NO pays 0.00 USD. If the criterion does not hold, YES pays 0.00 USD and NO pays 1.00 USD.",
+      "YES pays 1.00 USD if the resolution rule holds; NO pays 0.00 USD. If the resolution rule does not hold, YES pays 0.00 USD and NO pays 1.00 USD.",
     finalSettlementMethod:
       "Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.",
   };
@@ -368,7 +355,7 @@ function makeReferenceMarketAnalysis() {
 function makeChangeControl() {
   return {
     immutableAfterLaunch: [
-      "resolution.criterion" as const,
+      "resolution.resolutionRule" as const,
       "resolution.sources" as const,
       "resolution.materiality" as const,
       "resolution.exclusions" as const,
@@ -376,7 +363,7 @@ function makeChangeControl() {
     ],
     clarificationAllowedAfterLaunch: true,
     clarificationRule:
-      "Only non-material clarifications that do not alter the criterion, sources, materiality thresholds, exclusions, deadline, or payout are permitted after launch.",
+      "Only non-material clarifications that do not alter the resolution rule, sources, materiality thresholds, exclusions, deadline, or payout are permitted after launch.",
     amendmentRule:
       "Any material change requires a new contract version or ticker and does not affect already-listed terms.",
   };
@@ -387,7 +374,7 @@ function makeChangeControl() {
 /* -------------------------------------------------------------------------- */
 
 describe("README usage example", () => {
-  test("renders and validates the canonical statement from structured resolution fields", () => {
+  test("validates the open resolution rule and complete contract specification", () => {
     const spec: EventContractSpecT = {
       dsl: "event-contract-cnl/0.1",
       meta: makeMeta("Will CPI YoY be at least 3 percent?"),
@@ -395,9 +382,8 @@ describe("README usage example", () => {
       outcome: {
         type: "binary",
         values: ["Yes", "No"],
-        yesDefinition:
-          "The resolution criterion holds as stated in the canonical statement.",
-        noDefinition: "The resolution criterion does not hold.",
+        yesDefinition: "The resolution rule holds.",
+        noDefinition: "The resolution rule does not hold.",
       },
       trading: makeTrading(),
       resolution: makeResolution(),
@@ -410,14 +396,10 @@ describe("README usage example", () => {
       changeControl: makeChangeControl(),
     };
 
-    const canonicalStatement = renderCanonicalStatement(spec);
-    const validatedSpec = EventContractSpec.parse({
-      ...spec,
-      resolution: { ...spec.resolution, canonicalStatement },
-    });
+    const validatedSpec = EventContractSpec.parse(spec);
 
-    expect(validatedSpec.resolution.canonicalStatement).toBe(
-      "This contract resolves YES if US CPI year-over-year rate, as published by U.S. Bureau of Labor Statistics (Consumer Price Index), measured over the period from 2026-01-01T00:00:00Z to 2026-12-31T23:59:59Z (UTC), is greater than or equal to 3 percent (rounded to 1 decimal places), applying the first published value as of the resolution deadline; otherwise it resolves NO.",
+    expect(validatedSpec.resolution.resolutionRule).toContain(
+      "at least 3 percent",
     );
     expect(validatedSpec.resolution.maximumResolutionDelayHours).toBeCloseTo(
       (new Date("2027-01-31T23:59:59Z").getTime() -
@@ -497,9 +479,8 @@ describe("Full spec with contingency", () => {
       outcome: {
         type: "binary" as const,
         values: ["Yes", "No"] as ["Yes", "No"],
-        yesDefinition:
-          "The resolution criterion holds as stated in the canonical statement.",
-        noDefinition: "The resolution criterion does not hold.",
+        yesDefinition: "The resolution rule holds.",
+        noDefinition: "The resolution rule does not hold.",
       },
       trading: {
         ...makeTrading(),
@@ -508,14 +489,8 @@ describe("Full spec with contingency", () => {
       },
       resolution: {
         ...makeResolution(),
-        criterion: {
-          kind: "occurrence" as const,
-          comparator: "occurs" as const,
-          eventClause:
-            "The Federal Open Market Committee announces a cumulative reduction of at least 50 basis points in the federal funds target rate relative to its January 1, 2026 level.",
-          evidenceStandard:
-            "The FOMC post-meeting statement published on the Federal Reserve website states a target rate at least 50 basis points below the January 1, 2026 level.",
-        },
+        resolutionRule:
+          "Resolve YES when an FOMC statement published by the Federal Reserve establishes a cumulative reduction of at least 50 basis points in the federal funds target rate relative to its January 1, 2026 level; otherwise resolve NO.",
         scheduledResolutionTime: "2027-01-15T12:00:00Z",
         resolutionDeadline: "2027-01-31T23:59:59Z",
       },
@@ -564,15 +539,7 @@ describe("Full spec with contingency", () => {
       },
     };
 
-    const canonicalStatement = renderCanonicalStatement(
-      spec as EventContractSpecT,
-    );
-    const fullSpec = {
-      ...spec,
-      resolution: { ...spec.resolution, canonicalStatement },
-    };
-
-    const validated = EventContractSpec.parse(fullSpec);
+    const validated = EventContractSpec.parse(spec);
 
     expect(validated.meta.productName).toBe(
       "Will the Fed cut rates by at least 50 basis points before December 31, 2026?",
@@ -580,7 +547,9 @@ describe("Full spec with contingency", () => {
     expect(validated.contingency!.canonicalStatement).toBe(
       contingencyStatement,
     );
-    expect(validated.resolution.canonicalStatement).toBe(canonicalStatement);
+    expect(validated.resolution.resolutionRule).toContain(
+      "cumulative reduction of at least 50 basis points",
+    );
     expect(validated.publicInterestAssessment).toBeDefined();
     expect(validated.compliance.draftDisclaimer).toContain("DRAFT");
   });

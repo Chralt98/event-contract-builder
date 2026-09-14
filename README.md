@@ -7,14 +7,18 @@ The first product under this umbrella is **Bleavit Foresight**:
 > ChatGPT/Codex plugin for monitoring the probabilities of future events.
 
 The current plugin drafts **forecast specifications**: selectable questions,
-precise definitions, independent resolution sources, and explicit approvals.
+precise definitions, independent resolution sources, resolution
+criteria, and explicit approvals.
 Probability monitoring is planned. Full event-contract drafting is outside the
 current plugin workflow; the general event-contract schema library remains
 available separately below.
 
+Third-party workflow attributions and license notices are listed in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+
 ## Hosted service and repository boundary
 
-This repository contains the open-source library, plugin assets, four skills,
+This repository contains the open-source library, plugin assets, five skills,
 and client-visible MCP interface. The hosted Bleavit Foresight service provides
 MCP execution, workflow state, rendering, and future monitoring services. Those
 operational components are not included in this repository.
@@ -93,13 +97,16 @@ does not update ChatGPT's connection metadata.
 
 ## Forecast workflow
 
-1. Draft questions with `draft-display-question` and `submit_drafted_questions`.
+1. Draft at least three intent-aligned forecast specification units with
+   `draft-display-question` and `submit_drafted_questions`.
 2. Submit the chosen unit with `submit_selected_unit`, then record its explicit
    approval with `approve_forecast_specification` at `selected_unit`.
 3. Use `define-terms` and `submit_defined_terms`; approve `defined_terms`.
 4. Use `define-resolution-source` and `submit_resolution_source`; approve
    `resolution_sources` only after the user accepts the hierarchy.
-5. Retrieve approved content with `get_approved_forecast_specification`.
+5. Use `define-resolution-criteria` and `submit_resolution_criteria`; approve
+   `resolution_criteria` only after the user accepts the criteria.
+6. Retrieve approved content with `get_approved_forecast_specification`.
 
 Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
 separate timing skill or trading/expiration approval stage. Event time boundaries
@@ -114,7 +121,9 @@ Forecast source records contain `id`, `rank`, `name`, `publisher`, `url`, and
 optional `datasetId`. Default to independent primary and fallback sources. When
 only one exists, the user can continue with one, choose another forecast question,
 or provide a fallback for evaluation. URLs are inspection locators, not fetched
-or verified by the backend.
+or verified by the backend. Resolution criteria contain one open Yes/No rule
+for every binary question represented by the selected unit, plus broad shared
+rules for evidence, source handling, exceptions, and unresolved outcomes.
 
 ## Package the plugin
 
@@ -124,8 +133,9 @@ bun run package:plugin
 
 This creates `out/bleavit-foresight.zip` and an unpacked plugin directory
 from an explicit asset allowlist. The archive includes the skills, manifest, MCP
-configuration and notices. It excludes the library build, development files and
-local app mapping. Its manifest omits the local `apps` reference. Configure the
+configuration and license notices, including `THIRD_PARTY_LICENSES.md`. It
+excludes the library build, development files and local app mapping. Its manifest
+omits the local `apps` reference. Configure the
 MCP endpoint for the service or local server you intend to use. This command
 does not publish anything.
 
@@ -161,14 +171,13 @@ const productName = "Will CPI YoY be at least 3 percent?";
 
 ### Build and validate a full contract spec
 
-A complete spec includes meta (with product name), underlying event, outcome, trading parameters, resolution, payout, integrity assessment, and compliance posture. The `canonicalStatement` is rendered from structured resolution fields — hand-written statements that drift from the structured terms fail validation.
+A complete spec includes meta (with product name), underlying event, outcome, trading parameters, resolution, payout, integrity assessment, and compliance posture. The `resolutionRule` is open text so the rule can fit the question being forecast; the surrounding schema keeps sources, timing, evidence, exceptions, and settlement controls explicit.
 
 The example below is **condensed for readability**: a few required blocks (`scheduledResolutionTime`, `calculationMethodologyControls`, `fallbackControls`, `forceMajeure`) are omitted where marked. See the schema for the full set of required fields.
 
 ```ts
 import {
   EventContractSpec,
-  renderCanonicalStatement,
   type EventContractSpecT,
 } from "event-contract-builder";
 
@@ -225,19 +234,8 @@ const spec: EventContractSpecT = {
       "Settlement occurs within two business days after final resolution is confirmed.",
   },
   resolution: {
-    criterion: {
-      kind: "threshold",
-      metric: {
-        name: "US CPI year-over-year rate",
-        unit: "percent",
-        extraction:
-          "Read the annual percent change from the CPI-U all-items series (CUSR0000SA0) in the BLS CPI Summary table.",
-        revisionPolicy: "first-published-value",
-      },
-      comparator: "greater-than-or-equal",
-      threshold: 3,
-    },
-    canonicalStatement: "", // filled below by renderCanonicalStatement
+    resolutionRule:
+      "Resolve YES when the official BLS CPI Summary reports a CPI-U all-items year-over-year rate of at least 3 percent for the reference month; otherwise resolve NO.",
     observationWindow: {
       start: "2026-01-01T00:00:00Z",
       end: "2026-12-31T23:59:59Z",
@@ -341,23 +339,17 @@ const spec: EventContractSpecT = {
   },
 };
 
-// Render the canonical statement, then validate (once the omitted required
-// blocks above are supplied, EventContractSpec.parse returns the typed spec).
-const canonicalStatement = renderCanonicalStatement(spec);
-const validated = EventContractSpec.parse({
-  ...spec,
-  resolution: { ...spec.resolution, canonicalStatement },
-});
+// Once the omitted required blocks above are supplied,
+// EventContractSpec.parse returns the typed spec.
+const validated = EventContractSpec.parse(spec);
 
 console.log(validated.meta.productName);
 // → "Will CPI YoY be at least 3 percent?"
 
-console.log(validated.resolution.canonicalStatement);
-// → "This contract resolves YES if US CPI year-over-year rate, as published by
-//    U.S. Bureau of Labor Statistics (Consumer Price Index), measured over the
-//    period from 2026-01-01T00:00:00Z to 2026-12-31T23:59:59Z (UTC), is greater
-//    than or equal to 3 percent, applying the first published value as of the
-//    resolution deadline; otherwise it resolves NO."
+console.log(validated.resolution.resolutionRule);
+// → "Resolve YES when the official BLS CPI Summary reports a CPI-U all-items
+//    year-over-year rate of at least 3 percent for the reference month;
+//    otherwise resolve NO."
 ```
 
 ## Disclaimer

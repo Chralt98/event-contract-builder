@@ -1,6 +1,6 @@
 {
   "name": "bleavit-foresight",
-  "version": "0.2.0+codex.20260914083129",
+  "version": "0.2.0+codex.20260914152526",
   "description": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
   "author": {
     "name": "Christopher Maximilian Altmann",
@@ -29,6 +29,7 @@
       "Draft forecast specification questions from this event",
       "Define the ambiguous terms in this forecast specification",
       "Choose authoritative resolution sources",
+      "Define resolution criteria for this forecast specification",
       "Reduce semantic risk in this forecast specification"
     ],
     "brandColor": "#1F6FEB",

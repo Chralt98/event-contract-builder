@@ -24,7 +24,14 @@ if plugin_name != "event-contract-builder":
 manifest.pop("apps", None)
 (output / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
 shutil.copytree(root / "skills", output / "skills")
-for name in (".mcp.json", ".app.example.json", "LICENSE", "NOTICE", "DISCLAIMER.md"):
+for name in (
+    ".mcp.json",
+    ".app.example.json",
+    "LICENSE",
+    "NOTICE",
+    "THIRD_PARTY_LICENSES.md",
+    "DISCLAIMER.md",
+):
     shutil.copyfile(root / name, output / name)
 archive = output.parent / f"{plugin_name}.zip"
 with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:

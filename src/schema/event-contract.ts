@@ -214,7 +214,7 @@ export const EventContractSpec = z
             : spec.payout.contractSize,
         finalSettlementFormula:
           spec.payout.type === "binary"
-            ? `YES pays ${spec.payout.yesPays.toFixed(2)} ${ccy} if the resolution criterion holds as stated in the canonical statement; NO pays ${spec.payout.noPays.toFixed(2)} ${ccy}. If the criterion does not hold, YES pays ${spec.payout.noPays.toFixed(2)} ${ccy} and NO pays ${spec.payout.yesPays.toFixed(2)} ${ccy}.`
+            ? `YES pays ${spec.payout.yesPays.toFixed(2)} ${ccy} if the resolution rule holds; NO pays ${spec.payout.noPays.toFixed(2)} ${ccy}. If the resolution rule does not hold, YES pays ${spec.payout.noPays.toFixed(2)} ${ccy} and NO pays ${spec.payout.yesPays.toFixed(2)} ${ccy}.`
             : `Settlement per payout schedule in ${ccy}.`,
         finalSettlementMethod: `Cash settled by exchange ledger entry after final resolution is confirmed and the dispute window has closed.`,
       },

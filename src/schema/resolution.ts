@@ -1,43 +1,29 @@
 import { z } from "zod";
-import { COMPARATOR_PHRASES } from "../cnl-resolution-statement";
 import {
   IsoDateTime,
   Slug,
   IanaTimezone,
   CnlSentence,
+  CnlDisposition,
   BoundaryRule,
   checkTimezoneOffset,
 } from "./common";
-import { ThresholdCriterion } from "./criterion-threshold";
-import { OccurrenceCriterion } from "./criterion-occurrence";
-export { Metric } from "./metric";
-export type { MetricT } from "./metric";
-export { ThresholdCriterion } from "./criterion-threshold";
-export { OccurrenceCriterion } from "./criterion-occurrence";
-
 /* -------------------------------------------------------------------------- */
 /* §4 Resolution                                                              */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Structured resolution criterion: the single decision rule that determines
- * a contract's outcome. Exactly one variant applies per `Resolution`,
- * selected by `kind`:
- *
- * - `threshold` — numeric comparison against one or two bounds.
- * - `occurrence` — whether a discrete event did or did not occur.
- *
- * `Resolution.canonicalStatement` is deterministically rendered from this
- * value (see `COMPARATOR_PHRASES` and the CNL renderer), so the criterion
- * and the human-readable prose can never diverge.
+ * Open resolution rule for one complete event-contract specification.
+ * Forecast-specific workflows use one open rule per represented binary
+ * question; the full contract schema keeps one rule because its outcome is a
+ * single contract-level decision.
  */
-export const Criterion = z
-  .discriminatedUnion("kind", [
-    ThresholdCriterion,
-    OccurrenceCriterion,
-  ])
+export const ResolutionRule = z
+  .string()
+  .trim()
+  .min(1)
   .describe(
-    "Structured resolution criterion; canonicalStatement is rendered from this",
+    "Complete source-grounded rule for determining the contract outcome; use the logic appropriate to the question.",
   );
 
 /** A resolution data source with availability characteristics. */
@@ -156,7 +142,7 @@ export const Fallback = z.object({
   procedure: CnlSentence,
 });
 
-/** What happens if even the fallbacks fail or the outcome is undefined (invalid, ambigious). */
+/** What happens if even the fallbacks fail or the outcome is undefined (invalid, ambiguous). */
 export const TerminalAmbiguityPolicy = z
   .enum([
     "resolve-yes",
@@ -165,7 +151,7 @@ export const TerminalAmbiguityPolicy = z
     "exchange-determination-per-rulebook",
   ])
   .describe(
-    "Pre-committed disposition when no source/criterion can determine the outcome",
+    "Pre-committed disposition when no source or resolution rule can determine the outcome",
   );
 
 export const CalculationMethodologyControls = z
@@ -326,14 +312,8 @@ export const Exclusions = z
 
 export const Resolution = z
   .object({
-    criterion: Criterion,
-    /**
-     * Deterministically rendered CNL sentence (see src/cnl.ts render()).
-     * Stored redundantly so the YAML is self-contained for human reviewers;
-     * the validator re-renders and compares.
-     */
-    canonicalStatement: CnlSentence,
-    /** Reference period the metric/occurrence is measured over. */
+    resolutionRule: ResolutionRule,
+    /** Reference period used by the resolution rule. */
     observationWindow: z.object({
       start: IsoDateTime,
       end: IsoDateTime,
@@ -413,7 +393,7 @@ export const Resolution = z
       .array(
         z.object({
           scenario: CnlSentence,
-          disposition: CnlSentence,
+          disposition: CnlDisposition,
         }),
       )
       .min(3)
@@ -427,7 +407,7 @@ export const Resolution = z
     forceMajeure: ForceMajeure,
   })
   .describe(
-    "Complete resolution mechanics: criterion, sources, fallbacks, deadline, edge cases",
+    "Complete resolution mechanics: rule, sources, fallbacks, deadline, edge cases",
   )
   .superRefine((r, ctx) => {
     if (r.scheduledResolutionTime > r.resolutionDeadline) {
@@ -512,30 +492,6 @@ export const Resolution = z
         });
       }
     }
-    if (r.criterion.kind === "threshold") {
-      const hasUpper = r.criterion.thresholdUpper !== undefined;
-      const needsUpper = r.criterion.comparator.startsWith("between-");
-      if (needsUpper !== hasUpper) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["criterion", "thresholdUpper"],
-          message:
-            "thresholdUpper is required iff comparator is between-inclusive",
-        });
-      }
-    }
-    // Comparator phrase must literally appear in the canonical statement.
-    const phrase =
-      "comparator" in r.criterion
-        ? COMPARATOR_PHRASES[r.criterion.comparator]
-        : undefined;
-    if (phrase && !r.canonicalStatement.includes(phrase)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["canonicalStatement"],
-        message: `canonicalStatement must contain the fixed CNL phrase "${phrase}"`,
-      });
-    }
     const w = r.observationWindow;
     for (const field of ["start", "end"] as const) {
       const err = checkTimezoneOffset(w[field], w.timezone);
@@ -550,6 +506,7 @@ export const Resolution = z
   });
 
 export type ResolutionAuthorityT = z.infer<typeof ResolutionAuthority>;
+export type ResolutionRuleT = z.infer<typeof ResolutionRule>;
 export type CalculationMethodologyControlsT = z.infer<
   typeof CalculationMethodologyControls
 >;

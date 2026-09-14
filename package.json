@@ -33,6 +33,7 @@
     "README.md",
     "LICENSE",
     "NOTICE",
+    "THIRD_PARTY_LICENSES.md",
     "DISCLAIMER.md"
   ],
   "scripts": {

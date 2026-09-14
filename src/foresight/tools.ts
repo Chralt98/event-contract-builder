@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Definitions } from "./display-question";
 import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
+import { ResolutionCriteria } from "./resolution-criteria";
 import { alternativeForecastSpecificationSchema } from "./source-alternative";
 import {
   sourceHierarchyRankError,
@@ -55,10 +56,27 @@ export const draftedQuestionsShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   units: z
     .array(ConnectorDraftUnit)
+    .min(
+      3,
+      "A new forecast draft must contain at least three distinct selectable forecast specification units.",
+    )
+    .superRefine((units, ctx) => {
+      const signatures = units.map(({ type, question, questions, variables }) =>
+        JSON.stringify({ type, question, questions, variables }),
+      );
+
+      if (new Set(signatures).size !== signatures.length) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Drafted forecast specification units must be distinct.",
+        });
+      }
+    })
     .describe(
-      "The drafted forecast specifications, each a single selectable unit: a binary question, " +
+      "At least three distinct drafted forecast specifications, each a single selectable unit: a binary question, " +
         "the complete set of questions for one scalar or categorical forecast specification, " +
-        "or an additional placeholder-bearing template with its allowed values.",
+        "or an additional placeholder-bearing template with its allowed values. " +
+        "Include a direct interpretation and close reformulation or proxy interpretations that preserve the user's intent.",
     ),
   followUp: z
     .string()
@@ -120,6 +138,27 @@ export const resolutionSourceShape = {
     ),
 };
 
+export const resolutionCriteriaShape = {
+  forecast_specification_id: optionalForecastSpecificationId,
+  unit_number: z
+    .number()
+    .int()
+    .describe(
+      "The 1-based number of the selected unit as shown in the prior draft.",
+    ),
+  selected_unit: ConnectorDraftUnit.describe(
+    "The selected forecast specification unit whose resolution criteria are being defined — same structure as a unit from submit_drafted_questions.",
+  ),
+  resolution_criteria: ResolutionCriteria.describe(
+    "Broad source-grounded resolution criteria with one Yes/No rule for every binary question represented by the selected unit.",
+  ),
+  followUp: z
+    .string()
+    .describe(
+      "A follow-up question asking whether the user agrees with the resolution criteria or would like anything changed.",
+    ),
+};
+
 export const selectedUnitShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -139,8 +178,8 @@ export const foresightTools = {
       "Record an explicit user approval for one pending forecast specification " +
       "workflow stage. Call this only after the user has confirmed that " +
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
-      "in order: selected_unit, defined_terms, then " +
-      "resolution_sources.",
+      "in order: selected_unit, defined_terms, resolution_sources, then " +
+      "resolution_criteria.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -151,8 +190,8 @@ export const foresightTools = {
   get_approved_forecast_specification: {
     title: "Get Approved Forecast Specification",
     description:
-      "Retrieve the approved selected unit, definitions, and resolution " +
-      "source records saved during this chat; candidate drafts and workflow prompts " +
+      "Retrieve the approved selected unit, definitions, resolution source " +
+      "records, and resolution criteria saved during this chat; candidate drafts and workflow prompts " +
       "are not returned. " +
       "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
       "current MCP session, or provide the stable identifier returned by a " +
@@ -213,6 +252,25 @@ export const foresightTools = {
       "approve_forecast_specification after the user agrees to them.",
     inputSchema: resolutionSourceShape,
     outputSchema: resolutionSourceShape,
+    annotations: {
+      readOnlyHint: false,
+      idempotentHint: true,
+    },
+  },
+  submit_resolution_criteria: {
+    title: "Resolution Criteria",
+    description:
+      "Validate and store broad source-grounded Resolution Criteria for every " +
+      "binary question represented by a forecast specification unit. Call this once after resolution sources " +
+      "are approved, carrying the forecast_specification_id from the source " +
+      "result and preserving the exact selected unit, including every template " +
+      "variable and allowed value. The submission does not imply user approval; " +
+      "call approve_forecast_specification with stage resolution_criteria after " +
+      "the user agrees to the criteria. If validation fails, correct only the " +
+      "reported field, retry with all other values unchanged, and show the user " +
+      "only the corrected field and value instead of the full criteria.",
+    inputSchema: resolutionCriteriaShape,
+    outputSchema: resolutionCriteriaShape,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,

@@ -130,7 +130,18 @@ def main():
         raise ValueError("Unexpected installed cache location; refusing to clean it")
     # Local installation copies the source tree, including ignored development
     # files. Only prune the freshly installed cache; never change source files.
-    allowed = {".codex-plugin", "skills", ".mcp.json", ".app.json", ".app.example.json", "LICENSE", "NOTICE", "DISCLAIMER.md", "README.md"}
+    allowed = {
+        ".codex-plugin",
+        "skills",
+        ".mcp.json",
+        ".app.json",
+        ".app.example.json",
+        "LICENSE",
+        "NOTICE",
+        "THIRD_PARTY_LICENSES.md",
+        "DISCLAIMER.md",
+        "README.md",
+    }
     for path in cache.iterdir():
         if path.name not in allowed:
             if path.is_dir() and not path.is_symlink():
