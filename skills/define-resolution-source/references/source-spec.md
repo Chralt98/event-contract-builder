@@ -31,10 +31,16 @@ Each source should be:
 - **Public:** readable at resolution time without a paywall or login;
 - **Independent:** independently produced by a distinct source agency and not
   influenceable by a forecast specification participant;
-- **Scheduled:** published on a known cadence that fits the display question's timeframe;
-  and
-- **Fit-for-purpose:** linked to the exact durable event page when known,
-  otherwise to the publisher's stable canonical results, data, or topic hub.
+- **Scheduled or event-triggered:** recurring data has a known cadence that fits
+  the display question's timeframe, while laws, policy decisions, and other
+  event-driven outcomes have an identifiable official publication channel that
+  would carry the announcement when it occurs; and
+- **Fit-for-purpose:** the URL is a durable locator where the publisher is
+  reasonably expected to publish the exact required fact, not merely a page
+  that discusses the topic. Use the exact event page only when it is known to
+  be durable and intended for that result; otherwise use the source entity's
+  stable canonical legal gazette, legislation/results search, data portal,
+  registry, or press-release/newsroom hub.
 
 Default to at least one rank-1 primary and one rank-2 independent fallback.
 Ranks must be unique and contiguous, with rank 1 binding first. Add further
@@ -52,18 +58,34 @@ include that nearby or proxy alternative forecast specification.
 
 ## URL locator policy
 
-The `url` is a user-facing inspection locator, not a guarantee that the future
-value is already published there.
+The `url` is a user-facing inspection locator and the expected publication
+channel for the fact needed at resolution. It is not a guarantee that the
+future value is already published there.
 
-1. Prefer a known, stable event-specific results or data page.
-2. Otherwise use the publisher's stable canonical results, data, or topic hub.
-3. Use methodology pages, press releases, and documentation only as supporting
-   references when a results/data locator is unavailable.
+Use this decision order:
 
-Do not use a historical page for a different event, a guessed future path, an
-ephemeral session URL, or tracking parameters. The URL is an inspection
-locator only; the user should verify that it is reachable, authoritative,
-relevant, and suitable for the forecast specification.
+1. Use a known, stable event-specific results or data page only when it is
+   explicitly intended to publish the relevant result or is part of a recurring
+   publication system that will be updated for this event.
+2. Otherwise use the source entity's stable canonical publication hub where
+   the future item is most likely to appear, such as its official legal
+   gazette, legislation/results search, official statistics or data portal,
+   registry, or press-release/newsroom index. For an announcement forecast,
+   use the announcement channel rather than a historical announcement,
+   background FAQ, parliamentary debate page, or general topic article.
+3. A historical press release, methodology page, documentation page, or
+   explanatory article is supporting evidence only unless it is itself the
+   durable, updateable publication channel. A canonical press-release or
+   newsroom hub is a valid binding locator when that is where the entity
+   publishes the relevant announcements.
+
+For every candidate URL, ask: “Would this publisher reasonably be expected to
+publish the exact future fact here when it becomes available?” If not, find the
+entity-level publication hub or record the gap in coverage; do not substitute a
+page that merely discusses the topic. Do not use a historical page for a
+different event, a guessed future path, an ephemeral session URL, or tracking
+parameters. The user should be able to reach the locator without special
+access and identify the relevant future publication from that hub.
 
 ## Single-turn submission
 

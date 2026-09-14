@@ -22,9 +22,12 @@ the source schemas, and stop rules.
 2. Map every fact required by the agreed definitions to a source. Prefer a
    rank-1 primary and a rank-2 fallback from genuinely independent source
    agencies. Do not count a second page, dataset, mirror, re-publication, or
-   alias of the same agency as an independent source. Verify that each source's
-   publication schedule can settle the unit within the display question's
-   stated timeframe.
+   alias of the same agency as an independent source. For each source, verify
+   that the linked locator is the publisher's likely publication channel for
+   the required future fact: recurring data should have a compatible release
+   cadence, while laws, policy decisions, and other event-driven outcomes
+   should use the official publication channel that would carry the
+   announcement when it occurs.
 3. Work out the complete source records internally, then call
    `submit_resolution_source` once with the carried `forecast_specification_id`, exact
    selected unit, unit number, full ranked source records, and any applicable
@@ -64,20 +67,34 @@ the source schemas, and stop rules.
 ## URL locator policy
 
 The source `url` is a user-facing inspection locator. It identifies the
-publisher and gives the user a place to verify the source; it does not assert
-that the linked page already contains the future forecast specification's final value.
+publisher and should point to the place where the publisher is most likely to
+publish the data or official announcement needed to resolve the forecast. It
+does not assert that the linked page already contains the future forecast
+specification's final value.
 
-Choose the most specific durable locator available:
+Choose the durable publication locator that best matches the fact being
+resolved:
 
-1. Use an event-specific results page when the exact page is known, stable, and
-   intended to publish the fact that settles this forecast specification.
-2. Otherwise use the publisher's stable canonical results, data, or topic hub
-   where the future publication is expected to appear.
-3. Use a methodology page, press release, or documentation page only as a
-   supporting reference for source identity or publication practice, never as
-   the binding data locator when a results/data locator is available.
+1. Use a known, stable event-specific results or data page only when it is
+   explicitly intended to receive the relevant result or is part of a recurring
+   publication system that will reasonably be updated for this event.
+2. Otherwise use the source entity's stable canonical publication hub where
+   the future item is most likely to appear: for example, its official legal
+   gazette, legislation/results search, official statistics or data portal,
+   registry, or press-release/newsroom index. For an announcement forecast,
+   prefer the entity's announcement channel over a historical announcement,
+   background FAQ, parliamentary debate page, or a general topic article.
+3. An individual historical press release, methodology page, documentation
+   page, or explanatory article may support the source's identity or publication
+   practice, but is not a binding locator unless it is itself the durable,
+   updateable publication channel. A canonical press-release or newsroom hub
+   is a valid binding locator when that is where the entity publishes such
+   announcements.
 
-Never use a page for a different historical event, an ephemeral session or
-tracking URL, or a guessed future path. The URL is an inspection locator only;
-the user should verify that it is reachable, authoritative, relevant, and
-expected to contain the required fact.
+Before submission, ask of every URL: “Would this publisher reasonably be
+expected to publish the exact future fact here when it becomes available?” If
+the answer is no, find the entity-level publication hub or record the source
+gap rather than substituting a page that merely discusses the topic. Never use
+a page for a different historical event, an ephemeral session or tracking URL,
+or a guessed future path. The user should be able to reach the locator without
+special access and identify the relevant future publication from that hub.
