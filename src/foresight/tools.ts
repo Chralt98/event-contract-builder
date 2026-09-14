@@ -21,9 +21,40 @@ export const approvalShape = {
   ),
 };
 
-export const approvalOutputSchema =
-  approvedForecastSpecificationRecallSchema.extend({
+export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
+  .extend({
     approved_stage: approvalStageSchema,
+  })
+  .superRefine((value, ctx) => {
+    if (value.approved_stage !== "resolution_criteria") return;
+
+    // Final approval must expose the complete approved forecast
+    // specification so clients can render it without reconstructing state
+    // from earlier workflow responses.
+    if (!value.definitions) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["definitions"],
+        message:
+          "Final forecast-specification approval must include approved definitions.",
+      });
+    }
+    if (!value.resolution_sources) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolution_sources"],
+        message:
+          "Final forecast-specification approval must include approved resolution sources.",
+      });
+    }
+    if (!value.resolution_criteria) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolution_criteria"],
+        message:
+          "Final forecast-specification approval must include approved resolution criteria.",
+      });
+    }
   });
 
 export const approvedForecastSpecificationLookupShape = {
@@ -179,7 +210,10 @@ export const foresightTools = {
       "workflow stage. Call this only after the user has confirmed that " +
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
       "in order: selected_unit, defined_terms, resolution_sources, then " +
-      "resolution_criteria.",
+      "resolution_criteria. When approving resolution_criteria, return the " +
+      "complete approved forecast specification, including the selected unit, " +
+      "definitions, resolution sources, and resolution criteria; clients should " +
+      "render that complete result rather than only the approval status or ID.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {

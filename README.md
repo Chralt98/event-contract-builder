@@ -106,7 +106,10 @@ does not update ChatGPT's connection metadata.
    `resolution_sources` only after the user accepts the hierarchy.
 5. Use `define-resolution-criteria` and `submit_resolution_criteria`; approve
    `resolution_criteria` only after the user accepts the criteria.
-6. Retrieve approved content with `get_approved_forecast_specification`.
+6. After final approval, render the complete approved forecast specification —
+   selected unit, definitions, resolution sources, and resolution criteria. If
+   the approval response does not contain the full rendered result, retrieve it
+   with `get_approved_forecast_specification` and render that complete response.
 
 Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
 separate timing skill or trading/expiration approval stage. Event time boundaries

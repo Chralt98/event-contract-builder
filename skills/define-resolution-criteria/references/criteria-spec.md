@@ -87,7 +87,12 @@ Call `submit_resolution_criteria` once after the sources are approved. Present
 its complete returned Markdown without summarizing or changing the criteria.
 The submission remains pending until the user explicitly agrees. Only then
 call `approve_forecast_specification` with `stage: "resolution_criteria"` and
-the same `forecast_specification_id`.
+the same `forecast_specification_id`. After final approval, present the
+complete rendered Markdown returned by the approval call, including the
+selected unit, approved definitions, resolution sources, and resolution
+criteria. If the approval response is not complete, call
+`get_approved_forecast_specification` with the returned
+`forecast_specification_id` and present its complete rendered Markdown.
 
 If the user requests a change, revise and resubmit the complete criteria
 payload. If a prerequisite is missing or the source hierarchy cannot establish

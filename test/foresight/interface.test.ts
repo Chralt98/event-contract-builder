@@ -144,6 +144,30 @@ describe("public forecast interface", () => {
     expect(Object.keys(foresightTools)).toHaveLength(7);
   });
 
+  test("final approval requires the complete approved forecast specification", () => {
+    const schema = foresightTools.approve_forecast_specification.outputSchema;
+    const complete = {
+      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+      unit_number: 1,
+      selected_unit: input.selected_unit,
+      definitions: { deadline: "The stated resolution deadline." },
+      resolution_sources: { sources: [source] },
+      resolution_criteria: criteria,
+      approved_stage: "resolution_criteria" as const,
+    };
+
+    expect(schema.safeParse(complete).success).toBe(true);
+    for (const field of [
+      "definitions",
+      "resolution_sources",
+      "resolution_criteria",
+    ] as const) {
+      const incomplete = { ...complete };
+      delete incomplete[field];
+      expect(schema.safeParse(incomplete).success).toBe(false);
+    }
+  });
+
   test("resolution criteria use open question rules instead of closed criterion kinds or comparators", () => {
     const schema = z.object(
       foresightTools.submit_resolution_criteria.inputSchema,
@@ -336,6 +360,15 @@ describe("public forecast interface", () => {
     );
     expect(foresightTools.submit_resolution_criteria.description).toContain(
       "only the corrected field and value",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Present the complete rendered Markdown returned by that approval call",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Do not summarize, truncate, or respond with only the approval status or forecast specification ID",
+    );
+    expect(foresightTools.approve_forecast_specification.description).toContain(
+      "complete approved forecast specification",
     );
   });
 });
