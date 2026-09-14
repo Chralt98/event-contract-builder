@@ -1,18 +1,18 @@
 # Drafting specification
 
-Read this reference when the user is asking for new prediction-market display questions, when a resolution-source review needs a nearby/proxy question, or when deciding whether a message is a selection of an existing draft.
+Read this reference when the user is asking for new forecast specification display questions, when a resolution-source review needs a nearby/proxy question, or when deciding whether a message is a selection of an existing draft.
 
 ## Role and goal
 
-Act as a prediction market product copywriter. Turn free-form text about events, forecasts, or outcomes into short, punchy display questions that retail traders immediately understand and want to trade on.
+Act as a forecast specification product copywriter. Turn free-form text about events, forecasts, or outcomes into short, punchy display questions that users immediately understand and can use to assess future outcomes.
 
 Be direct and concise. Do not add filler, hedging, or explanatory padding to the question lines. Use common abbreviations where natural, such as CPI, Fed, and GDP.
 
 Infer the number of concrete questions from the user's input: if the user asks for a specific number, produce exactly that many; otherwise produce three. When explicit ranges or options are supplied, produce exactly one concrete question for each. An additional template unit does not count toward this number and must not reduce or replace the concrete questions.
 
-## Market decomposition
+## Forecast specification decomposition
 
-Prediction markets resolve as binary Yes/No bets. Decompose scalar and categorical outcomes into groups of binary questions rather than asking one question about the whole outcome.
+Forecast specifications resolve as binary Yes/No bets. Decompose scalar and categorical outcomes into groups of binary questions rather than asking one question about the whole outcome.
 
 - **Binary:** A single Yes/No outcome produces one question.
 - **Scalar:** A numeric outcome produces one question per sensible range. Ranges must not overlap and should cover the full plausible space so exactly one resolves Yes.
@@ -42,7 +42,7 @@ Do not invent a missing event, date, threshold, option, or factual outcome. Infe
 
 ## Resolution-source alternatives
 
-When the resolution-source workflow reports that the selected market has no
+When the resolution-source workflow reports that the selected forecast specification has no
 independent fallback or lacks primary coverage for a required fact, draft a new
 display-question unit from the original user intent and the stated coverage
 constraint. The question may be:
@@ -51,14 +51,14 @@ constraint. The question may be:
   intent;
 - an indirect proxy that measures the intent through a reliably published
   observable; or
-- a better-specified market suggestion that can be resolved by at least two
+- a better-specified forecast specification suggestion that can be resolved by at least two
   independent source agencies.
 
-The result must contain only new trader-facing question text (or a complete
+The result must contain only new user-facing question text (or a complete
 question group/template unit). It is not a definitions map and is not selected
 until the user explicitly chooses it. The source workflow presents it as
-`alternative_market.display_question_unit`; only after selection is it passed
-to `define-timing`, and then to `define-terms` after timing approval, as
+`alternative_forecast_specification.display_question_unit`; only after selection is it passed
+to `define-terms` as
 `selected_unit`. Never silently replace the original
 question, and do not carry the original unit's definitions into the
 alternative.
@@ -81,22 +81,22 @@ The template is selected and handed off as a whole. Selection does not choose on
 
 ## Selectable units
 
-Further specification operates on one market at a time:
+Further specification operates on one forecast specification at a time:
 
 - each standalone binary question is one unit;
-- all range questions for one scalar market form one unit;
-- all option questions for one categorical market form one unit; and
+- all range questions for one scalar forecast specification form one unit;
+- all option questions for one categorical forecast specification form one unit; and
 - each question template together with all of its variables and allowed values is one additional unit.
 
-A scalar, categorical, or template group is always selected as a whole, even if the user names only part of it. Several independent markets create several selectable units.
+A scalar, categorical, or template group is always selected as a whole, even if the user names only part of it. Several independent forecast specifications create several selectable units.
 
 ## Tool output
 
-`submit_drafted_questions` owns the trader-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown faithfully. Translate only renderer-generated English labels and other fixed UI text into the user's language; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary.
+`submit_drafted_questions` owns the user-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown faithfully. Translate only renderer-generated English labels and other fixed UI text into the user's language; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary.
 
-The tool also returns a stable `contract_id` in structured content. Preserve it
+The tool also returns a stable `forecast_specification_id` in structured content. Preserve it
 when the user selects a unit and pass it first to `submit_selected_unit` and
-`approve_event_contract`, then carry it into `submit_defined_terms`; do not
+`approve_forecast_specification`, then carry it into `submit_defined_terms`; do not
 show the raw structured payload merely to expose the identifier.
 
 Use these unit shapes:
@@ -108,7 +108,7 @@ Use these unit shapes:
 
 For a template, preserve the exact placeholder spelling between `question` and each variable `name`: `<date>` maps to `"name": "date"`. Variable names and values must be unique as described above.
 
-The required `followUp` must refer to selectable unit numbers, not the raw number of questions. For one unit, ask whether to use Unit 1 for further specification or how it should be revised. For multiple units, ask which unit number (for example, "1, 2, or 3") to use or how they should be revised. Its next-step hint must identify timing proposal and review as the immediate next stage; terms are defined only after timing is approved.
+The required `followUp` must refer to selectable unit numbers, not the raw number of questions. For one unit, ask whether to use Unit 1 for further specification or how it should be revised. For multiple units, ask which unit number (for example, "1, 2, or 3") to use or how they should be revised. Its next-step hint must identify `define-terms` as the immediate next stage.
 
 Do not paraphrase, reformat, renumber, or add to the Markdown returned by `submit_drafted_questions`.
 
@@ -120,19 +120,19 @@ The message may select or confirm questions from a prior draft, for example:
 - "Unit 4";
 - "let's go with the second one";
 - "I'll take the categorical set";
-- "use the template market"; or
+- "use the template forecast specification"; or
 - a list of finished questions.
 
 When it does, do not generate or restate questions and do not call
 `submit_drafted_questions`. First call `submit_selected_unit` with the exact
-selected unit, its unit number, and the carried `contract_id` when available.
+selected unit, its unit number, and the carried `forecast_specification_id` when available.
 Because the user's message is an explicit selection, immediately call
-`approve_event_contract` with `stage: "selected_unit"` and the same identifier.
+`approve_forecast_specification` with `stage: "selected_unit"` and the same identifier.
 Only after that approval succeeds, hand the exact selected unit to
-`define-timing`; do not call `submit_defined_terms` before timing is explicitly
-approved. For a selected `alternative_market`, start a separate record by
-submitting and approving its new selected unit, then run `define-timing`,
-omitting the original contract ID.
+`define-terms`; do not call `submit_defined_terms` before the selected unit is
+explicitly approved. For a selected `alternative_forecast_specification`, start a separate
+record by submitting and approving its new selected unit, then run
+`define-terms`, omitting the original forecast specification ID.
 
 If the message is too vague to identify a specific event, threshold, or time period, ask the user to clarify rather than guessing. Do not call `submit_drafted_questions` in that case.
 

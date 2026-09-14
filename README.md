@@ -1,410 +1,133 @@
-# event-contract-builder
+# Event Contract Builder
 
-An MCP server and TypeScript schema library for turning a free-form event
-description into a prediction-market event contract.
+Open-source event-contract schema library and shared plugin interface.
 
-## Status
+The first product under this umbrella is **Bleavit Foresight**:
 
-Early development; the public API and tool set may change before v1.0.0.
+> ChatGPT/Codex plugin for monitoring the probabilities of future events.
 
-The packaged skills are the semantic workflow layer for drafting questions,
-defining terms, and selecting independent resolution sources. The MCP server is the
-deterministic execution layer that validates and renders their structured
-outputs. The schema library (`src/schema`) models the eventual full
-event-contract specification — see [Library (schema)](#library-schema) below.
+The current plugin drafts **forecast specifications**: selectable questions,
+precise definitions, independent resolution sources, and explicit approvals.
+Probability monitoring is planned. Full event-contract drafting is outside the
+current plugin workflow; the general event-contract schema library remains
+available separately below.
 
-## MCP server
+## Hosted service and repository boundary
 
-`server/` runs a session-aware HTTP MCP server exposing deterministic tools for
-validating, rendering, checking, and recalling the structured outputs produced
-by the packaged skills. Approved workflow data is held in memory. Implicit
-lookup remains scoped to the current MCP session; HTTP sessions may continue a
-record from another session only by passing its explicit `contract_id` through
-the process-lifetime handoff registry. That identifier is a random bearer
-handoff, not authentication or authorization, and all memory is lost when the
-server process ends.
+This repository contains the open-source library, plugin assets, four skills,
+and client-visible MCP interface. The hosted Bleavit Foresight service provides
+MCP execution, workflow state, rendering, and future monitoring services. Those
+operational components are not included in this repository.
 
-### Run it
+The public package builds and tests independently. See the
+[repository boundary](docs/repository-boundary.md) for the capabilities and
+contribution boundaries. There is no active hosted-service implementation in
+this repository.
 
 ```sh
 bun install
-bun run start:server
+bun run test
+bun run check
 ```
 
-This starts the server once at `http://localhost:8787/mcp`. Keep the terminal
-open while the endpoint is in use. For development with automatic restarts on
-file changes, use `bun run dev:server` instead; do not run both commands at the
-same time because they listen on the same port.
+The public package builds independently of the hosted service. Existing imports
+are retained; the forecast interface is available through a new subpath:
 
-For a local MCP client or a tunnel client that expects a Stdio command, use
-the separate Stdio entrypoint:
-
-```sh
-bun run start:server:stdio
+```ts
+import {
+  foresightTools,
+  foresightServerInstructions,
+} from "event-contract-builder/foresight";
 ```
 
-The Stdio entrypoint uses the same tools and server factory as the HTTP
-endpoint. Its stdout is reserved for MCP protocol messages; diagnostics go to
-stderr.
+It exports tool descriptors, input/output schemas, forecast types, structural
+validation, and client-visible server instructions. It contains no handlers or
+state store. The plugin ID is `bleavit-foresight`; the npm package remains
+`event-contract-builder`. The plugin display name is Bleavit Foresight.
 
-Inspect it locally with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+Hosted services and commercial features support continued maintenance and
+development of this open-source project. The open-source repository remains
+usable for inspecting, adapting, and implementing the published interface;
+service access and operational components are provided separately.
 
-```sh
-bun run dev:server:inspect
-```
+Earlier versions of this repository included experimental server code. The
+current project separates the open-source schemas, skills, and client-visible
+protocol from the hosted Bleavit Foresight service. Existing Git history remains
+available for historical context.
 
-To connect an external client to your local server, use one of these
-alternatives:
+## Install or refresh the local plugin
 
-- For an existing OpenAI Secure MCP Tunnel, follow [Secure MCP Tunnel](#secure-mcp-tunnel).
-- For a simple ChatGPT test with an unauthenticated public endpoint, use the
-  ngrok helper:
-
-```sh
-bun run dev:server:ngrok
-```
-
-### Secure MCP Tunnel
-
-The local HTTP MCP server is available at `http://localhost:8787/mcp`. To
-connect it to an existing tunnel in the OpenAI platform, run the server and
-the tunnel client in separate terminals.
-
-#### 1. Start the local MCP server
-
-```sh
-bun run start:server
-```
-
-Keep this terminal open while the tunnel is in use.
-
-#### 2. Set the runtime key without echoing it
-
-Create or select a credential with the minimum permission **Tunnels: Read and
-Use** only. In a separate terminal, enter the key silently into the current
-shell:
-
-```sh
-read -r -s CONTROL_PLANE_API_KEY
-export CONTROL_PLANE_API_KEY
-printf '\n'
-```
-
-The key is not printed. Do not put it in this README, the project `.env`, shell
-history, or any committed file. Remove it from the shell when finished:
-
-```sh
-unset CONTROL_PLANE_API_KEY
-```
-
-#### 3. Run the client with the existing tunnel
-
-Use the profile name and tunnel ID from your local setup. Keep the placeholders
-below as placeholders when sharing this documentation:
-
-```sh
-tunnel-client run \
-  --profile <PROFILE_NAME> \
-  --control-plane.api-key env:CONTROL_PLANE_API_KEY \
-  --control-plane.tunnel-id <TUNNEL_ID> \
-  --mcp.server-url "url=http://localhost:8787/mcp"
-```
-
-The profile may hold the non-secret configuration, but keys must remain
-environment or file references such as `env:CONTROL_PLANE_API_KEY`; never put a
-literal key in the profile or a project `.env` file.
-
-#### 4. Diagnose configuration and health
-
-Run the profile checks before starting the client:
-
-```sh
-tunnel-client doctor --profile <PROFILE_NAME> --explain
-```
-
-After startup, check the local liveness and readiness endpoints (the default
-health listener is `127.0.0.1:8080`):
-
-```sh
-curl -fsS http://127.0.0.1:8080/healthz
-curl -fsS http://127.0.0.1:8080/readyz
-```
-
-#### 5. Keep the tunnel running
-
-`tunnel-client run` is a foreground process. Leave its terminal open for as
-long as the MCP endpoint should remain available; closing it or pressing
-`Ctrl-C` stops the tunnel. Do not commit the key, tunnel ID, or other user data
-from your local setup to this repository.
-
-### Public ngrok ChatGPT test
-
-The local HTTP MCP server is available at `http://localhost:8787/mcp`. The
-ngrok helper publishes it through HTTPS without authentication so it can be
-used for a simple ChatGPT test. The endpoint is publicly reachable; use test
-data only and stop the tunnel when finished. For a protected alternative, use
-[Secure MCP Tunnel](#secure-mcp-tunnel).
-
-#### 1. Start the local MCP server once
-
-In Terminal 1, start the HTTP MCP server and leave it running:
-
-```sh
-bun run start:server
-```
-
-For a development session that needs automatic restarts, use
-`bun run dev:server` here instead. Choose one mode only; both serve the same
-HTTP endpoint on port 8787.
-
-#### 2. Configure ngrok once
-
-Create an ngrok account and configure the local agent with its authtoken once,
-using the official ngrok instructions. The token is stored in ngrok's own
-user configuration, not in this project:
-
-```sh
-ngrok config add-authtoken <YOUR_NGROK_AUTHTOKEN>
-printf '\n'
-```
-
-Do not replace the placeholder in this README or commit the token.
-
-#### 3. Start the public endpoint in Terminal 2
-
-The server is already running on port 8787 in Terminal 1. In Terminal 2, run:
-
-```sh
-bun run dev:server:ngrok
-```
-
-The public HTTPS URL is printed by ngrok; use that URL with the `/mcp` path in
-ChatGPT's MCP connection setup. Keep both terminals open while the endpoint is
-in use. Press `Ctrl-C` in the ngrok terminal to stop publication.
-
-### Tools
-
-| Tool                          | Purpose                                                                                                                                 |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `submit_drafted_questions`    | Validate and render binary, scalar, categorical, and template question units.                                                           |
-| `submit_selected_unit`        | Validate and store the user's selected unit as pending until explicitly approved.                                                       |
-| `submit_timing`               | Validate, store, and render the pending final event, trading, and expiration timing submission from `define-timing`.                    |
-| `submit_defined_terms`        | Validate and render definitions for a selected unit.                                                                                    |
-| `submit_resolution_source`    | Validate and render the complete Resolution Source Hierarchy with independent-source validation.                                       |
-| `approve_event_contract`      | Record explicit user approval for the selected unit, timing, definitions, or detailed source records.                                 |
-| `get_approved_event_contract` | Retrieve only explicitly approved workflow content, including timing, from the current session or an explicit `contract_id` handoff.    |
-
-The `skills/` directory contains five focused capabilities: drafting display
-questions, defining timing, defining ambiguous terms, selecting resolution
-sources, and reducing semantic risk. It is intended to be packaged with the
-MCP server as one plugin.
-
-### Plugin package
-
-This repository is also a ChatGPT/Codex plugin package. The manifest at
-`.codex-plugin/plugin.json` discovers the five packaged skills, and
-`.mcp.json` connects the plugin to the local HTTP MCP endpoint. Start the
-server before importing the package into a local host:
-
-```sh
-bun run start:server
-```
-
-The packaged endpoint is `http://localhost:8787/mcp`. For a hosted ChatGPT
-connection, expose the server over HTTPS and replace the endpoint in the
-deployment-specific MCP configuration.
-
-#### Local ChatGPT app mapping
-
-The plugin manifest keeps its `apps` reference at `./.app.json`. For local
-ChatGPT testing, copy the tracked example and replace the placeholder with
-your own registered ChatGPT App ID:
+For a local ChatGPT app mapping, copy the example and replace its placeholder:
 
 ```sh
 cp .app.example.json .app.json
 ```
 
-Edit `.app.json` after copying it. The file is intentionally ignored because
-the App ID is specific to the local ChatGPT connection; do not commit it.
-The tracked `.app.example.json` is safe to publish and must retain only the
-placeholder.
-
-#### Updating the local plugin after skill changes
-
-When a file under `skills/` changes, run these commands from
-the project directory to update the plugin version and reinstall the existing
-personal marketplace entry:
+`.app.json` stays ignored; it identifies your own ChatGPT connection. The installed
+plugin-creator helpers and Codex CLI are required for the following commands.
+Set `CODEX_PLUGIN_CREATOR` only if the skill is installed somewhere other than
+`$CODEX_HOME/skills/.system/plugin-creator` (default `~/.codex`).
 
 ```sh
-python3 ~/.codex/skills/.system/plugin-creator/scripts/update_plugin_cachebuster.py .
-codex plugin add event-contract-builder@personal --json
+# First setup, or repair a missing personal-marketplace source link:
+bun run refresh:plugin --setup
+
+# After changing skills or plugin metadata:
+bun run refresh:plugin
+
+# Read-only source verification:
+bun run refresh:plugin --check
 ```
 
-Then start a new Codex chat so the updated skills are loaded. For server-only
-logic changes, restarting the server is sufficient; `bun run dev:server`
-restarts it automatically during development.
+Setup uses the plugin-creator marketplace helper and creates a source link to
+this checkout. Refresh refuses to reinstall an entry that points elsewhere.
+After installation it removes development files from the newly created Codex
+cache, retaining only plugin assets and the intentional local app mapping.
+Start a **new Codex task** after refreshing to load the updated plugin.
 
-If tool metadata such as the description, schema, or return shape changes, also
-refresh or update the ChatGPT plugin connection and test it in a new chat. Do
-not add keys, tunnel IDs, or user data to this guide or to project files.
+For local development, connect the plugin to an MCP server that implements the
+public interface. For the hosted Bleavit Foresight service, use the endpoint and
+authentication method provided with your service access. Refresh the ChatGPT
+connection after tool descriptions or schemas change; the Codex refresh command
+does not update ChatGPT's connection metadata.
 
-### Workflow
+## Forecast workflow
 
-1. **Draft** — use the `draft-display-question` skill with a sufficiently
-   specific future event, e.g. `"CPI year-over-year inflation might exceed 3
-percent in June 2026"`. Organize the result into selectable units, then
-   call `submit_drafted_questions` and present its returned Markdown faithfully,
-   translating fixed English renderer labels into the user's language while
-   preserving the questions and values:
+1. Draft questions with `draft-display-question` and `submit_drafted_questions`.
+2. Submit the chosen unit with `submit_selected_unit`, then record its explicit
+   approval with `approve_forecast_specification` at `selected_unit`.
+3. Use `define-terms` and `submit_defined_terms`; approve `defined_terms`.
+4. Use `define-resolution-source` and `submit_resolution_source`; approve
+   `resolution_sources` only after the user accepts the hierarchy.
+5. Retrieve approved content with `get_approved_forecast_specification`.
 
-   ```md
-   **Unit 1: Scalar market**
+Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
+separate timing skill or trading/expiration approval stage. Event time boundaries
+still belong in the question and definitions when needed.
 
-   - Will CPI YoY be below 3 percent in June 2026?
-   - Will CPI YoY be at least 3 percent in June 2026?
+Carry `forecast_specification_id` between tools, especially across HTTP sessions.
+The current backend stores records in memory; the ID is a bearer handoff, not an
+account credential. Recall includes only explicitly approved content. A newly
+selected alternative starts a separate record with fresh definitions and sources.
 
-   **Unit 2: Template market**
+Forecast source records contain `id`, `rank`, `name`, `publisher`, `url`, and
+optional `datasetId`. Default to independent primary and fallback sources. When
+only one exists, the user can continue with one, choose another forecast question,
+or provide a fallback for evaluation. URLs are inspection locators, not fetched
+or verified by the backend.
 
-   - Will CPI YoY be <comparator> <threshold> in <month>?
-     - `<comparator>`:
-       - below
-       - at least
-     - `<threshold>`:
-       - 3 percent
-     - `<month>`:
-       - June 2026
+## Package the plugin
 
-   ---
+```sh
+bun run package:plugin
+```
 
-   Which unit (1 or 2) should we use for further specification?
-   ```
-
-   Keep the `contract_id` returned in structured content and pass it to the
-   next workflow step. This explicit identifier is required when the host may
-   invoke the next tool through a new MCP HTTP session.
-
-2. **Select, approve timing, and define** — when the user selects a unit, call
-   `submit_selected_unit` with the exact selected unit and carry the returned
-   `contract_id`. After the selection is explicit in chat, call
-   `approve_event_contract` with `stage: "selected_unit"`. Then use the
-   `define-timing` skill before defining terms or selecting sources. It derives
-   the event deadline or observation window when possible, records exact ISO
-   8601 UTC timestamps with named IANA time zones and inclusive/exclusive
-   boundaries, asks whether occurrence time, publication time, or both control,
-   and suggests trading start/end and expiration together. After the user
-   confirms the conversational proposal, call `submit_timing` with the complete
-   final timing fields and present its returned Markdown. The conversational
-   confirmation is the timing approval; immediately call
-   `approve_event_contract` with `stage: "timing"` without asking for a second
-   timing confirmation, then pass the approved timing unchanged downstream.
-   Then use the `define-terms` skill to
-   propose precise definitions, pass the carried `contract_id`, call
-   `submit_defined_terms`, and present its returned Markdown faithfully,
-   translating fixed English renderer labels into the user's language while
-   preserving the definitions. Carry the returned identifier forward. After
-   the user explicitly agrees, call `approve_event_contract` with
-   `stage: "defined_terms"`.
-
-3. **Choose and submit sources** — after the user agrees to the definitions,
-   use the `define-resolution-source` skill with the approved timing. Check
-   source publication schedules against the approved event boundary and
-   expiration; return to `define-timing` if the hierarchy is incompatible.
-   Call `submit_resolution_source` once with the carried `contract_id`, exact
-   selected unit, full ranked source records, and source URLs selected under
-   the URL locator policy:
-
-   ```json
-   {
-     "unit_number": 1,
-     "selected_unit": {
-       "type": "binary",
-       "question": "Will CPI YoY be at least 3 percent in June 2026?"
-     },
-     "sources": [
-       {
-         "id": "bls-cpi",
-         "rank": 1,
-         "name": "Consumer Price Index",
-         "publisher": "U.S. Bureau of Labor Statistics",
-         "url": "https://www.bls.gov/cpi/",
-         "publicationSchedule": "Published monthly.",
-         "controlsFor": ["CPI year-over-year rate"],
-         "publiclyAccessible": true,
-         "independenceNote": "The public agency publishes the index independently of market participants."
-       },
-       {
-         "id": "fred-cpi",
-         "rank": 2,
-         "name": "FRED CPI series",
-         "publisher": "Federal Reserve Bank of St. Louis",
-         "url": "https://fred.stlouisfed.org/series/CPIAUCNS",
-         "publicationSchedule": "Updated as the source series is released.",
-         "controlsFor": ["Fallback CPI year-over-year rate"],
-         "publiclyAccessible": true,
-         "independenceNote": "The Federal Reserve Bank of St. Louis publishes the public series independently of market participants."
-       }
-     ],
-     "followUp": "Does this source hierarchy look right, or should we add, remove, or reorder any source?"
-   }
-   ```
-
-   The source URL is a user-facing inspection locator, not a guarantee that
-   the future market value is already published at that address. Prefer a
-   known, durable event-specific results or data page. If that page is not yet
-   known, use the publisher's stable canonical results, data, or topic hub
-   where the future publication is expected. Methodology pages, press releases,
-   and documentation are supporting references only. Never use a historical
-   page for a different event, a guessed future path, or an ephemeral tracking
-   URL. The tool does not verify or fetch the URL; users should inspect each
-   locator and confirm that it is appropriate before locking the hierarchy.
-
-   The fallback must be independently produced by a different source agency;
-   a second page, dataset, mirror, re-publication, or alias of the same agency
-   does not qualify. If no independent fallback exists, keep only the rank-1
-   primary when the user accepts that risk. The tools show a warning that no
-   independent fallback was found or approved. The skill should also include a
-   nearby or proxy `alternative_market` containing a newly drafted
-   `display_question_unit`, a `unit_number`, and at least two independent
-   sources. This is a new prediction-market display-question proposal, not a
-   definitions map. If the user selects that alternative, pass its exact
-   display-question unit as `selected_unit` with its number to
-   `submit_selected_unit`, call `approve_event_contract` with
-   `stage: "selected_unit"`, then run `define-timing` and obtain explicit
-   timing approval before passing it to `define-terms`. Omit the original
-   contract ID, do not reuse the original definitions or source hierarchy, and
-   re-check its source candidates after the new timing and definitions are
-   agreed.
-   If a required fact has no primary source, list it in `coverage_gaps`, state
-   that the selected market is not fully source-covered, and offer the same
-   kind of new display-question alternative without silently replacing the
-   selected question.
-
-   The tool renders the detailed `Resolution Source Hierarchy` directly. URL
-   locators are stored for user inspection and are not fetched or verified by
-   the MCP server.
-
-4. **Approve sources** — present the complete returned Markdown faithfully,
-   translating fixed English renderer labels into the user's language while
-   preserving source data. The source submission remains pending until the
-   user explicitly approves it; then call `approve_event_contract` with
-   `stage: "resolution_sources"`. Revise and resubmit the hierarchy if the
-   user requests it. If the user selects an alternative market, omit the
-   original ID so its definitions and sources start a separate saved record.
-
-5. **Recall** — when the user asks to see the approved event-contract
-   information later in the chat, call `get_approved_event_contract`. Omit
-   `contract_id` only when the call remains in the same MCP session; otherwise
-   pass the explicit identifier from the prior tool result. The identifier is a
-   random bearer handoff rather than an authentication credential. The tool
-   returns only the selected unit, definitions, and source records whose stages
-   were explicitly approved; it does not replay pending submissions, the
-   candidate draft, or workflow follow-ups.
-
-6. **Reduce semantic risk** — use the standalone `reduce-semantic-risk` skill
-   before trading or when auditing a proposed contract. It makes ordinary
-   resolution cases deterministic, surfaces material exceptions, constrains
-   unforeseen-event rules, and governs any remaining discretion. This review
-   is advisory and does not call an MCP tool or establish legal compliance.
+This creates `out/bleavit-foresight.zip` and an unpacked plugin directory
+from an explicit asset allowlist. The archive includes the skills, manifest, MCP
+configuration and notices. It excludes the library build, development files and
+local app mapping. Its manifest omits the local `apps` reference. Configure the
+MCP endpoint for the service or local server you intend to use. This command
+does not publish anything.
 
 ## Library (schema)
 

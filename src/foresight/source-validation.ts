@@ -69,21 +69,3 @@ function normalizePublisher(publisher: string): string {
 function normalizeUrl(url: string): string {
   return url.trim().replace(/\/+$/, "");
 }
-
-/**
- * Explain the settlement risk of intentionally omitting a fallback source.
- * The warning is visible in proposal and registration responses while
- * remaining outside structuredContent, which echoes the input.
- */
-export function singleSourceWarning(sourceCount: number): string | undefined {
-  if (sourceCount !== 1) return undefined;
-  return (
-    "⚠ Warning: Only one resolution source is supplied. If the primary " +
-    "source fails to report, becomes unavailable, or otherwise cannot be " +
-    "used, the market will have no pre-approved fallback resolution source. " +
-    "No independent fallback source was found or approved for this market. " +
-    "Alternative: consider a nearby proxy or revised market question for " +
-    "which at least two independent resolution sources can be named before " +
-    "locking the market."
-  );
-}

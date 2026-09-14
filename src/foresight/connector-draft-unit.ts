@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DraftUnit, type DraftUnitT } from "../../src/schema/display-question";
+import { DraftUnit, type DraftUnitT } from "./display-question";
 
 /**
  * Connector-safe representation of a draft unit.
@@ -12,7 +12,7 @@ const ConnectorDisplayQuestion = z
   .string()
   .min(10)
   .max(200)
-  .describe("Trader-facing display question, ending in '?'.");
+  .describe("User-facing display question, ending in '?'.");
 
 const ConnectorTemplateVariable = z.object({
   name: z
@@ -30,28 +30,28 @@ export const ConnectorDraftUnit = z
     type: z
       .enum(["binary", "scalar", "categorical", "template"])
       .describe(
-        "Market shape. Binary uses question; scalar and categorical use questions; template uses question and variables.",
+        "Forecast specification shape. Binary uses question; scalar and categorical use questions; template uses question and variables.",
       ),
     question: ConnectorDisplayQuestion.optional().describe(
-      "The single Yes/No question for a binary market, or placeholder-bearing question for a template market.",
+      "The single Yes/No question for a binary forecast specification, or placeholder-bearing question for a template forecast specification.",
     ),
     questions: z
       .array(ConnectorDisplayQuestion)
       .min(2)
       .optional()
       .describe(
-        "The complete question set for a scalar or categorical market (at least two).",
+        "The complete question set for a scalar or categorical forecast specification (at least two).",
       ),
     variables: z
       .array(ConnectorTemplateVariable)
       .min(1)
       .optional()
       .describe(
-        "For a template market, one entry per angle-bracket placeholder in question.",
+        "For a template forecast specification, one entry per angle-bracket placeholder in question.",
       ),
   })
   .describe(
-    "A market unit. The server validates the required field for its market shape.",
+    "A forecast specification unit. The server validates the required field for its forecast specification shape.",
   );
 
 export type ConnectorDraftUnitT = z.infer<typeof ConnectorDraftUnit>;

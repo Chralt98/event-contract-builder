@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseConnectorDraftUnit } from "../src/connector-draft-unit";
+import { parseConnectorDraftUnit } from "../../src/foresight/connector-draft-unit";
 
 describe("parseConnectorDraftUnit", () => {
   test("restores template placeholder invariants at the connector boundary", () => {

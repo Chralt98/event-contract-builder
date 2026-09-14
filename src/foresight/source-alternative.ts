@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
-import { sourceIndependenceError } from "./source-hierarchy";
+import { sourceIndependenceError } from "./source-validation";
 
-/** A concise source identity used for an alternative-market suggestion. */
+/** A concise source identity used for an alternative forecast specification suggestion. */
 export const alternativeSourceIdentitySchema = z.object({
   name: z.string().min(3),
   publisher: z.string().min(2),
@@ -15,16 +15,16 @@ export const alternativeSourceIdentitySchema = z.object({
  * nevertheless be genuinely distinct before the suggestion is shown as a
  * two-source alternative.
  */
-export const alternativeMarketSchema = z.object({
+export const alternativeForecastSpecificationSchema = z.object({
   unit_number: z
     .number()
     .int()
     .min(1)
     .describe(
-      "The 1-based unit number to use if the user selects this alternative and continues with define-timing, then define-terms.",
+      "The 1-based unit number to use if the user selects this alternative and continues with define-terms.",
     ),
   display_question_unit: ConnectorDraftUnit.describe(
-    "A newly drafted alternative display-question unit. It is not selected yet and must contain only the new market question(s), placeholders, variables, and allowed values; pass it as selected_unit to define-timing, then define-terms, only after the user chooses it.",
+    "A newly drafted alternative display-question unit. It is not selected yet and must contain only the new forecast specification question(s), placeholders, variables, and allowed values; pass it as selected_unit to define-terms only after the user chooses it.",
   ),
   rationale: z
     .string()
@@ -34,14 +34,19 @@ export const alternativeMarketSchema = z.object({
     ),
   sources: z
     .array(alternativeSourceIdentitySchema)
-    .min(2, "An alternative market must offer at least two sources.")
+    .min(
+      2,
+      "An alternative forecast specification must offer at least two sources.",
+    )
     .superRefine((sources, ctx) => {
       const error = sourceIndependenceError(sources);
       if (error) ctx.addIssue({ code: "custom", message: error });
     })
     .describe(
-      "At least two independent source agencies that can resolve the alternative market.",
+      "At least two independent source agencies that can resolve the alternative forecast specification.",
     ),
 });
 
-export type AlternativeMarketT = z.infer<typeof alternativeMarketSchema>;
+export type AlternativeForecastSpecificationT = z.infer<
+  typeof alternativeForecastSpecificationSchema
+>;

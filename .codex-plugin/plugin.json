@@ -1,41 +1,39 @@
 {
-  "name": "event-contract-builder",
-  "version": "0.1.0+codex.20260911173506",
-  "description": "Draft and specify prediction-market event contracts with focused skills and deterministic MCP tools.",
+  "name": "bleavit-foresight",
+  "version": "0.2.0+codex.20260914083129",
+  "description": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
   "author": {
     "name": "Christopher Maximilian Altmann",
     "url": "https://github.com/Chralt98"
   },
-  "homepage": "https://github.com/Chralt98/event-contract-builder#readme",
-  "repository": "https://github.com/Chralt98/event-contract-builder",
   "license": "Apache-2.0",
   "keywords": [
-    "prediction-markets",
-    "event-contracts",
+    "forecast-specifications",
+    "probability-monitoring",
     "mcp",
     "chatgpt",
+    "codex",
     "skills"
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "apps": "./.app.json",
   "interface": {
-    "displayName": "Event Contract Builder",
-    "shortDescription": "Draft and specify prediction-market event contracts.",
-    "longDescription": "Event Contract Builder combines focused skills with deterministic MCP tools for drafting display questions, approving timing, defining terms, selecting authoritative resolution sources, and reducing semantic risk.",
+    "displayName": "Bleavit Foresight",
+    "shortDescription": "Monitor the probabilities of future events.",
+    "longDescription": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
     "developerName": "Christopher Maximilian Altmann",
     "category": "Productivity",
-    "capabilities": [
-      "Interactive"
-    ],
-    "websiteURL": "https://github.com/Chralt98/event-contract-builder",
+    "capabilities": ["Interactive"],
     "defaultPrompt": [
-      "Draft prediction-market questions from this event",
-      "Approve the event, trading, and expiration timing for this market",
-      "Define the ambiguous terms in this market",
+      "Draft forecast specification questions from this event",
+      "Define the ambiguous terms in this forecast specification",
       "Choose authoritative resolution sources",
-      "Reduce semantic risk in this event contract"
+      "Reduce semantic risk in this forecast specification"
     ],
-    "brandColor": "#1F6FEB"
-  }
+    "brandColor": "#1F6FEB",
+    "websiteURL": "https://github.com/Chralt98/event-contract-builder"
+  },
+  "homepage": "https://github.com/Chralt98/event-contract-builder#readme",
+  "repository": "https://github.com/Chralt98/event-contract-builder"
 }

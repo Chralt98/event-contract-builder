@@ -1,7 +1,7 @@
 {
   "name": "event-contract-builder",
-  "version": "0.1.0",
-  "description": "A TypeScript library, CLI, and MCP server for generating, validating, and converting YAML/JSON event contract specifications for prediction markets.",
+  "version": "0.2.0",
+  "description": "Open-source event-contract schema library and shared plugin interface for Bleavit Foresight.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -21,6 +21,10 @@
     "./schema": {
       "types": "./dist/src/schema/event-contract.d.ts",
       "default": "./dist/src/schema/event-contract.js"
+    },
+    "./foresight": {
+      "types": "./dist/src/foresight/index.d.ts",
+      "default": "./dist/src/foresight/index.js"
     }
   },
   "license": "Apache-2.0",
@@ -32,15 +36,13 @@
     "DISCLAIMER.md"
   ],
   "scripts": {
-    "build": "bun build ./index.ts ./src/index.ts ./src/cnl.ts ./src/schema/event-contract.ts --outdir ./dist --target node --format esm --external zod && tsc -p tsconfig.build.json",
+    "build": "bun run scripts/build.ts",
     "test": "bun run build && bun test",
-    "start:server": "bun run server/src/index.ts",
-    "start:server:stdio": "bun run server/src/stdio.ts",
-    "dev:server": "bun --watch run server/src/index.ts",
-    "dev:server:inspect": "npx @modelcontextprotocol/inspector --transport http --server-url http://localhost:8787/mcp",
-    "dev:server:ngrok": "./scripts/start-ngrok.sh",
     "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format:check": "prettier . --check",
+    "refresh:plugin": "python3 scripts/refresh-plugin.py",
+    "check": "tsc --noEmit",
+    "package:plugin": "python3 scripts/package-plugin.py"
   },
   "author": "Christopher Maximilian Altmann",
   "repository": {
@@ -60,7 +62,6 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   }

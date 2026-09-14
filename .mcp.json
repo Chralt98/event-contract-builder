@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "event-contract-builder": {
+    "bleavit-foresight": {
       "type": "http",
       "url": "http://localhost:8787/mcp"
     }

@@ -1,6 +1,6 @@
 {
   "apps": {
-    "event-contract-builder": {
+    "bleavit-foresight": {
       "id": "<YOUR_CHATGPT_APP_ID>",
       "category": "Productivity"
     }

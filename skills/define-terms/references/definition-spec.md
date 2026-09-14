@@ -1,15 +1,15 @@
 # Definition specification
 
-Read this reference when defining terms for a selected prediction-market unit.
+Read this reference when defining terms for a selected forecast specification unit.
 
 ## Role and goal
 
-Act as a prediction market event contract analyst. Identify ambiguous words and phrases and propose precise definitions so that traders and resolution authorities agree on what the terms mean.
+Act as a forecast specification analyst. Identify ambiguous words and phrases and propose precise definitions so that forecast users and resolution authorities agree on what the terms mean.
 
 Be precise and neutral. Every definition should be tight enough that two reasonable people would agree on whether the condition was met.
 
-The input is one selected market unit from a prior display-question draft or
-from an `alternative_market` branch offered during resolution-source review:
+The input is one selected forecast specification unit from a prior display-question draft or
+from an `alternative_forecast_specification` branch offered during resolution-source review:
 
 - a binary unit contains one question;
 - a scalar unit contains the complete set of range questions; and
@@ -18,7 +18,7 @@ from an `alternative_market` branch offered during resolution-source review:
 
 Keep the selected unit exactly as provided. Do not rewrite or modify its question text, placeholders, variables, or values. For a template, analyze the common question wording and the full value set; do not choose a value or instantiate one concrete question.
 
-When the unit comes from an alternative-market branch, use its supplied unit
+When the unit comes from an alternative forecast specification branch, use its supplied unit
 number and new display-question unit unchanged as the complete selected unit.
 Treat the alternative's source identities as provisional candidates only; do
 not carry over definitions from the original unit, and send the new unit
@@ -26,16 +26,16 @@ through resolution-source review after definitions are agreed.
 
 ## What counts as ambiguous
 
-Flag a term only when a reasonable trader could interpret it in more than one way. Typical cases include:
+Flag a term only when a reasonable forecast user could interpret it in more than one way. Typical cases include:
 
 - a term with multiple common meanings, such as “hit” meaning reach once or sustain;
 - a threshold without a defined measurement, such as “CPI” without an index or adjustment convention;
 - a time reference that could be interpreted differently, such as “by end of 2026”;
 - a named entity that could refer to more than one thing, such as “Apple”;
-- domain jargon that a retail trader may not know, such as “bps” or “market cap”; and
+- domain jargon that a forecast user may not know, such as “bps” or “company capitalization”; and
 - a measurable quantity without a specified data source or methodology.
 
-Do not define words with one obvious meaning in context. Do not define data sources, resolution authorities, reporting entities, time boundaries, deadlines, or observation/resolution periods; those belong to later contract-definition steps.
+Do not define words with one obvious meaning in context. Do not define data sources, resolution authorities, reporting entities, time boundaries, deadlines, or observation/resolution periods; those belong to later forecast specification-definition steps.
 
 ## Definition rules
 
@@ -45,15 +45,15 @@ Do not define words with one obvious meaning in context. Do not define data sour
 - Do not invent facts or silently resolve ambiguity by guessing. If the context is insufficient, ask for clarification instead.
 - Return a map from each ambiguous term to its definition. An empty map is valid when no genuine ambiguity remains.
 
-## Submission contract
+## Submission format
 
 `submit_defined_terms` owns the visible Markdown. After completing the analysis, call it exactly once with:
 
 - `unit_number`: the 1-based number shown in the prior draft or supplied by the
-  selected alternative-market branch;
-- `contract_id`: the stable identifier returned by the prior workflow tool,
-  when continuing an existing contract; omit it when starting a newly selected
-  alternative-market record;
+  selected alternative forecast specification branch;
+- `forecast_specification_id`: the stable identifier returned by the prior workflow tool,
+  when continuing an existing forecast specification; omit it when starting a newly selected
+  alternative forecast specification record;
 - `selected_unit`: the exact binary, scalar, categorical, or template unit selected by the user;
 - `definitions`: a term-to-definition map; and
 - `followUp`: one sentence asking whether the user agrees with the definitions or wants any changed.
@@ -75,6 +75,6 @@ reorder content, or expose the raw structured payload.
 - If the selected unit or its unit number is unavailable, ask the user to provide it rather than reconstructing it from memory.
 - If the selected unit has not been explicitly approved, stop and return to the
   selection handoff; do not call `submit_defined_terms`.
-- If an alternative-market selection is missing its complete display-question
+- If an alternative forecast specification selection is missing its complete display-question
   unit or unit number, ask for that handoff rather than reconstructing it from
   definitions or from memory.
