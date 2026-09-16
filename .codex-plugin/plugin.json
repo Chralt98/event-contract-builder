@@ -1,27 +1,20 @@
 {
   "name": "bleavit-foresight",
-  "version": "0.2.0+codex.20260916072204",
-  "description": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
+  "version": "0.2.0+codex.20260916075033",
+  "description": "ChatGPT plugin for creating forecast specifications.",
   "author": {
     "name": "Christopher Maximilian Altmann",
     "url": "https://github.com/Chralt98"
   },
   "license": "Apache-2.0",
-  "keywords": [
-    "forecast-specifications",
-    "probability-monitoring",
-    "mcp",
-    "chatgpt",
-    "codex",
-    "skills"
-  ],
+  "keywords": ["forecast-specifications", "mcp", "chatgpt", "codex", "skills"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "apps": "./.app.json",
   "interface": {
     "displayName": "Bleavit Foresight",
-    "shortDescription": "Monitor the probabilities of future events.",
-    "longDescription": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
+    "shortDescription": "Create forecast specifications.",
+    "longDescription": "ChatGPT plugin for creating forecast specifications.",
     "developerName": "Christopher Maximilian Altmann",
     "category": "Productivity",
     "capabilities": ["Interactive"],

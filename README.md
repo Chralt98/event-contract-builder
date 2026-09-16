@@ -4,7 +4,7 @@ Open-source event-contract schema library and shared plugin interface.
 
 The first product under this umbrella is **Bleavit Foresight**:
 
-> ChatGPT/Codex plugin for monitoring the probabilities of future events.
+> ChatGPT plugin for creating forecast specifications.
 
 The current plugin drafts **forecast specifications**: selectable questions,
 precise definitions, independent resolution sources, resolution criteria,
