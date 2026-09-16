@@ -267,7 +267,7 @@ export const selectedUnitShape = {
     .boolean()
     .optional()
     .describe(
-      "Set true only when the user chooses to start a separate forecast specification in a new language. Omit forecast_specification_id in that case; the new record starts with no approvals and must receive fresh approval at every workflow stage.",
+      "Set true only when the user chooses to start a separate forecast specification branch, including a translated specification or a selected alternative. Omit forecast_specification_id in that case; the new record starts with no approvals and must receive fresh approval at every workflow stage.",
     ),
   unit_number: z
     .number()

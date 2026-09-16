@@ -59,6 +59,11 @@ Never copy an approval from one language record to another. Use the same
 explicit new-record flag for a selected alternative question when that branch
 must be independent, even if it keeps the current language.
 
+If no selected-unit stage has been approved in the original record yet, there
+is no approved selection to translate. Start the separate-language workflow
+with a fresh `submit_drafted_questions` call in the target language instead;
+do not carry over the original record ID or any approval.
+
 The deterministic tool output is an English rendering scaffold. When
 presenting it, translate renderer-generated labels, headings, warnings, and
 other fixed UI text into the specification's locked language. Preserve all

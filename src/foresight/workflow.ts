@@ -18,12 +18,8 @@ export const ForecastSpecificationLanguageCode = z
   .trim()
   .min(2)
   .max(35)
-  .regex(
-    /^(?:[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*|x(?:-[A-Za-z0-9]{1,8})+)$/i,
-    "Use a BCP 47 language tag such as de, en, or en-GB.",
-  )
   .describe(
-    "Canonical BCP 47 language tag for every forecast-specification field in this workflow, such as de, en, or en-GB.",
+    "Valid BCP 47 language tag for every forecast-specification field in this workflow, such as de, en, or en-GB. The server canonicalizes it before storage.",
   );
 
 export type ForecastSpecificationLanguageCode = z.infer<

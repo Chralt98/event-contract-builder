@@ -104,8 +104,12 @@ describe("public forecast interface", () => {
     const schema = z.toJSONSchema(
       z.object(foresightTools.submit_selected_unit.inputSchema),
     );
+    const draftSchema = z.toJSONSchema(
+      z.object(foresightTools.submit_drafted_questions.inputSchema),
+    );
     const unit = schema.properties!.selected_unit!;
     expect(unit).not.toHaveProperty("oneOf");
+    expect(draftSchema.properties!.language_code).not.toHaveProperty("pattern");
     expect(() => parseConnectorDraftUnit({ type: "binary" })).toThrow();
     expect(() =>
       parseConnectorDraftUnit({
@@ -198,6 +202,7 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({
         forecast_specification_id: summary.forecast_specification_id,
+        language_code: undefined,
         approved_stage: "background_information",
       }).success,
     ).toBe(false);
@@ -223,8 +228,11 @@ describe("public forecast interface", () => {
       true,
     );
     expect(ForecastSpecificationLanguageCode.safeParse("1-GB").success).toBe(
-      false,
+      true,
     );
+    expect(() =>
+      canonicalizeForecastSpecificationLanguageCode("1-GB"),
+    ).toThrow();
     expect(canonicalizeForecastSpecificationLanguageCode("DE-de")).toBe(
       "de-DE",
     );
