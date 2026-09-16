@@ -3,6 +3,7 @@ import { Definitions } from "./display-question";
 import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
+import { ForecastBackgroundInformation } from "./background-information";
 
 /** The identifier shared by all stages of one forecast specification workflow. */
 export const ForecastSpecificationId = z
@@ -22,6 +23,7 @@ export const approvalStageSchema = z.enum([
   "defined_terms",
   "resolution_sources",
   "resolution_criteria",
+  "background_information",
 ]);
 
 export type ApprovalStage = z.infer<typeof approvalStageSchema>;
@@ -36,6 +38,7 @@ export const approvedForecastSpecificationRecallSchema = z.object({
     .object({ sources: z.array(DataSource).min(1) })
     .optional(),
   resolution_criteria: ResolutionCriteria.optional(),
+  background_information: ForecastBackgroundInformation.optional(),
 });
 
 export type ApprovedForecastSpecificationRecall = z.infer<

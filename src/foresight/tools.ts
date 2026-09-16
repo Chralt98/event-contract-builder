@@ -3,6 +3,7 @@ import { Definitions } from "./display-question";
 import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
+import { ForecastBackgroundInformation } from "./background-information";
 import { alternativeForecastSpecificationSchema } from "./source-alternative";
 import {
   sourceHierarchyRankError,
@@ -26,7 +27,7 @@ export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
     approved_stage: approvalStageSchema,
   })
   .superRefine((value, ctx) => {
-    if (value.approved_stage !== "resolution_criteria") return;
+    if (value.approved_stage !== "background_information") return;
 
     // Final approval must expose the complete approved forecast
     // specification so clients can render it without reconstructing state
@@ -53,6 +54,14 @@ export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
         path: ["resolution_criteria"],
         message:
           "Final forecast-specification approval must include approved resolution criteria.",
+      });
+    }
+    if (!value.background_information) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["background_information"],
+        message:
+          "Final forecast-specification approval must include approved background information.",
       });
     }
   });
@@ -190,6 +199,27 @@ export const resolutionCriteriaShape = {
     ),
 };
 
+export const backgroundInformationShape = {
+  forecast_specification_id: optionalForecastSpecificationId,
+  unit_number: z
+    .number()
+    .int()
+    .describe(
+      "The 1-based number of the selected unit as shown in the prior draft.",
+    ),
+  selected_unit: ConnectorDraftUnit.describe(
+    "The selected forecast specification unit whose context and background information is being defined — same structure as a unit from submit_drafted_questions.",
+  ),
+  background_information: ForecastBackgroundInformation.describe(
+    "Neutral, factual context and background information that helps the user understand the forecast without changing its question or resolution rules. Public references are optional.",
+  ),
+  followUp: z
+    .string()
+    .describe(
+      "A follow-up question asking whether the user approves the context and background information or would like anything changed.",
+    ),
+};
+
 export const selectedUnitShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -209,10 +239,12 @@ export const foresightTools = {
       "Record an explicit user approval for one pending forecast specification " +
       "workflow stage. Call this only after the user has confirmed that " +
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
-      "in order: selected_unit, defined_terms, resolution_sources, then " +
-      "resolution_criteria. When approving resolution_criteria, return the " +
+      "in order: selected_unit, defined_terms, resolution_sources, " +
+      "resolution_criteria, then background_information. When approving " +
+      "background_information, return the " +
       "complete approved forecast specification, including the selected unit, " +
-      "definitions, resolution sources, and resolution criteria; clients should " +
+      "definitions, resolution sources, resolution criteria, and background " +
+      "information; clients should " +
       "render that complete result rather than only the approval status or ID.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
@@ -225,7 +257,7 @@ export const foresightTools = {
     title: "Get Approved Forecast Specification",
     description:
       "Retrieve the approved selected unit, definitions, resolution source " +
-      "records, and resolution criteria saved during this chat; candidate drafts and workflow prompts " +
+      "records, resolution criteria, and background information saved during this chat; candidate drafts and workflow prompts " +
       "are not returned. " +
       "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
       "current MCP session, or provide the stable identifier returned by a " +
@@ -300,11 +332,30 @@ export const foresightTools = {
       "result and preserving the exact selected unit, including every template " +
       "variable and allowed value. The submission does not imply user approval; " +
       "call approve_forecast_specification with stage resolution_criteria after " +
-      "the user agrees to the criteria. If validation fails, correct only the " +
+      "the user agrees to the criteria, then continue to the background-information " +
+      "stage. If validation fails, correct only the " +
       "reported field, retry with all other values unchanged, and show the user " +
       "only the corrected field and value instead of the full criteria.",
     inputSchema: resolutionCriteriaShape,
     outputSchema: resolutionCriteriaShape,
+    annotations: {
+      readOnlyHint: false,
+      idempotentHint: true,
+    },
+  },
+  submit_background_information: {
+    title: "Context and Background Information",
+    description:
+      "Validate and store neutral, factual context and background " +
+      "information for a forecast specification. Call this once after resolution " +
+      "criteria are approved, carrying the forecast_specification_id and exact " +
+      "selected unit. Optional background references are explanatory and do not alter the " +
+      "approved resolution-source hierarchy. The submission does not imply user " +
+      "approval; call approve_forecast_specification with stage " +
+      "background_information after the user agrees. That final approval returns " +
+      "the complete approved forecast specification.",
+    inputSchema: backgroundInformationShape,
+    outputSchema: backgroundInformationShape,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import {
   DataSource,
+  ForecastBackgroundInformation,
   approvalStageSchema,
   foresightTools,
   parseConnectorResolutionCriteria,
@@ -41,6 +42,23 @@ const criteria = {
     "Use the highest-ranked approved source that publishes a result by the deadline. Apply an official correction published before resolution.",
   exceptionAndUnresolvedRules:
     "If no approved source can establish the result by the resolution deadline, apply the platform's documented unresolved-outcome policy.",
+};
+
+const backgroundInformation = {
+  overview:
+    "This forecast asks whether measurable rainfall will occur on the specified day.",
+  background:
+    "The local observatory publishes daily weather measurements for the surrounding area.",
+  keyFactors: [
+    "Changes in the local weather system before the observation period.",
+  ],
+  references: [
+    {
+      title: "Observatory weather information",
+      publisher: "City Observatory",
+      url: "https://observatory.example/weather",
+    },
+  ],
 };
 
 describe("public forecast interface", () => {
@@ -134,14 +152,15 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("forecast approval stages include resolution criteria after sources", () => {
+  test("forecast approval stages include background information after resolution criteria", () => {
     expect(approvalStageSchema.options).toEqual([
       "selected_unit",
       "defined_terms",
       "resolution_sources",
       "resolution_criteria",
+      "background_information",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(7);
+    expect(Object.keys(foresightTools)).toHaveLength(8);
   });
 
   test("final approval requires the complete approved forecast specification", () => {
@@ -153,7 +172,8 @@ describe("public forecast interface", () => {
       definitions: { deadline: "The stated resolution deadline." },
       resolution_sources: { sources: [source] },
       resolution_criteria: criteria,
-      approved_stage: "resolution_criteria" as const,
+      background_information: backgroundInformation,
+      approved_stage: "background_information" as const,
     };
 
     expect(schema.safeParse(complete).success).toBe(true);
@@ -161,11 +181,74 @@ describe("public forecast interface", () => {
       "definitions",
       "resolution_sources",
       "resolution_criteria",
+      "background_information",
     ] as const) {
       const incomplete = { ...complete };
       delete incomplete[field];
       expect(schema.safeParse(incomplete).success).toBe(false);
     }
+
+    const {
+      background_information: _ignoredBackgroundInformation,
+      ...completeThroughCriteria
+    } = complete;
+    const criteriaApproval = {
+      ...completeThroughCriteria,
+      approved_stage: "resolution_criteria" as const,
+    };
+    expect(schema.safeParse(criteriaApproval).success).toBe(true);
+  });
+
+  test("background information allows omitted references and validates supplied ones", () => {
+    const schema = z.object(
+      foresightTools.submit_background_information.inputSchema,
+    );
+    const payload = {
+      unit_number: 1,
+      selected_unit: input.selected_unit,
+      background_information: backgroundInformation,
+      followUp: "Do you approve this context and background information?",
+    };
+
+    expect(schema.safeParse(payload).success).toBe(true);
+    expect(ForecastBackgroundInformation.parse(backgroundInformation)).toEqual(
+      backgroundInformation,
+    );
+    expect(Object.keys(ForecastBackgroundInformation.shape)).toEqual([
+      "overview",
+      "background",
+      "keyFactors",
+      "references",
+    ]);
+    const { references: _references, ...backgroundWithoutReferences } =
+      backgroundInformation;
+    expect(
+      schema.safeParse({
+        ...payload,
+        background_information: backgroundWithoutReferences,
+      }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...payload,
+        background_information: {
+          ...backgroundWithoutReferences,
+          references: [],
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        background_information: {
+          ...backgroundInformation,
+          references: [
+            ...backgroundInformation.references,
+            ...backgroundInformation.references,
+          ],
+        },
+      }).success,
+    ).toBe(false);
   });
 
   test("resolution criteria use open question rules instead of closed criterion kinds or comparators", () => {
@@ -369,6 +452,15 @@ describe("public forecast interface", () => {
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
       "complete approved forecast specification",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Do not present the complete forecast specification yet.",
+    );
+    expect(foresightServerInstructions).toContain(
+      'stage: "background_information"',
+    );
+    expect(foresightTools.submit_background_information.description).toContain(
+      "do not alter the approved resolution-source hierarchy",
     );
   });
 });

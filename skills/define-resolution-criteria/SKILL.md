@@ -160,14 +160,9 @@ frontier, and ask the remaining questions before proceeding.
 8. Present the tool's complete returned Markdown faithfully, translating only
    renderer-generated labels and fixed UI text into the user's language. After
    the user agrees, call `approve_forecast_specification` with
-   `stage: "resolution_criteria"`. Then present the complete rendered Markdown
-   returned by that approval call, including the selected unit, approved
-   definitions, resolution sources, and resolution criteria. Do not summarize,
-   truncate, or respond with only the approval status or forecast specification
-   ID. If the approval response does not contain the complete rendered result,
-   call `get_approved_forecast_specification` with the returned
-   `forecast_specification_id` and present that tool's complete rendered
-   Markdown instead.
+   `stage: "resolution_criteria"`. The workflow is not complete at this point:
+   continue with `define-background-information` and do not present the complete
+   forecast specification until that final stage is approved.
 
 ## Validation-error recovery
 

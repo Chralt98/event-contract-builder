@@ -4,6 +4,7 @@ export * from "./connector-draft-unit";
 export * from "./source-alternative";
 export * from "./source-validation";
 export * from "./resolution-criteria";
+export * from "./background-information";
 export * from "./workflow";
 export * from "./tools";
 export * from "./instructions";

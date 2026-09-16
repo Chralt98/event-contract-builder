@@ -7,8 +7,8 @@ The first product under this umbrella is **Bleavit Foresight**:
 > ChatGPT/Codex plugin for monitoring the probabilities of future events.
 
 The current plugin drafts **forecast specifications**: selectable questions,
-precise definitions, independent resolution sources, resolution
-criteria, and explicit approvals.
+precise definitions, independent resolution sources, resolution criteria,
+context/background information, and explicit approvals.
 Probability monitoring is planned. Full event-contract drafting is outside the
 current plugin workflow; the general event-contract schema library remains
 available separately below.
@@ -18,7 +18,7 @@ Third-party workflow attributions and license notices are listed in
 
 ## Hosted service and repository boundary
 
-This repository contains the open-source library, plugin assets, five skills,
+This repository contains the open-source library, plugin assets, six skills,
 and client-visible MCP interface. The hosted Bleavit Foresight service provides
 MCP execution, workflow state, rendering, and future monitoring services. Those
 operational components are not included in this repository.
@@ -106,8 +106,12 @@ does not update ChatGPT's connection metadata.
    `resolution_sources` only after the user accepts the hierarchy.
 5. Use `define-resolution-criteria` and `submit_resolution_criteria`; approve
    `resolution_criteria` only after the user accepts the criteria.
-6. After final approval, render the complete approved forecast specification —
-   selected unit, definitions, resolution sources, and resolution criteria. If
+6. Use `define-background-information` and `submit_background_information`;
+   approve `background_information` only after the user accepts the explanatory
+   context and any non-binding references.
+7. After final approval, render the complete approved forecast specification —
+   selected unit, definitions, resolution sources, resolution criteria, and
+   context/background information. If
    the approval response does not contain the full rendered result, retrieve it
    with `get_approved_forecast_specification` and render that complete response.
 
@@ -127,6 +131,9 @@ or provide a fallback for evaluation. URLs are inspection locators, not fetched
 or verified by the backend. Resolution criteria contain one open Yes/No rule
 for every binary question represented by the selected unit, plus broad shared
 rules for evidence, source handling, exceptions, and unresolved outcomes.
+Background information provides a neutral overview, relevant history, durable
+key factors, and optional supporting reference links. Any links are explanatory
+and do not change the approved resolution-source hierarchy.
 
 ## Package the plugin
 
