@@ -37,10 +37,11 @@ tool call.
    settled and that can be answered without guessing.
 3. Track the grilling-round count from the first question round. Before the
    questions in every round, state the current round and the maximum number of
-   grilling rounds expected for this session. Write the progress line and
-   fixed labels in the user's current conversation language. The English
-   examples below show the format; adapt them to the conversation instead of
-   treating English or another language as fixed. For example:
+   grilling rounds expected for this session. Write every specification-related
+   question, progress line, fixed label, and follow-up in the immutable language
+   identified by the current record's `language_code`. The English examples
+   below show the format; translate them into that language instead of
+   inferring a new language from the latest message. For example:
    `🧭 Grilling round 1 of 1 total (exact).` and
    `🧭 Grilling round 2 of about 2 total (estimate).` When the mapped design tree
    makes the maximum knowable, mark it exact. When adaptive branches or
@@ -69,8 +70,8 @@ tool call.
 
    Format every round using this structure, adapted from the upstream
    `grilling` skill. Translate fixed labels and prompts, including the progress
-   line and the free-form invitation, into the user's current conversation
-   language; keep the question numbering, symbols, and separators:
+   line and the free-form invitation, into the locked specification language;
+   keep the question numbering, symbols, and separators:
 
    ```text
    🧭 Grilling round <current> of <total> total (exact).
@@ -92,7 +93,7 @@ tool call.
 
    If the maximum is only an estimate, translate the English example
    `🧭 Grilling round <current> of about <estimate> total (estimate).` into the
-   user's current conversation language, then put the round-reduction
+   locked specification language, then put the round-reduction
    suggestion immediately below it. The progress line and suggestion must
    appear before `Q1` in every round, including the final round. The maximum
    counts question rounds only; it does not count criteria submission or its
@@ -170,9 +171,11 @@ frontier, and ask the remaining questions before proceeding.
 7. Call `submit_resolution_criteria` exactly once with the exact selected unit,
    unit number, carried `forecast_specification_id`, complete
    `resolution_criteria`, and a follow-up asking whether the user agrees or
-   wants changes. This submission is pending and does not imply approval.
+   wants changes, all in the locked language. The structured result returns the
+   same `language_code`. This submission is pending and does not imply approval.
 8. Present the tool's complete returned Markdown faithfully, translating only
-   renderer-generated labels and fixed UI text into the user's language. After
+   renderer-generated labels and fixed UI text into the locked specification
+   language. After
    the user agrees, call `approve_forecast_specification` with
    `stage: "resolution_criteria"`. The workflow is not complete at this point:
    continue with `define-background-information` and do not present the complete

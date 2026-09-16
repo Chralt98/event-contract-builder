@@ -15,6 +15,8 @@ import {
 } from "./source-validation";
 import {
   optionalForecastSpecificationId,
+  ForecastSpecificationId,
+  ForecastSpecificationLanguageCode,
   approvalStageSchema,
   approvedForecastSpecificationRecallSchema,
 } from "./workflow";
@@ -38,6 +40,7 @@ export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
   .extend({
     forecast_specification_id:
       approvedForecastSpecificationRecallSchema.shape.forecast_specification_id,
+    language_code: ForecastSpecificationLanguageCode,
     approved_stage: approvalStageSchema,
     forecast_question: forecastQuestionLinesSchema.optional(),
   })
@@ -125,6 +128,9 @@ export const definedTermsShape = {
 
 export const draftedQuestionsShape = {
   forecast_specification_id: optionalForecastSpecificationId,
+  language_code: ForecastSpecificationLanguageCode.describe(
+    "The canonical BCP 47 language tag chosen for this new forecast specification. Every specification field and workflow follow-up must use this language for the lifetime of this record.",
+  ),
   units: z
     .array(ConnectorDraftUnit)
     .min(
@@ -254,6 +260,15 @@ export const backgroundInformationShape = {
 
 export const selectedUnitShape = {
   forecast_specification_id: optionalForecastSpecificationId,
+  language_code: ForecastSpecificationLanguageCode.describe(
+    "The canonical BCP 47 language tag for this forecast specification. Keep it unchanged when continuing; use the target language only when explicitly starting a new specification.",
+  ),
+  start_new_specification: z
+    .boolean()
+    .optional()
+    .describe(
+      "Set true only when the user chooses to start a separate forecast specification in a new language. Omit forecast_specification_id in that case; the new record starts with no approvals and must receive fresh approval at every workflow stage.",
+    ),
   unit_number: z
     .number()
     .int()
@@ -262,6 +277,39 @@ export const selectedUnitShape = {
     "The exact display-question unit selected from the prior draft or an alternative forecast specification handoff.",
   ),
 };
+
+const workflowOutput = <T extends z.ZodRawShape>(shape: T) =>
+  z
+    .object(shape)
+    .extend({
+      forecast_specification_id: ForecastSpecificationId,
+      language_code: ForecastSpecificationLanguageCode,
+    })
+    .strict();
+
+export const draftedQuestionsOutputSchema = workflowOutput({
+  ...draftedQuestionsShape,
+});
+export const definedTermsOutputSchema = workflowOutput({
+  ...definedTermsShape,
+});
+export const resolutionSourceOutputSchema = workflowOutput({
+  ...resolutionSourceShape,
+});
+export const resolutionCriteriaOutputSchema = workflowOutput({
+  ...resolutionCriteriaShape,
+});
+export const backgroundInformationOutputSchema = workflowOutput({
+  ...backgroundInformationShape,
+});
+export const selectedUnitOutputSchema = z
+  .object({
+    forecast_specification_id: ForecastSpecificationId,
+    language_code: ForecastSpecificationLanguageCode,
+    unit_number: selectedUnitShape.unit_number,
+    selected_unit: selectedUnitShape.selected_unit,
+  })
+  .strict();
 
 /** Client-visible MCP contract. Execution is provided by the private backend. */
 export const foresightTools = {
@@ -273,8 +321,9 @@ export const foresightTools = {
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
       "in order: selected_unit, defined_terms, resolution_sources, " +
       "resolution_criteria, then background_information. On final " +
-      "background_information approval, return only the forecast specification " +
-      "ID and exact question text. The client should show those two items, then " +
+      "background_information approval, include language_code in structured " +
+      "content but return only the forecast specification ID and exact question " +
+      "text in the user-facing summary. The client should show those two items, then " +
       "offer to show the complete specification in chat, download it as YAML, " +
       "PDF, JSON, and/or Markdown, or do both. If the user chooses to see it, " +
       "call get_approved_forecast_specification with that ID, show the complete " +
@@ -294,7 +343,8 @@ export const foresightTools = {
     description:
       "Retrieve the approved selected unit, definitions, resolution source " +
       "records, resolution criteria, and background information saved during this chat; candidate drafts and workflow prompts " +
-      "are not returned. " +
+      "are not returned. The result includes the immutable language_code for " +
+      "the specification. " +
       "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
       "current MCP session, or provide the stable identifier returned by a " +
       "workflow tool for an explicit cross-session HTTP handoff.",
@@ -318,7 +368,7 @@ export const foresightTools = {
       "after background_information is approved and the user chooses formats, " +
       "either directly or after a requested read-through is confirmed correct. " +
       "If both are requested, wait for that confirmation before exporting. Export " +
-      "the identifier, selected unit, definitions, " +
+      "the identifier, language_code, selected unit, definitions, " +
       "resolution sources, resolution criteria, and background information; " +
       "exclude drafts and workflow prompts.",
     inputSchema: forecastSpecificationExportInputSchema.shape,
@@ -335,12 +385,14 @@ export const foresightTools = {
       "specification. Call this once after defining terms, passing the definitions as a " +
       "term-to-definition map. When the unit came from an alternative forecast specification " +
       "branch, define its terms from scratch and keep its supplied unit number. " +
+      "Write definitions and the follow-up in the specification's immutable " +
+      "language_code; the returned structured content includes that code. " +
       "Carry forecast_specification_id from the prior workflow result when continuing a record. " +
       "Submit and explicitly approve the selected unit first. This submission " +
       "does not imply user approval; call approve_forecast_specification after the user " +
       "agrees to the definitions.",
     inputSchema: definedTermsShape,
-    outputSchema: definedTermsShape,
+    outputSchema: definedTermsOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,
@@ -352,13 +404,16 @@ export const foresightTools = {
       "Validate and store a drafted set of display questions, " +
       "organized into binary/scalar/categorical/template units. Call this once " +
       "after the model has drafted questions for a new event, passing " +
-      "the draft as structured units. A forecast_specification_id is returned for later " +
+      "the draft as structured units and a canonical BCP 47 language_code " +
+      "chosen from the first user request or an explicit language choice. " +
+      "The code is immutable for the record; write every question and follow-up " +
+      "in that language. A forecast_specification_id is returned for later " +
       "workflow steps; use template placeholders only for narrow, closed values " +
       "that preserve one shared settlement source and method across every allowed combination. " +
       "Carry it explicitly when a later HTTP call may use a " +
       "new MCP session.",
     inputSchema: draftedQuestionsShape,
-    outputSchema: draftedQuestionsShape,
+    outputSchema: draftedQuestionsOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,
@@ -374,12 +429,14 @@ export const foresightTools = {
       "warning that asks whether to proceed with one source, switch to an " +
       "alternative forecast specification with at least two independent " +
       "sources, or provide a known fallback source. Call this once after definitions are approved, " +
-      "carrying the forecast_specification_id from the definitions result. For a template, " +
+      "carrying the forecast_specification_id from the definitions result. " +
+      "Write source descriptions, coverage gaps, and the follow-up in the specification's immutable " +
+      "language_code; the structured result returns that code. For a template, " +
       "verify that one identical hierarchy covers every allowed value; do not use value-specific sources. This submission " +
       "does not imply approval of the detailed sources; call " +
       "approve_forecast_specification after the user agrees to them.",
     inputSchema: resolutionSourceShape,
-    outputSchema: resolutionSourceShape,
+    outputSchema: resolutionSourceOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,
@@ -392,14 +449,16 @@ export const foresightTools = {
       "binary question represented by a forecast specification unit. Call this once after resolution sources " +
       "are approved, carrying the forecast_specification_id from the source " +
       "result and preserving the exact selected unit, including every template " +
-      "variable and allowed value. A template's one rule must apply uniformly to all substitutions using the same source, formula, procedure, and methodology; if any value needs different treatment, return to drafting and split the unit. The submission does not imply user approval; " +
+      "variable and allowed value. Write criteria and the follow-up in the " +
+      "specification's immutable language_code; the structured result returns " +
+      "that code. A template's one rule must apply uniformly to all substitutions using the same source, formula, procedure, and methodology; if any value needs different treatment, return to drafting and split the unit. The submission does not imply user approval; " +
       "call approve_forecast_specification with stage resolution_criteria after " +
       "the user agrees to the criteria, then continue to the background-information " +
       "stage. If validation fails, correct only the " +
       "reported field, retry with all other values unchanged, and show the user " +
       "only the corrected field and value instead of the full criteria.",
     inputSchema: resolutionCriteriaShape,
-    outputSchema: resolutionCriteriaShape,
+    outputSchema: resolutionCriteriaOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,
@@ -411,15 +470,16 @@ export const foresightTools = {
       "Validate and store neutral, factual context and background " +
       "information for a forecast specification. Call this once after resolution " +
       "criteria are approved, carrying the forecast_specification_id and exact " +
-      "selected unit. Optional background references are explanatory and do not alter the " +
+      "selected unit. Write context and the follow-up in the specification's " +
+      "immutable language_code; the structured result returns that code. Optional background references are explanatory and do not alter the " +
       "approved resolution-source hierarchy. The submission does not imply user " +
       "approval; call approve_forecast_specification with stage " +
-      "background_information after the user agrees. That final approval returns " +
-      "only the forecast specification ID and question, then offer to show the " +
+      "background_information after the user agrees. That final approval includes " +
+      "language_code in structured content and shows only the forecast specification ID and question, then offer to show the " +
       "complete specification in chat, download it as YAML, PDF, JSON, and/or " +
       "Markdown, or do both.",
     inputSchema: backgroundInformationShape,
-    outputSchema: backgroundInformationShape,
+    outputSchema: backgroundInformationOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,
@@ -430,11 +490,18 @@ export const foresightTools = {
     description:
       "Validate and store the user's selected display-question unit as a " +
       "pending workflow stage. This submission does not imply approval. " +
+      "Carry the existing language_code unchanged. Only when the user chooses " +
+      "a separate specification branch (including a translation branch), set " +
+      "start_new_specification=true, " +
+      "omit forecast_specification_id, and pass the target language_code. " +
+      "This creates a new record with no approvals; translate only outputs from " +
+      "stages already approved, then obtain fresh approval for every stage in " +
+      "order. " +
       "After the user confirms the selected unit in chat, call " +
       "approve_forecast_specification with stage selected_unit before approving " +
       "definitions or continuing the workflow.",
     inputSchema: selectedUnitShape,
-    outputSchema: selectedUnitShape,
+    outputSchema: selectedUnitOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,

@@ -31,11 +31,12 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
 4. After selected-unit approval has succeeded, call `submit_defined_terms`
    once with the carried `forecast_specification_id` when one is available, the unit number,
    exact selected unit, definitions map, and a follow-up asking whether the
-   definitions should be changed. Preserve the returned identifier for
-   resolution-source review.
+   definitions should be changed. Use the record's immutable `language_code`
+   for every definition and the follow-up. Preserve the returned identifier and
+   language code for resolution-source review.
 5. Present the tool's complete returned Markdown faithfully and nothing else. It
    is the user-facing glossary: translate renderer-generated English labels and
-   other fixed UI text into the user's language, while preserving every term,
+   other fixed UI text into the locked specification language, while preserving every term,
    definition, and follow-up. Never replace it with a confirmation or the
    follow-up alone.
 

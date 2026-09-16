@@ -64,7 +64,8 @@ The host must submit and explicitly approve the selected unit before calling
 definition submission.
 
 Present the returned Markdown faithfully. Translate renderer-generated English
-labels and other fixed UI text into the user's language, while preserving every
+labels and other fixed UI text into the locked specification language from
+`language_code`, while preserving every
 term, definition, and the follow-up. Do not paraphrase, reformat, rename fields,
 reorder content, or expose the raw structured payload.
 

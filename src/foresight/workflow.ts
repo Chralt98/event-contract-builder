@@ -12,6 +12,37 @@ export const ForecastSpecificationId = z
     "Stable identifier for one forecast specification workflow record.",
   );
 
+/** Canonical BCP 47 language tag assigned when a specification is started. */
+export const ForecastSpecificationLanguageCode = z
+  .string()
+  .trim()
+  .min(2)
+  .max(35)
+  .regex(
+    /^(?:[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*|x(?:-[A-Za-z0-9]{1,8})+)$/i,
+    "Use a BCP 47 language tag such as de, en, or en-GB.",
+  )
+  .describe(
+    "Canonical BCP 47 language tag for every forecast-specification field in this workflow, such as de, en, or en-GB.",
+  );
+
+export type ForecastSpecificationLanguageCode = z.infer<
+  typeof ForecastSpecificationLanguageCode
+>;
+
+/** Normalize equivalent BCP 47 spellings before storing a specification. */
+export function canonicalizeForecastSpecificationLanguageCode(
+  languageCode: string,
+): ForecastSpecificationLanguageCode {
+  const canonical = Intl.getCanonicalLocales(languageCode.trim())[0];
+  if (!canonical) {
+    throw new Error(
+      "language_code must be a valid BCP 47 language tag, such as de, en, or en-GB.",
+    );
+  }
+  return ForecastSpecificationLanguageCode.parse(canonical);
+}
+
 /** Optional on input so the first draft can create the identifier. */
 export const optionalForecastSpecificationId =
   ForecastSpecificationId.optional().describe(
@@ -31,6 +62,7 @@ export type ApprovalStage = z.infer<typeof approvalStageSchema>;
 /** Public retrieval shape containing only the approved forecast specification content. */
 export const approvedForecastSpecificationRecallSchema = z.object({
   forecast_specification_id: ForecastSpecificationId,
+  language_code: ForecastSpecificationLanguageCode,
   unit_number: z.number().int(),
   selected_unit: ConnectorDraftUnit,
   definitions: Definitions.optional(),

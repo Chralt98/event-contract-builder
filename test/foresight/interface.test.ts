@@ -4,6 +4,8 @@ import {
   DataSource,
   ForecastBackgroundInformation,
   approvalStageSchema,
+  canonicalizeForecastSpecificationLanguageCode,
+  ForecastSpecificationLanguageCode,
   foresightTools,
   parseConnectorResolutionCriteria,
   parseConnectorDraftUnit,
@@ -125,6 +127,7 @@ describe("public forecast interface", () => {
     const second = unit("Will the event be confirmed by the deadline?");
     const third = unit("Will a reliable proxy indicate the event by then?");
     const payload = {
+      language_code: "de",
       units: [first],
       followUp: "Which unit should we define next?",
     };
@@ -133,6 +136,21 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({ ...payload, units: [first, second, third] }).success,
     ).toBe(true);
+    expect(
+      foresightTools.submit_drafted_questions.outputSchema.safeParse({
+        ...payload,
+        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+        units: [first, second, third],
+      }).success,
+    ).toBe(true);
+    expect(
+      foresightTools.submit_drafted_questions.outputSchema.safeParse({
+        ...payload,
+        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+        language_code: undefined,
+        units: [first, second, third],
+      }).success,
+    ).toBe(false);
     expect(
       schema.safeParse({ ...payload, units: [first, first, second] }).success,
     ).toBe(false);
@@ -167,6 +185,7 @@ describe("public forecast interface", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
     const summary = {
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+      language_code: "de",
       forecast_question: [input.selected_unit.question],
       approved_stage: "background_information" as const,
     };
@@ -185,11 +204,30 @@ describe("public forecast interface", () => {
 
     const criteriaApproval = {
       forecast_specification_id: summary.forecast_specification_id,
+      language_code: "de",
       unit_number: 1,
       selected_unit: input.selected_unit,
       approved_stage: "resolution_criteria" as const,
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
+  });
+
+  test("language code is a BCP 47 tag and canonicalized before storage", () => {
+    expect(ForecastSpecificationLanguageCode.safeParse("de").success).toBe(
+      true,
+    );
+    expect(ForecastSpecificationLanguageCode.safeParse("en-GB").success).toBe(
+      true,
+    );
+    expect(ForecastSpecificationLanguageCode.safeParse("EN-us").success).toBe(
+      true,
+    );
+    expect(ForecastSpecificationLanguageCode.safeParse("1-GB").success).toBe(
+      false,
+    );
+    expect(canonicalizeForecastSpecificationLanguageCode("DE-de")).toBe(
+      "de-DE",
+    );
   });
 
   test("download tool accepts unique format combinations and returns MCP resources", () => {
@@ -447,7 +485,13 @@ describe("public forecast interface", () => {
       "🧭 Grilling round 2 of about 2 total (estimate).",
     );
     expect(foresightServerInstructions).toContain(
-      "localize those forms for the conversation instead of treating any language as fixed",
+      "translate these into the locked specification language",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Treat that code as immutable",
+    );
+    expect(foresightServerInstructions).toContain(
+      "start a separate specification in the newly requested language",
     );
     expect(foresightServerInstructions).not.toContain(
       "Klärungsrunde <aktuell>",

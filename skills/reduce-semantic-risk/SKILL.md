@@ -9,6 +9,12 @@ Make semantic risk bounded: make ordinary cases deterministic; expose exceptiona
 
 ## Method
 
+Use the forecast specification's stored `language_code` for any proposed
+question, definition, rule, follow-up, or user-facing risk description. A change
+in the user's latest message language does not change the specification
+language; the host must create a separate record and obtain fresh approvals if
+the user chooses a translated specification.
+
 1. Identify every interpretation, decision, or missing rule that could change the outcome, including relevant time boundaries, inputs, source precedence, and calculations.
 2. Make the ordinary resolution path mechanical. Use observable conditions and explicit rules for units, thresholds, inclusivity, rounding, revisions, ties, and source priority wherever they matter.
 3. Surface plausible exceptional cases before using a forecast specification. Address only material cases, such as unavailable, delayed, revised, or conflicting data; source replacement; event cancellation or postponement; and changes to a named entity or authority.

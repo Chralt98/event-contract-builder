@@ -35,12 +35,15 @@ the source schemas, and stop rules.
 3. Work out the complete source records internally, then call
    `submit_resolution_source` once with the carried `forecast_specification_id`, exact
    selected unit, unit number, full ranked source records, and any applicable
-   `coverage_gaps` or `alternative_forecast_specification`. This is the only resolution-source
+   `coverage_gaps` or `alternative_forecast_specification`. Write notes, gaps,
+   alternatives, and the follow-up in the record's immutable `language_code`.
+   This is the only resolution-source
    submission step. There is no separate source-hierarchy proposal or approval
    stage.
 4. Present the tool's complete returned Markdown faithfully, including every
    source detail, warning, alternative, and follow-up, translating only
-   renderer-generated English labels and fixed UI text. Then stop and wait for
+   renderer-generated English labels and fixed UI text into the locked
+   specification language. Then stop and wait for
    the user's approval or requested changes.
 5. After the user approves the detailed hierarchy, call
    `approve_forecast_specification` with `stage: "resolution_sources"`. If the user

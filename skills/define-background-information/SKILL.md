@@ -30,8 +30,9 @@ source, payload, review, and final-approval requirements.
 4. Call `submit_background_information` once with the carried
    `forecast_specification_id`, exact selected unit and unit number, complete
    `background_information`, and a follow-up asking whether the user approves
-   it or wants changes. Present the tool's complete returned Markdown faithfully,
-   translating only renderer-generated labels and fixed UI text into the user's
+   it or wants changes. Write both in the record's immutable `language_code`.
+   Present the tool's complete returned Markdown faithfully, translating only
+   renderer-generated labels and fixed UI text into the locked specification
    language.
 5. The submission is pending. If the user requests a change, revise and resubmit
    the complete background-information payload. After the user explicitly
