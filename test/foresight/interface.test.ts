@@ -160,43 +160,72 @@ describe("public forecast interface", () => {
       "resolution_criteria",
       "background_information",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(8);
+    expect(Object.keys(foresightTools)).toHaveLength(9);
   });
 
-  test("final approval requires the complete approved forecast specification", () => {
+  test("final approval returns only the identifier and forecast question", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
-    const complete = {
+    const summary = {
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-      unit_number: 1,
-      selected_unit: input.selected_unit,
-      definitions: { deadline: "The stated resolution deadline." },
-      resolution_sources: { sources: [source] },
-      resolution_criteria: criteria,
-      background_information: backgroundInformation,
+      forecast_question: [input.selected_unit.question],
       approved_stage: "background_information" as const,
     };
 
-    expect(schema.safeParse(complete).success).toBe(true);
-    for (const field of [
-      "definitions",
-      "resolution_sources",
-      "resolution_criteria",
-      "background_information",
-    ] as const) {
-      const incomplete = { ...complete };
-      delete incomplete[field];
-      expect(schema.safeParse(incomplete).success).toBe(false);
-    }
+    expect(schema.safeParse(summary).success).toBe(true);
+    expect(
+      schema.safeParse({ ...summary, definitions: { deadline: "A deadline." } })
+        .success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        forecast_specification_id: summary.forecast_specification_id,
+        approved_stage: "background_information",
+      }).success,
+    ).toBe(false);
 
-    const {
-      background_information: _ignoredBackgroundInformation,
-      ...completeThroughCriteria
-    } = complete;
     const criteriaApproval = {
-      ...completeThroughCriteria,
+      forecast_specification_id: summary.forecast_specification_id,
+      unit_number: 1,
+      selected_unit: input.selected_unit,
       approved_stage: "resolution_criteria" as const,
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
+  });
+
+  test("download tool accepts unique format combinations and returns MCP resources", () => {
+    const tool = foresightTools.download_approved_forecast_specification;
+    const inputSchema = z.object(tool.inputSchema);
+    const forecast_specification_id = "00000000-0000-4000-8000-000000000001";
+
+    expect(
+      inputSchema.safeParse({
+        forecast_specification_id,
+        formats: ["yaml", "pdf", "json", "markdown"],
+      }).success,
+    ).toBe(true);
+    expect(
+      inputSchema.safeParse({ forecast_specification_id, formats: [] }).success,
+    ).toBe(false);
+    expect(
+      inputSchema.safeParse({
+        forecast_specification_id,
+        formats: ["yaml", "yaml"],
+      }).success,
+    ).toBe(false);
+
+    expect(
+      tool.outputSchema.safeParse({
+        forecast_specification_id,
+        downloads: [
+          {
+            format: "pdf",
+            filename: `forecast-specification-${forecast_specification_id}.pdf`,
+            media_type: "application/pdf",
+            resource_uri: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
+          },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   test("background information allows omitted references and validates supplied ones", () => {
@@ -463,13 +492,28 @@ describe("public forecast interface", () => {
       "only the corrected field and value",
     );
     expect(foresightServerInstructions).toContain(
-      "Present the complete rendered Markdown returned by that approval call",
+      "present only the returned `forecast_specification_id` and exact forecast question text",
     );
     expect(foresightServerInstructions).toContain(
-      "Do not summarize, truncate, or respond with only the approval status or forecast specification ID",
+      "YAML, PDF, JSON, and/or Markdown",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Offer to show the complete approved specification in chat, download it",
+    );
+    expect(foresightServerInstructions).toContain(
+      "fulfill any previously selected downloads",
+    );
+    expect(foresightServerInstructions).not.toContain(
+      "Present the complete rendered Markdown returned by that approval call",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
-      "complete approved forecast specification",
+      "return only the forecast specification ID and exact question text",
+    );
+    expect(foresightTools.approve_forecast_specification.description).toContain(
+      "YAML, PDF, JSON, and/or Markdown",
+    );
+    expect(foresightTools.approve_forecast_specification.description).toContain(
+      "or do both",
     );
     expect(foresightServerInstructions).toContain(
       "Do not present the complete forecast specification yet.",
@@ -480,5 +524,17 @@ describe("public forecast interface", () => {
     expect(foresightTools.submit_background_information.description).toContain(
       "do not alter the approved resolution-source hierarchy",
     );
+    expect(foresightTools.submit_background_information.description).toContain(
+      "offer to show the complete specification in chat",
+    );
+    expect(
+      foresightTools.download_approved_forecast_specification.description,
+    ).toContain("identical");
+    expect(
+      foresightTools.download_approved_forecast_specification.description,
+    ).toContain(".json");
+    expect(
+      foresightTools.download_approved_forecast_specification.description,
+    ).toContain("If both are requested, wait for that confirmation");
   });
 });

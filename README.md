@@ -109,11 +109,15 @@ does not update ChatGPT's connection metadata.
 6. Use `define-background-information` and `submit_background_information`;
    approve `background_information` only after the user accepts the explanatory
    context and any non-binding references.
-7. After final approval, render the complete approved forecast specification —
-   selected unit, definitions, resolution sources, resolution criteria, and
-   context/background information. If
-   the approval response does not contain the full rendered result, retrieve it
-   with `get_approved_forecast_specification` and render that complete response.
+7. After final approval, show only the forecast specification ID and question,
+   then offer to show the complete specification in chat, download it as YAML,
+   PDF, JSON, and/or Markdown, or do both. If the user chooses only a download,
+   call `download_approved_forecast_specification` for the selected formats. If
+   they also want to see it, call `get_approved_forecast_specification` with
+   that ID and present the full result. Ask whether it looks correct; if changes
+   are needed, update the affected stages and repeat the review. After they
+   confirm it looks correct, fulfill any requested downloads or ask which
+   formats they want.
 
 Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
 separate timing skill or trading/expiration approval stage. Event time boundaries

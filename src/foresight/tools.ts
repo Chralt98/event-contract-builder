@@ -6,6 +6,10 @@ import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { alternativeForecastSpecificationSchema } from "./source-alternative";
 import {
+  forecastSpecificationExportInputSchema,
+  forecastSpecificationExportOutputSchema,
+} from "./exports";
+import {
   sourceHierarchyRankError,
   sourceIndependenceError,
 } from "./source-validation";
@@ -22,46 +26,73 @@ export const approvalShape = {
   ),
 };
 
-export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
-  .extend({
-    approved_stage: approvalStageSchema,
-  })
-  .superRefine((value, ctx) => {
-    if (value.approved_stage !== "background_information") return;
+const forecastQuestionLinesSchema = z
+  .array(z.string().min(1))
+  .min(1)
+  .describe(
+    "The exact approved question text in unit order. Binary and template units use one item; scalar and categorical units include each question.",
+  );
 
-    // Final approval must expose the complete approved forecast
-    // specification so clients can render it without reconstructing state
-    // from earlier workflow responses.
-    if (!value.definitions) {
+export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
+  .partial()
+  .extend({
+    forecast_specification_id:
+      approvedForecastSpecificationRecallSchema.shape.forecast_specification_id,
+    approved_stage: approvalStageSchema,
+    forecast_question: forecastQuestionLinesSchema.optional(),
+  })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.approved_stage === "background_information") {
+      if (!value.forecast_question) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["forecast_question"],
+          message:
+            "Final approval must return the exact approved forecast question.",
+        });
+      }
+
+      for (const field of [
+        "unit_number",
+        "selected_unit",
+        "definitions",
+        "resolution_sources",
+        "resolution_criteria",
+        "background_information",
+      ] as const) {
+        if (value[field] !== undefined) {
+          ctx.addIssue({
+            code: "custom",
+            path: [field],
+            message:
+              "Final approval returns only the forecast specification ID and question; retrieve the full specification only if the user chooses to see it.",
+          });
+        }
+      }
+      return;
+    }
+
+    if (value.unit_number === undefined) {
       ctx.addIssue({
         code: "custom",
-        path: ["definitions"],
-        message:
-          "Final forecast-specification approval must include approved definitions.",
+        path: ["unit_number"],
+        message: "Stage approval must include the selected unit number.",
       });
     }
-    if (!value.resolution_sources) {
+    if (value.selected_unit === undefined) {
       ctx.addIssue({
         code: "custom",
-        path: ["resolution_sources"],
-        message:
-          "Final forecast-specification approval must include approved resolution sources.",
+        path: ["selected_unit"],
+        message: "Stage approval must include the selected unit.",
       });
     }
-    if (!value.resolution_criteria) {
+    if (value.forecast_question !== undefined) {
       ctx.addIssue({
         code: "custom",
-        path: ["resolution_criteria"],
+        path: ["forecast_question"],
         message:
-          "Final forecast-specification approval must include approved resolution criteria.",
-      });
-    }
-    if (!value.background_information) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["background_information"],
-        message:
-          "Final forecast-specification approval must include approved background information.",
+          "The forecast question summary is only returned after final approval.",
       });
     }
   });
@@ -241,12 +272,16 @@ export const foresightTools = {
       "workflow stage. Call this only after the user has confirmed that " +
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
       "in order: selected_unit, defined_terms, resolution_sources, " +
-      "resolution_criteria, then background_information. When approving " +
-      "background_information, return the " +
-      "complete approved forecast specification, including the selected unit, " +
-      "definitions, resolution sources, resolution criteria, and background " +
-      "information; clients should " +
-      "render that complete result rather than only the approval status or ID.",
+      "resolution_criteria, then background_information. On final " +
+      "background_information approval, return only the forecast specification " +
+      "ID and exact question text. The client should show those two items, then " +
+      "offer to show the complete specification in chat, download it as YAML, " +
+      "PDF, JSON, and/or Markdown, or do both. If the user chooses to see it, " +
+      "call get_approved_forecast_specification with that ID, show the complete " +
+      "result, and ask whether it looks correct. If it does, fulfill any chosen " +
+      "downloads; if not, ask what should change, revise the affected stages, " +
+      "and repeat the review. When both options are chosen, wait for correctness " +
+      "confirmation before exporting. A direct-download choice does not require a read-through.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -265,6 +300,29 @@ export const foresightTools = {
       "workflow tool for an explicit cross-session HTTP handoff.",
     inputSchema: approvedForecastSpecificationLookupShape,
     outputSchema: approvedForecastSpecificationRecallSchema,
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+    },
+  },
+  download_approved_forecast_specification: {
+    title: "Download Approved Forecast Specification",
+    description:
+      "Create deterministic downloads of one fully approved forecast " +
+      "specification in the formats selected by the user. Use only the final " +
+      "approved record and preserve its exact field values and stable section " +
+      "order. For the same approved record and format, the file bytes must be " +
+      "identical; do not add timestamps or model-generated rewrites. Use stable " +
+      "filenames of the form forecast-specification-{forecast_specification_id}.yaml, " +
+      ".pdf, .json, or .md. Return one MCP resource URI per requested format. Call " +
+      "after background_information is approved and the user chooses formats, " +
+      "either directly or after a requested read-through is confirmed correct. " +
+      "If both are requested, wait for that confirmation before exporting. Export " +
+      "the identifier, selected unit, definitions, " +
+      "resolution sources, resolution criteria, and background information; " +
+      "exclude drafts and workflow prompts.",
+    inputSchema: forecastSpecificationExportInputSchema.shape,
+    outputSchema: forecastSpecificationExportOutputSchema,
     annotations: {
       readOnlyHint: true,
       idempotentHint: true,
@@ -357,7 +415,9 @@ export const foresightTools = {
       "approved resolution-source hierarchy. The submission does not imply user " +
       "approval; call approve_forecast_specification with stage " +
       "background_information after the user agrees. That final approval returns " +
-      "the complete approved forecast specification.",
+      "only the forecast specification ID and question, then offer to show the " +
+      "complete specification in chat, download it as YAML, PDF, JSON, and/or " +
+      "Markdown, or do both.",
     inputSchema: backgroundInformationShape,
     outputSchema: backgroundInformationShape,
     annotations: {

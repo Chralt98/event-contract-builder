@@ -37,12 +37,17 @@ source, payload, review, and final-approval requirements.
    the complete background-information payload. After the user explicitly
    approves it, call `approve_forecast_specification` with
    `stage: "background_information"`.
-6. Present the complete rendered forecast specification returned by final
-   approval, including the selected unit, approved definitions, resolution
-   sources, resolution criteria, and context/background information. Do not
-   summarize or truncate it. If the response is incomplete, immediately call
-   `get_approved_forecast_specification` with the returned identifier and present
-   that complete rendering.
+6. Present only the final approval's `forecast_specification_id` and exact
+   forecast question text. Offer to show the complete approved specification in
+   chat, download it as YAML, PDF, JSON, and/or Markdown, or do both. If the user
+   chooses only a download, call `download_approved_forecast_specification` with
+   the selected formats. If they also want to see the full specification, call
+   `get_approved_forecast_specification` with the same ID and present its
+   complete rendering faithfully. Then ask whether it looks correct; if not,
+   ask what should change and revise the affected workflow stages before
+   repeating the review. If the user confirms it looks correct, fulfill any
+   previously requested downloads or ask which formats they want, then present
+   the returned files.
 
 ## Guardrails
 
