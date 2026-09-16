@@ -238,7 +238,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("download tool returns direct HTTPS links and MCP resources", () => {
+  test("download tool requires MCP resources and accepts optional HTTPS links", () => {
     const tool = foresightTools.download_approved_forecast_specification;
     const inputSchema = z.object(tool.inputSchema);
     const forecast_specification_id = "00000000-0000-4000-8000-000000000001";
@@ -268,6 +268,19 @@ describe("public forecast interface", () => {
             filename: `forecast-specification-${forecast_specification_id}.pdf`,
             media_type: "application/pdf",
             download_url: `https://downloads.example.com/forecast-specification-${forecast_specification_id}.pdf`,
+            resource_uri: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
+          },
+        ],
+      }).success,
+    ).toBe(true);
+    expect(
+      tool.outputSchema.safeParse({
+        forecast_specification_id,
+        downloads: [
+          {
+            format: "pdf",
+            filename: `forecast-specification-${forecast_specification_id}.pdf`,
+            media_type: "application/pdf",
             resource_uri: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
           },
         ],
@@ -632,9 +645,9 @@ describe("public forecast interface", () => {
     ).toContain("If both are requested, wait for that confirmation");
     expect(
       foresightTools.download_approved_forecast_specification.description,
-    ).toContain("render each HTTPS download URL as a Markdown link");
+    ).toContain("browser-accessible HTTPS download URL may be included");
     expect(foresightServerInstructions).toContain(
-      "present each returned HTTPS `download_url` as a Markdown link",
+      "let the client present the returned named MCP resource links",
     );
   });
 });

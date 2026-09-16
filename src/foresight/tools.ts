@@ -364,10 +364,11 @@ export const foresightTools = {
       "order. For the same approved record and format, the file bytes must be " +
       "identical; do not add timestamps or model-generated rewrites. Use stable " +
       "filenames of the form forecast-specification-{forecast_specification_id}.yaml, " +
-      ".pdf, .json, or .md. Return a browser-accessible HTTPS download URL and " +
-      "an MCP resource URI per requested format. In the user-facing reply, " +
-      "render each HTTPS download URL as a Markdown link labeled with its filename; " +
-      "never rely on an opaque custom-scheme resource URI alone. Call " +
+      ".pdf, .json, or .md. Return a named MCP resource_link and resource URI " +
+      "per requested format so the client can present each file directly. A " +
+      "browser-accessible HTTPS download URL may be included when the host " +
+      "provides one; render it as an additional Markdown link labeled with its " +
+      "filename. Call " +
       "after background_information is approved and the user chooses formats, " +
       "either directly or after a requested read-through is confirmed correct. " +
       "If both are requested, wait for that confirmation before exporting. Export " +

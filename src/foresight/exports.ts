@@ -49,14 +49,15 @@ export const forecastSpecificationDownloadSchema = z
       .refine((value) => new URL(value).protocol === "https:", {
         message: "Must be an HTTPS download URL.",
       })
+      .optional()
       .describe(
-        "Browser-accessible HTTPS URL that directly downloads this file. Present this as the user-facing download link.",
+        "Optional browser-accessible HTTPS URL that directly downloads this file. Use it as an additional user-facing link when the host provides one.",
       ),
     resource_uri: z
       .string()
       .min(1)
       .describe(
-        "Stable MCP resource URI for programmatic retrieval. Do not use an opaque custom-scheme resource URI as the only user-facing download link.",
+        "Stable MCP resource URI for retrieving the file. The tool also returns a native resource_link content block so clients can present the download without an HTTPS endpoint.",
       ),
   })
   .strict();
