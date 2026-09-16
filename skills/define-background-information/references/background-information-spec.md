@@ -60,18 +60,21 @@ placeholder, variable, and allowed value. Carry the
 
 ## Review and final approval
 
-Present the complete rendered context/background submission for review. The
+Present the complete rendered context/background submission for review using
+the shared layout: selected unit, `---`, background information, `---`,
+follow-up. Insert missing separators as presentation formatting only. The
 submission does not imply approval. If the user requests edits, resubmit the
 complete revised payload; do not alter already approved upstream stages.
 
 Only after explicit approval call `approve_forecast_specification` with
 `stage: "background_information"`. This is the final approval. Show only the
-returned forecast specification ID and exact question text, then offer to show
+returned forecast specification ID and exact question text, separated by
+`---`; put another `---` before the format offer. Then offer to show
 the complete specification in chat, download it as YAML, PDF, JSON, and/or
 Markdown, or do both. If the user chooses only a download, generate the selected
 files with `download_approved_forecast_specification`. If they also want to see
 the specification, retrieve it with `get_approved_forecast_specification` using
-the same ID and present the complete result faithfully. Ask whether it looks
+the same ID and present the complete result with the shared separators. Ask whether it looks
 correct. If it does not, ask what should change, update the affected workflow
 stages, and repeat the complete review. Once the user confirms it looks correct,
 fulfill any formats they already selected or ask whether they want downloads and

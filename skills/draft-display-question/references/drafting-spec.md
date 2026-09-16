@@ -95,7 +95,7 @@ A scalar, categorical, or template group is always selected as a whole, even if 
 
 ## Tool output
 
-`submit_drafted_questions` owns the user-facing Markdown: numbered unit headings, question bullets, the `---` rule, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present its complete returned Markdown faithfully. Translate only renderer-generated English labels and other fixed UI text into the specification's locked language from `language_code`; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary.
+`submit_drafted_questions` owns the user-facing Markdown: numbered unit headings, question bullets, separators, and the follow-up line. Organize the draft into units in drafting order, then call the tool once and present the complete returned Markdown with `---` between selectable units and before the follow-up. Translate renderer-generated English labels and other fixed UI text into the specification's locked language from `language_code`; preserve the questions, variable names/values, and follow-up content, and do not replace the rendered units or questions with a summary. Add a missing separator as presentation formatting only.
 
 The tool also returns a stable `forecast_specification_id` in structured content. Preserve it
 when the user selects a unit and pass it first to `submit_selected_unit` and
@@ -113,7 +113,7 @@ For a template, preserve the exact placeholder spelling between `question` and e
 
 The required `followUp` must refer to selectable unit numbers, not the raw number of questions. For the new-event draft, ask which unit number (for example, "1, 2, or 3") to use or how the alternatives should be revised. Its next-step hint must identify `define-terms` as the immediate next stage.
 
-Do not paraphrase, reformat, renumber, or add to the Markdown returned by `submit_drafted_questions`.
+Do not paraphrase, renumber, or change the order of content returned by `submit_drafted_questions`. The only permitted formatting addition is an omitted `---` separator between units or before the follow-up.
 
 ## Selection guard and stop rule
 

@@ -34,11 +34,12 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
    definitions should be changed. Use the record's immutable `language_code`
    for every definition and the follow-up. Preserve the returned identifier and
    language code for resolution-source review.
-5. Present the tool's complete returned Markdown faithfully and nothing else. It
-   is the user-facing glossary: translate renderer-generated English labels and
-   other fixed UI text into the locked specification language, while preserving every term,
-   definition, and follow-up. Never replace it with a confirmation or the
-   follow-up alone.
+5. Present the complete returned Markdown as the user-facing glossary. Translate
+   renderer-generated English labels and other fixed UI text into the locked
+   specification language, preserving every term, definition, and follow-up.
+   Use the shared layout: selected unit, `---`, definitions, `---`, follow-up.
+   Insert a missing separator as presentation formatting only; do not alter
+   glossary content or replace the response with a confirmation or follow-up alone.
 
 The selected unit is supplied directly to this skill by the host workflow. Do not call a separate prompt-returning tool; the only MCP call in this workflow is `submit_defined_terms`.
 

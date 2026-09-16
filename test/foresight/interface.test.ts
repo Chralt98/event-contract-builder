@@ -238,7 +238,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("download tool accepts unique format combinations and returns MCP resources", () => {
+  test("download tool returns direct HTTPS links and MCP resources", () => {
     const tool = foresightTools.download_approved_forecast_specification;
     const inputSchema = z.object(tool.inputSchema);
     const forecast_specification_id = "00000000-0000-4000-8000-000000000001";
@@ -267,11 +267,53 @@ describe("public forecast interface", () => {
             format: "pdf",
             filename: `forecast-specification-${forecast_specification_id}.pdf`,
             media_type: "application/pdf",
+            download_url: `https://downloads.example.com/forecast-specification-${forecast_specification_id}.pdf`,
             resource_uri: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
           },
         ],
       }).success,
     ).toBe(true);
+    expect(
+      tool.outputSchema.safeParse({
+        forecast_specification_id,
+        downloads: [
+          {
+            format: "pdf",
+            filename: `forecast-specification-${forecast_specification_id}.pdf`,
+            media_type: "application/pdf",
+            download_url: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
+            resource_uri: `bleavit-foresight://downloads/forecast-specification-${forecast_specification_id}.pdf`,
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  test("workflow output instructions require consistent section separators", () => {
+    expect(foresightServerInstructions).toContain(
+      "Use one Markdown layout throughout Bleavit Foresight",
+    );
+    expect(foresightServerInstructions).toContain(
+      "For term definitions, place one separator before the definitions",
+    );
+    expect(foresightServerInstructions).toContain(
+      "and one before the follow-up",
+    );
+    expect(foresightServerInstructions).toContain(
+      "For every resolution-criteria grilling round, begin with the exact selected",
+    );
+    expect(foresightServerInstructions).toContain(
+      "For a full approved-specification read-through, show the ID and language",
+    );
+    expect(foresightServerInstructions).toContain(
+      "metadata together, then `---`, then the selected unit",
+    );
+    expect(
+      foresightTools.get_approved_forecast_specification.description,
+    ).toContain("then `---`, then the selected unit");
+    expect(
+      foresightTools.get_approved_forecast_specification.description,
+    ).toContain("then `---`, then definitions, sources, criteria");
   });
 
   test("background information allows omitted references and validates supplied ones", () => {
@@ -588,5 +630,11 @@ describe("public forecast interface", () => {
     expect(
       foresightTools.download_approved_forecast_specification.description,
     ).toContain("If both are requested, wait for that confirmation");
+    expect(
+      foresightTools.download_approved_forecast_specification.description,
+    ).toContain("render each HTTPS download URL as a Markdown link");
+    expect(foresightServerInstructions).toContain(
+      "present each returned HTTPS `download_url` as a Markdown link",
+    );
   });
 });

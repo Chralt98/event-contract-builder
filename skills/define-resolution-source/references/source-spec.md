@@ -109,8 +109,10 @@ After sourcing, call `submit_resolution_source` once with:
   changed.
 
 The tool renders the heading **Resolution Source Hierarchy**, source details,
-warnings, alternatives, and the follow-up in one response. Do not call a
-separate source-proposal tool or introduce a source-proposal approval stage.
+warnings, alternatives, and the follow-up in one response. Present them in the
+shared layout: selected unit, `---`, source hierarchy, `---`, follow-up. Insert
+either separator if the renderer omits it. Do not call a separate source-proposal
+tool or introduce a source-proposal approval stage.
 
 Only after the user approves that response, call
 `approve_forecast_specification` with `stage: "resolution_sources"`. If the user

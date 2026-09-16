@@ -31,20 +31,22 @@ source, payload, review, and final-approval requirements.
    `forecast_specification_id`, exact selected unit and unit number, complete
    `background_information`, and a follow-up asking whether the user approves
    it or wants changes. Write both in the record's immutable `language_code`.
-   Present the tool's complete returned Markdown faithfully, translating only
+   Present the complete returned Markdown with the shared layout: selected
+   unit, `---`, background information, `---`, follow-up. Translate
    renderer-generated labels and fixed UI text into the locked specification
-   language.
+   language. Insert missing separators as presentation formatting only.
 5. The submission is pending. If the user requests a change, revise and resubmit
    the complete background-information payload. After the user explicitly
    approves it, call `approve_forecast_specification` with
    `stage: "background_information"`.
 6. Present only the final approval's `forecast_specification_id` and exact
-   forecast question text. Offer to show the complete approved specification in
+   forecast question text, separated by `---`; put another `---` before the
+   offer. Offer to show the complete approved specification in
    chat, download it as YAML, PDF, JSON, and/or Markdown, or do both. If the user
    chooses only a download, call `download_approved_forecast_specification` with
    the selected formats. If they also want to see the full specification, call
    `get_approved_forecast_specification` with the same ID and present its
-   complete rendering faithfully. Then ask whether it looks correct; if not,
+   complete rendering with the shared separators. Then ask whether it looks correct; if not,
    ask what should change and revise the affected workflow stages before
    repeating the review. If the user confirms it looks correct, fulfill any
    previously requested downloads or ask which formats they want, then present

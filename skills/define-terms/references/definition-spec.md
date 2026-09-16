@@ -63,11 +63,12 @@ The host must submit and explicitly approve the selected unit before calling
 `selected_unit` approval, but the approval tool call must complete before this
 definition submission.
 
-Present the returned Markdown faithfully. Translate renderer-generated English
-labels and other fixed UI text into the locked specification language from
-`language_code`, while preserving every
-term, definition, and the follow-up. Do not paraphrase, reformat, rename fields,
-reorder content, or expose the raw structured payload.
+Present the complete returned Markdown, translating renderer-generated English
+labels and other fixed UI text into the specification's locked language from
+`language_code`. Preserve every term, definition, and the follow-up. Use this
+layout: selected unit, `---`, definitions, `---`, follow-up. If either required
+separator is missing, insert it as presentation formatting only; do not
+paraphrase or reorder content, rename fields, or expose the raw structured payload.
 
 ## Stop rules
 

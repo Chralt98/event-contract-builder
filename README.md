@@ -45,8 +45,11 @@ import {
 ```
 
 It exports tool descriptors, input/output schemas, forecast types, structural
-validation, and client-visible server instructions. It contains no handlers or
-state store. The plugin ID is `bleavit-foresight`; the npm package remains
+validation, and client-visible server instructions. Download responses require
+a browser-accessible HTTPS link as well as the MCP resource URI, so chat clients
+can present a direct download action. This package contains no handlers or
+state store; the hosted service must provide the HTTPS download endpoint. The
+plugin ID is `bleavit-foresight`; the npm package remains
 `event-contract-builder`. The plugin display name is Bleavit Foresight.
 
 Hosted services and commercial features support continued maintenance and

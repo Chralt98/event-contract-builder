@@ -44,10 +44,20 @@ export const forecastSpecificationDownloadSchema = z
         "text/markdown",
       ])
       .describe("MIME type of the generated file."),
+    download_url: z
+      .url()
+      .refine((value) => new URL(value).protocol === "https:", {
+        message: "Must be an HTTPS download URL.",
+      })
+      .describe(
+        "Browser-accessible HTTPS URL that directly downloads this file. Present this as the user-facing download link.",
+      ),
     resource_uri: z
       .string()
       .min(1)
-      .describe("Stable MCP resource URI for the downloadable file."),
+      .describe(
+        "Stable MCP resource URI for programmatic retrieval. Do not use an opaque custom-scheme resource URI as the only user-facing download link.",
+      ),
   })
   .strict();
 

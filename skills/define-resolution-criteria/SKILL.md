@@ -69,11 +69,19 @@ tool call.
    listed possibility when all of them are unsuitable.
 
    Format every round using this structure, adapted from the upstream
-   `grilling` skill. Translate fixed labels and prompts, including the progress
-   line and the free-form invitation, into the locked specification language;
-   keep the question numbering, symbols, and separators:
+   `grilling` skill. Begin with the exact selected unit, including every
+   question and any template values, followed by `---`; this selected-unit
+   block is part of the round, not a separate commentary. Then translate fixed
+   labels and prompts, including the progress line and the free-form invitation,
+   into the locked specification language; keep the question numbering,
+   symbols, and separators. Put a final `---` after the last question too:
 
    ```text
+   **Selected Unit <unit_number>: <translated fixed unit label>**
+   - <exact selected question, or the complete exact grouped unit>
+
+   ---
+
    🧭 Grilling round <current> of <total> total (exact).
 
    ❓ **Q1** - **<short question title>**: <question with at most three explicit choices>
@@ -89,6 +97,8 @@ tool call.
    ↪️ If none of these options fits, tell me what you would prefer or how you would like to proceed instead.
 
    ➡️ <Recommendation>
+
+   ---
    ```
 
    If the maximum is only an estimate, translate the English example
@@ -119,7 +129,8 @@ tool call.
    before submission; the rendered submission is the single criteria review.
 
 For each round, make the complete round the final user-visible response for that
-turn. The final response must contain the progress line, any required
+turn. The final response must contain the exact selected unit, its `---`
+separator, the progress line, any required
 estimate-reduction suggestion, every question, each free-form fallback
 invitation, every recommendation, and the `---` separators. Do not emit the
 round only as an intermediate commentary or progress update, and do not replace
@@ -173,9 +184,10 @@ frontier, and ask the remaining questions before proceeding.
    `resolution_criteria`, and a follow-up asking whether the user agrees or
    wants changes, all in the locked language. The structured result returns the
    same `language_code`. This submission is pending and does not imply approval.
-8. Present the tool's complete returned Markdown faithfully, translating only
-   renderer-generated labels and fixed UI text into the locked specification
-   language. After
+8. Present the tool's complete returned Markdown with the shared layout:
+   selected unit, `---`, resolution criteria, `---`, follow-up. Insert missing
+   separators as presentation formatting only. Translate renderer-generated
+   labels and fixed UI text into the locked specification language. After
    the user agrees, call `approve_forecast_specification` with
    `stage: "resolution_criteria"`. The workflow is not complete at this point:
    continue with `define-background-information` and do not present the complete

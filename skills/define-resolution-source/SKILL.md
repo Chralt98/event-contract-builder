@@ -40,11 +40,12 @@ the source schemas, and stop rules.
    This is the only resolution-source
    submission step. There is no separate source-hierarchy proposal or approval
    stage.
-4. Present the tool's complete returned Markdown faithfully, including every
-   source detail, warning, alternative, and follow-up, translating only
-   renderer-generated English labels and fixed UI text into the locked
-   specification language. Then stop and wait for
-   the user's approval or requested changes.
+4. Present the complete returned Markdown, including every source detail,
+   warning, alternative, and follow-up, translating renderer-generated English
+   labels and fixed UI text into the locked specification language. Use the
+   shared layout: selected unit, `---`, source hierarchy, `---`, follow-up.
+   Insert missing separators as presentation formatting only. Then stop and
+   wait for the user's approval or requested changes.
 5. After the user approves the detailed hierarchy, call
    `approve_forecast_specification` with `stage: "resolution_sources"`. If the user
    requests changes, revise and resubmit the complete hierarchy instead.

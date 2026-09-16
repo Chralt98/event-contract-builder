@@ -20,6 +20,13 @@ workflow records and business logic do not belong in that export. Source rank an
 duplicate checks are structural refinements; they do not prove that two publishers
 produce independent evidence. The skills assess that separately.
 
+The public download contract requires a browser-accessible HTTPS `download_url`
+for every export, alongside its MCP `resource_uri`. The hosted service owns the
+download endpoint and must return a URL that the chat client can present as a
+direct file link. The public Markdown instructions also define the consistent
+`---` separators for hosted renderers and assistant presentation; rendering and
+deployment implementation remain private.
+
 Existing full event-contract exports remain supported. Forecast sources use a
 separate smaller schema, leaving the general library's richer resolution schema
 unchanged. The forecast MCP interface intentionally breaks with the earlier

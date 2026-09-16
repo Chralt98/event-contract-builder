@@ -87,7 +87,9 @@ cases and no fixed ambiguity-disposition enum.
 ## Submission and approval
 
 Call `submit_resolution_criteria` once after the sources are approved. Present
-its complete returned Markdown without summarizing or changing the criteria.
+its complete returned Markdown with the shared layout: selected unit, `---`,
+resolution criteria, `---`, follow-up. Insert missing separators as
+presentation formatting only, without summarizing or changing the criteria.
 The submission remains pending until the user explicitly agrees. Only then
 call `approve_forecast_specification` with `stage: "resolution_criteria"` and
 the same `forecast_specification_id`. Criteria approval is not final approval;
