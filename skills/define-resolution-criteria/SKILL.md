@@ -22,9 +22,12 @@ decision-interview workflow from Matt Pocock's `grilling` skill. The adaptation
 is documented in [THIRD_PARTY_LICENSES.md](../../THIRD_PARTY_LICENSES.md).
 
 This is an interactive gate, not a request to present recommendations. Do not
-call `submit_resolution_criteria`, present a complete criteria draft, or imply
-that the gate is complete until the user has answered every frontier round and
-then explicitly confirmed the resulting shared understanding.
+call `submit_resolution_criteria` until the user has answered every frontier
+round. Once no decision remains, construct the criteria and submit them
+directly. Do not show a separate pre-submission criteria draft or ask for a
+second confirmation: the submitted, rendered criteria are the user's single
+criteria review, and their approval of that response authorizes the approval
+tool call.
 
 1. Map only the criteria decisions that are relevant to the selected unit as a
    design tree: each decision branches into the later decisions that depend on
@@ -34,11 +37,15 @@ then explicitly confirmed the resulting shared understanding.
    settled and that can be answered without guessing.
 3. Track the grilling-round count from the first question round. Before the
    questions in every round, state the current round and the maximum number of
-   grilling rounds expected for this session. When the mapped design tree makes
-   the maximum knowable, use a line such as `🧭 Grilling round 1 of 4 total
-(exact).` When adaptive branches or unresolved user input prevent an exact
-   count, give a conservative estimate instead, such as `🧭 Grilling round 1
-of about 4 total (estimate).` On an estimated round, immediately add a
+   grilling rounds expected for this session. Write the progress line and
+   fixed labels in the user's current conversation language. The English
+   examples below show the format; adapt them to the conversation instead of
+   treating English or another language as fixed. For example:
+   `🧭 Grilling round 1 of 1 total (exact).` and
+   `🧭 Grilling round 2 of about 2 total (estimate).` When the mapped design tree
+   makes the maximum knowable, mark it exact. When adaptive branches or
+   unresolved user input prevent an exact count, give a conservative estimate
+   instead. On an estimated round, immediately add a
    practical suggestion for reducing the maximum: answer every question in
    that round in one response, explicitly accept or reject each recommendation,
    include any free-form fallback, and state any decisions that logically
@@ -61,32 +68,35 @@ of about 4 total (estimate).` On an estimated round, immediately add a
    listed possibility when all of them are unsuitable.
 
    Format every round using this structure, adapted from the upstream
-   `grilling` skill:
+   `grilling` skill. Translate fixed labels and prompts, including the progress
+   line and the free-form invitation, into the user's current conversation
+   language; keep the question numbering, symbols, and separators:
 
    ```text
-   🧭 Grilling round <current> of <maximum> total (exact).
+   🧭 Grilling round <current> of <total> total (exact).
 
-   ❓ **Q1** - **<short question title>**: <question body with no more than three explicit choices>
+   ❓ **Q1** - **<short question title>**: <question with at most three explicit choices>
 
-   ↪️ If none of these fits, tell me what you would prefer or what should happen instead.
+   ↪️ If none of these options fits, tell me what you would prefer or how you would like to proceed instead.
 
-   ➡️ <recommended answer>
+   ➡️ <Recommendation>
 
    ---
 
-   ❓ **Q2** - **<short question title>**: <question body with no more than three explicit choices>
+   ❓ **Q2** - **<short question title>**: <question with at most three explicit choices>
 
-   ↪️ If none of these fits, tell me what you would prefer or what should happen instead.
+   ↪️ If none of these options fits, tell me what you would prefer or how you would like to proceed instead.
 
-   ➡️ <recommended answer>
+   ➡️ <Recommendation>
    ```
 
-   If the maximum is only an estimate, replace the progress line with
-   `🧭 Grilling round <current> of about <estimate> total (estimate).` and put
-   the round-reduction suggestion immediately below it. The progress line and
-   suggestion must appear before `Q1` in every round, including the final
-   round. The maximum counts grilling-question rounds only; it does not count
-   the final criteria confirmation or the submission step.
+   If the maximum is only an estimate, translate the English example
+   `🧭 Grilling round <current> of about <estimate> total (estimate).` into the
+   user's current conversation language, then put the round-reduction
+   suggestion immediately below it. The progress line and suggestion must
+   appear before `Q1` in every round, including the final round. The maximum
+   counts question rounds only; it does not count criteria submission or its
+   single user approval.
 
    Number questions consecutively within the round. Include the question title,
    no more than three decision options, the free-form fallback invitation, and
@@ -103,9 +113,9 @@ of about 4 total (estimate).` On an estimated round, immediately add a
 6. Resolve factual prerequisites from the approved material and available
    tools yourself; ask the user only for choices that require their judgment.
 7. Continue until every branch has been visited and nothing remains silently
-   assumed. Then present the complete criteria draft and ask for an explicit
-   confirmation that the shared understanding is correct. Only that final
-   confirmation satisfies the gate and permits a workflow action.
+   assumed. Then construct the complete criteria and proceed directly to
+   submission. Do not present a separate criteria draft or ask for confirmation
+   before submission; the rendered submission is the single criteria review.
 
 For each round, make the complete round the final user-visible response for that
 turn. The final response must contain the progress line, any required
@@ -124,8 +134,9 @@ frontier, and ask the remaining questions before proceeding.
 1. Confirm that exactly one unit is in scope and that its selected-unit,
    definitions, and resolution-sources stages are explicitly approved. If any
    prerequisite is missing, stop and return to that stage.
-2. Apply the [Grilling gate](#grilling-gate) and obtain explicit confirmation
-   of the complete criteria draft before submission.
+2. Apply the [Grilling gate](#grilling-gate), then submit the criteria directly
+   when all decisions are settled. The rendered submission is the only criteria
+   review before the user approves it.
 3. Keep the selected unit, including every template placeholder, variable, and
    allowed value, exactly unchanged. Define criteria against the agreed terms
    and the approved sources, not against an informal rewrite of the question.

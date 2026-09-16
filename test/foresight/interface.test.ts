@@ -393,34 +393,52 @@ describe("public forecast interface", () => {
 
   test("criteria workflow instructions enforce the grilling round protocol", () => {
     expect(foresightServerInstructions).toContain(
-      "ask every currently answerable user-dependent decision as a separately numbered question",
+      "Ask every currently answerable user-dependent decision separately",
     );
     expect(foresightServerInstructions).toContain("❓ **Qn** - **title**");
     expect(foresightServerInstructions).toContain(
-      "Do not treat a list of recommendations or a combined confirmation as answered questions.",
+      "Do not pad choices or treat recommendations or a combined confirmation as answered questions.",
     );
     expect(foresightServerInstructions).toContain(
-      "no more than three distinct, reasonable substantive possibilities",
+      "no more than three distinct, reasonable possibilities",
     );
     expect(foresightServerInstructions).toContain(
-      "if none of the listed possibilities fits",
+      "if none of the choices fits",
     );
     expect(foresightServerInstructions).toContain(
-      "Treat that free-form answer as valid user input, not as a fourth listed option",
+      "Treat that free-form response as valid input, not a fourth option",
     );
     expect(foresightServerInstructions).toContain(
-      "track the round count, and start every round with the current round number and the maximum expected number of grilling rounds",
+      "track the round count, and start every round with the current round number and maximum expected number of rounds",
     );
     expect(foresightServerInstructions).toContain(
-      "of about <estimate> total (estimate)",
+      "🧭 Grilling round 1 of 1 total (exact).",
     );
     expect(foresightServerInstructions).toContain(
-      "answer every question in the current round in one response",
+      "🧭 Grilling round 2 of about 2 total (estimate).",
     );
     expect(foresightServerInstructions).toContain(
-      "explicitly accept or reject each recommendation",
+      "localize those forms for the conversation instead of treating any language as fixed",
+    );
+    expect(foresightServerInstructions).not.toContain(
+      "Klärungsrunde <aktuell>",
     );
     expect(foresightServerInstructions).toContain(
+      "answering every question in that round in one response",
+    );
+    expect(foresightServerInstructions).toContain(
+      "explicitly accepting or rejecting each recommendation",
+    );
+    expect(foresightServerInstructions).toContain(
+      "call `submit_resolution_criteria` directly, exactly once",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Do not show a separate pre-submission criteria draft",
+    );
+    expect(foresightServerInstructions).toContain(
+      "this submitted criteria output is the single criteria review",
+    );
+    expect(foresightServerInstructions).not.toContain(
       "obtain the user's explicit final confirmation",
     );
     expect(foresightServerInstructions).toContain(
