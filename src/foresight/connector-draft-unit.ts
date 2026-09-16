@@ -18,11 +18,15 @@ const ConnectorTemplateVariable = z.object({
   name: z
     .string()
     .min(1)
-    .describe("Placeholder name without the surrounding angle brackets."),
+    .describe(
+      "Name of one narrow, finite parameter such as a date, match, city, or candidate; do not use an open-ended event or outcome category.",
+    ),
   values: z
     .array(z.string().min(1))
     .min(1)
-    .describe("Allowed concrete values for this placeholder."),
+    .describe(
+      "Explicit closed set of concrete values. Every value and meaningful combination must share the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
+    ),
 });
 
 export const ConnectorDraftUnit = z
@@ -33,7 +37,7 @@ export const ConnectorDraftUnit = z
         "Forecast specification shape. Binary uses question; scalar and categorical use questions; template uses question and variables.",
       ),
     question: ConnectorDisplayQuestion.optional().describe(
-      "The single Yes/No question for a binary forecast specification, or placeholder-bearing question for a template forecast specification.",
+      "The single Yes/No question for a binary forecast specification, or placeholder-bearing template question whose every allowed substitution preserves one settlement framework.",
     ),
     questions: z
       .array(ConnectorDisplayQuestion)
@@ -47,11 +51,11 @@ export const ConnectorDraftUnit = z
       .min(1)
       .optional()
       .describe(
-        "For a template forecast specification, one entry per angle-bracket placeholder in question.",
+        "For a template, one entry per placeholder. Use only narrow finite parameters whose every allowed value and meaningful combination has the same settlement source, formula, procedure, methodology, interpretation, and legal/compliance analysis; otherwise draft separate units.",
       ),
   })
   .describe(
-    "A forecast specification unit. The server validates the required field for its forecast specification shape.",
+    "A forecast specification unit. Template placeholders must be narrow and finite; split cases that need a different qualifying rule, interpretation, source, settlement method, or legal/compliance analysis.",
   );
 
 export type ConnectorDraftUnitT = z.infer<typeof ConnectorDraftUnit>;

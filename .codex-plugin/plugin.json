@@ -1,6 +1,6 @@
 {
   "name": "bleavit-foresight",
-  "version": "0.2.0+codex.20260916060817",
+  "version": "0.2.0+codex.20260916072204",
   "description": "ChatGPT/Codex plugin for monitoring the probabilities of future events.",
   "author": {
     "name": "Christopher Maximilian Altmann",

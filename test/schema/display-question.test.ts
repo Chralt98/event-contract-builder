@@ -1,50 +1,32 @@
 import { describe, expect, test } from "bun:test";
 import { DraftUnit } from "../../src/schema/display-question";
 
-const bitcoinTemplate = {
+const museumTemplate = {
   type: "template" as const,
-  question: "Will Bitcoin's USD price be <comparator> <price> on <date>?",
+  question: "Will the museum's dinosaur exhibition remain open through <date>?",
   variables: [
-    { name: "comparator", values: ["below", "at least"] },
-    { name: "price", values: ["$60k", "$100k"] },
-    { name: "date", values: ["November 26, 2026"] },
+    {
+      name: "date",
+      values: ["August 25", "August 31", "September 15", "September 30"],
+    },
   ],
 };
 
 describe("DraftUnit template", () => {
   test("accepts a template with exactly one variable per placeholder", () => {
-    expect(DraftUnit.parse(bitcoinTemplate)).toEqual(bitcoinTemplate);
-    expect(
-      DraftUnit.parse({
-        type: "template",
-        question:
-          "Will the museum's dinosaur exhibition remain open through <date>?",
-        variables: [
-          {
-            name: "date",
-            values: [
-              "August 25",
-              "August 31",
-              "September 15",
-              "September 30",
-              "October 31",
-            ],
-          },
-        ],
-      }).type,
-    ).toBe("template");
+    expect(DraftUnit.parse(museumTemplate)).toEqual(museumTemplate);
   });
 
   test("rejects missing and undeclared variables", () => {
     const missing = {
-      ...bitcoinTemplate,
-      variables: bitcoinTemplate.variables.slice(0, 2),
+      ...museumTemplate,
+      variables: [],
     };
     const undeclared = {
-      ...bitcoinTemplate,
+      ...museumTemplate,
       variables: [
-        ...bitcoinTemplate.variables,
-        { name: "exchange", values: ["Coinbase"] },
+        ...museumTemplate.variables,
+        { name: "venue", values: ["City Museum"] },
       ],
     };
 
@@ -54,17 +36,17 @@ describe("DraftUnit template", () => {
 
   test("rejects duplicate variable names and duplicate values", () => {
     const duplicateName = {
-      ...bitcoinTemplate,
+      ...museumTemplate,
       variables: [
-        ...bitcoinTemplate.variables,
+        ...museumTemplate.variables,
         { name: "date", values: ["December 31, 2026"] },
       ],
     };
     const duplicateValue = {
-      ...bitcoinTemplate,
-      variables: bitcoinTemplate.variables.map((variable) =>
-        variable.name === "price"
-          ? { ...variable, values: ["$60k", "$60k"] }
+      ...museumTemplate,
+      variables: museumTemplate.variables.map((variable) =>
+        variable.name === "date"
+          ? { ...variable, values: ["August 25", "August 25"] }
           : variable,
       ),
     };
@@ -83,8 +65,8 @@ describe("DraftUnit template", () => {
     ).toBe(false);
     expect(
       DraftUnit.safeParse({
-        ...bitcoinTemplate,
-        question: bitcoinTemplate.question.slice(0, -1),
+        ...museumTemplate,
+        question: museumTemplate.question.slice(0, -1),
       }).success,
     ).toBe(false);
   });

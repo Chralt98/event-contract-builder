@@ -59,9 +59,12 @@ to controlled comparator values or a closed rule taxonomy.
   State how the set handles multiple matches or no match when either is
   realistically possible.
 - For a template unit, provide one rule for the exact placeholder-bearing
-  question. Preserve its placeholders and make the rule valid for every allowed
-  substitution. If values require different treatment, express that mapping in
-  the open rule text.
+  question. Preserve its placeholders and apply the same approved source,
+  formula, procedure, and methodology uniformly to every allowed substitution.
+  Do not express value-specific source or settlement mappings. If any value
+  changes the qualifying predicate, interpretation, or legal/compliance
+  analysis, stop and return to drafting so the affected cases are separate
+  units.
 
 Each `resolvesYesWhen` rule states the necessary and sufficient conditions for
 Yes. Each `resolvesNoWhen` rule states the complement, deadline treatment, and

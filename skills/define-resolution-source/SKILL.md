@@ -19,8 +19,12 @@ the source schemas, and stop rules.
 1. Confirm that the selected unit, unit number, and agreed definitions are
    present. If definitions are missing or not approved, route back to
    `define-terms` and stop.
-2. Map every fact required by the agreed definitions to a source. Prefer a
-   rank-1 primary and a rank-2 fallback from genuinely independent source
+2. Map every fact required by the agreed definitions to a source. For a
+   template, verify that the identical rank-1 source and the same fallback
+   hierarchy cover every explicitly allowed value and meaningful combination;
+   do not map different values to different authorities or publication
+   channels. If no shared hierarchy works, send the unit back for separate
+   drafts. Prefer a rank-1 primary and a rank-2 fallback from genuinely independent source
    agencies. Do not count a second page, dataset, mirror, re-publication, or
    alias of the same agency as an independent source. For each source, verify
    that the linked locator is the publisher's likely publication channel for
@@ -48,6 +52,7 @@ the source schemas, and stop rules.
 - Do not define resolution calculations, methodology locking, deadlines, or
   observation windows; those belong to the earlier workflow stages.
 - Cover every fact the unit resolves on; do not leave any fact unsourced.
+- For a template, use one identical source hierarchy for all allowed values. Do not submit value-specific source mappings; split the affected values into separate units if any needs a different publisher, publication channel, or settlement method.
 - Do not silently rewrite the selected question or present a proxy as an exact
   source for the original intent.
 - If no independent fallback exists, a single rank-1 source is valid only when

@@ -115,7 +115,8 @@ export const draftedQuestionsShape = {
     .describe(
       "At least three distinct drafted forecast specifications, each a single selectable unit: a binary question, " +
         "the complete set of questions for one scalar or categorical forecast specification, " +
-        "or an additional placeholder-bearing template with its allowed values. " +
+        "or an additional placeholder-bearing template with finite, explicit values. " +
+        "A template is optional and valid only when every allowed value and meaningful combination preserves the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis; otherwise draft separate units. " +
         "Include a direct interpretation and close reformulation or proxy interpretations that preserve the user's intent.",
     ),
   followUp: z
@@ -294,7 +295,9 @@ export const foresightTools = {
       "organized into binary/scalar/categorical/template units. Call this once " +
       "after the model has drafted questions for a new event, passing " +
       "the draft as structured units. A forecast_specification_id is returned for later " +
-      "workflow steps; carry it explicitly when a later HTTP call may use a " +
+      "workflow steps; use template placeholders only for narrow, closed values " +
+      "that preserve one shared settlement source and method across every allowed combination. " +
+      "Carry it explicitly when a later HTTP call may use a " +
       "new MCP session.",
     inputSchema: draftedQuestionsShape,
     outputSchema: draftedQuestionsShape,
@@ -313,7 +316,8 @@ export const foresightTools = {
       "warning that asks whether to proceed with one source, switch to an " +
       "alternative forecast specification with at least two independent " +
       "sources, or provide a known fallback source. Call this once after definitions are approved, " +
-      "carrying the forecast_specification_id from the definitions result. This submission " +
+      "carrying the forecast_specification_id from the definitions result. For a template, " +
+      "verify that one identical hierarchy covers every allowed value; do not use value-specific sources. This submission " +
       "does not imply approval of the detailed sources; call " +
       "approve_forecast_specification after the user agrees to them.",
     inputSchema: resolutionSourceShape,
@@ -330,7 +334,7 @@ export const foresightTools = {
       "binary question represented by a forecast specification unit. Call this once after resolution sources " +
       "are approved, carrying the forecast_specification_id from the source " +
       "result and preserving the exact selected unit, including every template " +
-      "variable and allowed value. The submission does not imply user approval; " +
+      "variable and allowed value. A template's one rule must apply uniformly to all substitutions using the same source, formula, procedure, and methodology; if any value needs different treatment, return to drafting and split the unit. The submission does not imply user approval; " +
       "call approve_forecast_specification with stage resolution_criteria after " +
       "the user agrees to the criteria, then continue to the background-information " +
       "stage. If validation fails, correct only the " +

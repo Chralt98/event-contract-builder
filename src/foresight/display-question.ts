@@ -22,7 +22,7 @@ export type DisplayQuestionT = z.infer<typeof DisplayQuestion>;
 /**
  * A display-question template. Unlike `DisplayQuestion`, this deliberately
  * retains one or more angle-bracket placeholders for a configurable forecast specification
- * family, for example `<date>` or `<price>`.
+ * family, for example `<date>` or `<match>`.
  */
 export const DisplayQuestionTemplate = z
   .string()
@@ -47,6 +47,9 @@ export const TemplateVariable = z.object({
     .refine(
       (value) => value === value.trim() && !/[<>]/.test(value),
       "Must be a trimmed placeholder name without angle brackets",
+    )
+    .describe(
+      "Name of a narrow, finite parameter such as a date, match, city, or candidate, not an open-ended event or outcome category.",
     ),
   values: z
     .array(
@@ -66,7 +69,10 @@ export const TemplateVariable = z.object({
           message: "Template variable values must be unique",
         });
       }
-    }),
+    })
+    .describe(
+      "Explicit closed list of concrete values. Every value and meaningful combination must use the same settlement source, formula, procedure, and methodology, with the same event interpretation and legal/compliance analysis.",
+    ),
 });
 
 export type TemplateVariableT = z.infer<typeof TemplateVariable>;
@@ -123,7 +129,7 @@ export const DraftUnit = z
           }
         })
         .describe(
-          "One entry per distinct angle-bracket placeholder in the template question.",
+          "One entry per distinct placeholder. Use only narrow finite parameters whose every allowed value and meaningful combination shares the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
         ),
     }),
   ])

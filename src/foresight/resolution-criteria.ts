@@ -21,7 +21,7 @@ export const QuestionResolutionRule = z.object({
     .trim()
     .min(1)
     .describe(
-      "Exact binary display question from the selected unit, or the exact placeholder-bearing question for a template unit.",
+      "Exact binary display question from the selected unit, or the exact placeholder-bearing question for a template unit; one template rule must apply uniformly to all allowed substitutions.",
     ),
   resolvesYesWhen: ResolutionText.describe(
     "Necessary and sufficient conditions under which this question resolves Yes.",
@@ -56,7 +56,7 @@ export const ResolutionCriteria = z
         }
       })
       .describe(
-        "One complete Yes/No rule for every binary question in the selected unit; a template uses its exact placeholder-bearing question once.",
+        "One complete Yes/No rule for every binary question in the selected unit; a template uses its exact placeholder-bearing question once and the same source, formula, procedure, and methodology for every allowed substitution.",
       ),
     evidenceAndSourceRules: ResolutionText.describe(
       "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",

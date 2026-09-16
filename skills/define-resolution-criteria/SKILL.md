@@ -135,8 +135,11 @@ frontier, and ask the remaining questions before proceeding.
    - a scalar or categorical unit has one entry for every exact question in
      its `questions` array;
    - a template unit has one entry for its exact placeholder-bearing question,
-     with a rule that covers every allowed substitution without silently
-     selecting one value.
+     with one rule that applies uniformly to every allowed substitution using
+     the same approved source, formula, procedure, and methodology. Do not add
+     value-specific mappings. If any value changes the qualifying predicate,
+     interpretation, or legal/compliance analysis, stop and return to drafting
+     so the cases can be separate units.
 5. State complete `resolvesYesWhen` and `resolvesNoWhen` conditions for each
    entry. Use whatever source-grounded logic the question requires, including
    comparisons, occurrences, rankings, calculations, classifications,

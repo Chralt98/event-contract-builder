@@ -56,6 +56,13 @@ specification question with at least two independent source agencies, or
 provide a fallback source they know so it can be evaluated. When appropriate,
 include that nearby or proxy alternative forecast specification.
 
+For a template, verify that the identical rank-1 source and the same fallback
+hierarchy cover every explicitly allowed value and meaningful combination.
+Do not assign different publishers, publication channels, or source ranks to
+different placeholder values. If any value lacks coverage under that shared
+hierarchy, report the gap and return the unit to drafting for separate units;
+do not patch the template with value-specific source mappings.
+
 ## URL locator policy
 
 The `url` is a user-facing inspection locator and the expected publication

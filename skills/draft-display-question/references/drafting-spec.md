@@ -17,15 +17,15 @@ Forecast specifications resolve as binary Yes/No bets. Decompose scalar and cate
 - **Binary:** A single Yes/No outcome produces one question.
 - **Scalar:** A numeric outcome produces one question per sensible range. Ranges must not overlap and should cover the full plausible space so exactly one resolves Yes.
 - **Categorical:** A set of mutually exclusive options produces one question per option.
-- **Template:** When two or more related concrete questions share stable wording and vary by one or more substitutable values, append a configurable template unit after the concrete unit or units it represents. A template is always additional; it never replaces the binary, scalar, or categorical draft.
+- **Template:** When two or more related concrete questions share stable wording and vary by one or more substitutable values, add a template only if every allowed substitution fits the same fixed settlement framework described below. A template is always additional; it never replaces the binary, scalar, or categorical draft. It is optional when the family cannot be represented safely.
 
-Submission invariant: every scalar or categorical unit is incomplete without an
-additional companion template unit. A related family of standalone binary
-questions also requires a template. A lone binary question remains a complete
-domain unit without one, but a new-event draft still requires at least three
-distinct selectable units. Check both invariants before calling
-`submit_drafted_questions`; the server rejects drafts with fewer than three
-distinct units or grouped drafts that omit their templates.
+Submission invariant: every new-event draft needs at least three distinct
+selectable units. A scalar or categorical group, or a family of related binary
+questions, does not require a template when its variations change the qualifying
+condition, interpretation, source, settlement method, or legal/compliance
+analysis. Never add an unsafe template just to reach a template count. A
+template is additional to the three substantive alternatives, and a lone
+binary question remains a complete domain unit without one.
 
 ## Question rules
 
@@ -66,17 +66,19 @@ alternative.
 
 ## Template-unit rules
 
-Append one template unit for each useful family of at least two related concrete questions. This applies whether the concrete family is one scalar/categorical group or several standalone binary units. Do not add a template for a lone question or for questions whose shared wording would be artificial or misleading.
+Append one template unit for a useful family of at least two related concrete questions only when the family passes the settlement-invariance check below. This applies whether the concrete family is one scalar/categorical group or several standalone binary units. Do not add a template for a lone question, for questions whose shared wording would be artificial or misleading, or for a family whose values require different settlement treatment.
 
 Construct a template unit as follows:
 
-- Keep the common question wording and replace each varying part with a descriptive angle-bracket placeholder such as `<date>`, `<price>`, or `<comparator>`.
+- Keep the common question wording and replace only a narrow, finite parameter with a descriptive angle-bracket placeholder, such as `<date>`, `<match>`, `<city>`, or `<candidate>`. These examples are safe only when all listed values remain under the same settlement source and method. Do not use broad or open-ended placeholders such as `<event>`, `<outcome>`, or `<country>` when they can cover different kinds of event, authority, or legal/compliance treatment.
 - Keep the template question between 10 and 200 characters and end it with a question mark. Its unresolved placeholders are intentional.
 - Add `variables` in the order their placeholders first appear in the question.
 - For each distinct placeholder, add exactly one variable whose `name` omits the angle brackets and whose non-empty `values` list contains unique concrete choices.
 - Every placeholder must have a variable and every variable must appear as a placeholder. Do not add unused variables.
-- Derive values from the user's input or the concrete draft. Do not invent an event, time boundary, threshold, option, or factual outcome merely to populate a variable.
+- Use a closed list of explicit concrete values. Do not use wildcard choices such as "any event," "all countries," or "all candidates," and derive values from the user's input or the concrete draft. Do not invent an event, time boundary, threshold, option, or factual outcome merely to populate a variable.
 - Use separate placeholders only when their values can be combined meaningfully. If values depend on each other, combine the dependent phrase into one placeholder instead of implying invalid combinations.
+- Before submission, instantiate every allowed value and every meaningful combination. Confirm that all instances retain the same qualifying event predicate and interpretation, use the identical authoritative settlement source, formula, procedure, and methodology, and have the same legal/compliance analysis. A date may vary within one recurring series; matches must use the same competition and official result method; cities must remain within the same source and relevant jurisdiction; candidates must remain within the same election and result method. Split the instances into separate units if any value changes the kind of event or condition that qualifies, the applicable interpretation or jurisdiction, the settlement source, formula, procedure, or methodology.
+- Do not use a placeholder when the common source or settlement framework cannot be established. The later source review must confirm the same source hierarchy covers every allowed value; resolution criteria must apply one rule uniformly to every allowed substitution. If either later stage finds value-specific treatment is needed, return to drafting and separate those cases instead of adding a value-specific mapping.
 
 The template is selected and handed off as a whole. Selection does not choose one variable value or instantiate a concrete question.
 
@@ -105,7 +107,7 @@ Use these unit shapes:
 - Binary: `{ "type": "binary", "question": "<question>" }`
 - Scalar: `{ "type": "scalar", "questions": ["<question>", "..."] }`
 - Categorical: `{ "type": "categorical", "questions": ["<question>", "..."] }`
-- Template: `{ "type": "template", "question": "Will <event> happen by <date>?", "variables": [{ "name": "date", "values": ["<value>", "..."] }] }`
+- Template: `{ "type": "template", "question": "Will the museum's dinosaur exhibition remain open through <date>?", "variables": [{ "name": "date", "values": ["August 25", "August 31"] }] }` (only when one official calendar and the same rule cover both dates)
 
 For a template, preserve the exact placeholder spelling between `question` and each variable `name`: `<date>` maps to `"name": "date"`. Variable names and values must be unique as described above.
 
@@ -145,19 +147,11 @@ If the message is too vague to identify a specific event, threshold, or time per
 - Will Bitcoin's USD price be at least $60k but below $100k on November 26, 2026?
 - Will Bitcoin's USD price be $100k or higher on November 26, 2026?
 
-Because those questions form a reusable threshold family, append a template unit after the scalar unit:
-
-```json
-{
-  "type": "template",
-  "question": "Will Bitcoin's USD price be <comparator> <price> on <date>?",
-  "variables": [
-    { "name": "comparator", "values": ["below", "at least"] },
-    { "name": "price", "values": ["$60k", "$100k"] },
-    { "name": "date", "values": ["November 26, 2026"] }
-  ]
-}
-```
+Do not combine the below-$60k and at-least-$100k questions with `<comparator>` or
+`<price>` placeholders: those substitutions change the qualifying condition.
+Keep the scalar questions as the exact range group. A separate date template is
+appropriate only if multiple concrete dates were supplied and the same USD price
+source and observation procedure apply to each date.
 
 That direct scalar unit is only one of the selectable units required in the
 first workflow step. Add at least two distinct, intent-preserving alternatives
