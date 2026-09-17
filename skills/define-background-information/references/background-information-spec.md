@@ -69,15 +69,9 @@ complete revised payload; do not alter already approved upstream stages.
 Only after explicit approval call `approve_forecast_specification` with
 `stage: "background_information"`. This is the final approval. Show only the
 returned forecast specification ID and exact question text, separated by
-`---`; put another `---` before the format offer. Then offer to show
-the complete specification in chat, download it as YAML, PDF, JSON, and/or
-Markdown, or do both. If the user chooses only a download, generate the selected
-files with `download_approved_forecast_specification`. If they also want to see
-the specification, retrieve it with `get_approved_forecast_specification` using
-the same ID and present the complete result with the shared separators. Ask whether it looks
-correct. If it does not, ask what should change, update the affected workflow
-stages, and repeat the complete review. Once the user confirms it looks correct,
-fulfill any formats they already selected or ask whether they want downloads and
-which formats. The export tool must serialize only the approved record, in a
-stable field order, with stable filenames and no generated timestamps or
-model-written changes.
+`---`; put another `---` before the offer. Then offer to show the complete
+specification in chat. If they want to see it, retrieve it with
+`get_approved_forecast_specification` using the same ID and present the complete
+result with the shared separators. Ask whether it looks correct. If it does
+not, ask what should change, update the affected workflow stages, and repeat
+the complete review.

@@ -20,11 +20,9 @@ workflow records and business logic do not belong in that export. Source rank an
 duplicate checks are structural refinements; they do not prove that two publishers
 produce independent evidence. The skills assess that separately.
 
-The public download contract requires a named MCP `resource_link` and stable
-`resource_uri` for every export so capable chat clients can present the file
-directly. A hosted service may additionally provide a browser-accessible HTTPS
-`download_url`, but an external download endpoint is not required for a valid
-tool result. The public Markdown instructions also define the consistent `---`
+Approved forecast specifications are retrieved through the public
+`get_approved_forecast_specification` tool. The public Markdown instructions
+also define the consistent `---`
 separators for hosted renderers and assistant presentation; rendering and
 deployment implementation remain private.
 

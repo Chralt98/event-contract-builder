@@ -41,16 +41,12 @@ source, payload, review, and final-approval requirements.
    `stage: "background_information"`.
 6. Present only the final approval's `forecast_specification_id` and exact
    forecast question text, separated by `---`; put another `---` before the
-   offer. Offer to show the complete approved specification in
-   chat, download it as YAML, PDF, JSON, and/or Markdown, or do both. If the user
-   chooses only a download, call `download_approved_forecast_specification` with
-   the selected formats. If they also want to see the full specification, call
+   offer. Offer to show the complete specification in chat. If the user wants
+   to see the full specification, call
    `get_approved_forecast_specification` with the same ID and present its
-   complete rendering with the shared separators. Then ask whether it looks correct; if not,
-   ask what should change and revise the affected workflow stages before
-   repeating the review. If the user confirms it looks correct, fulfill any
-   previously requested downloads or ask which formats they want, then present
-   the returned files.
+   complete rendering with the shared separators. Then ask whether it looks
+   correct; if not, ask what should change and revise the affected workflow
+   stages before repeating the review.
 
 ## Guardrails
 
