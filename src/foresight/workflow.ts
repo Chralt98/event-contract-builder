@@ -4,6 +4,7 @@ import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
+import { ForecastNewsTimeline } from "./news-timeline";
 
 /** The identifier shared by all stages of one forecast specification workflow. */
 export const ForecastSpecificationId = z
@@ -51,6 +52,7 @@ export const approvalStageSchema = z.enum([
   "resolution_sources",
   "resolution_criteria",
   "background_information",
+  "news_timeline",
 ]);
 
 export type ApprovalStage = z.infer<typeof approvalStageSchema>;
@@ -67,6 +69,7 @@ export const approvedForecastSpecificationRecallSchema = z.object({
     .optional(),
   resolution_criteria: ResolutionCriteria.optional(),
   background_information: ForecastBackgroundInformation.optional(),
+  news_timeline: ForecastNewsTimeline.optional(),
 });
 
 export type ApprovedForecastSpecificationRecall = z.infer<

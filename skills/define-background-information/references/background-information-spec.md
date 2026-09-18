@@ -16,7 +16,10 @@ the event and the environment around it. Include:
   outcome, without assigning probabilities; and
 - optional public `references` when they materially support the factual context.
 
-Favor durable facts over live-status updates and short-lived developments.
+Favor durable historical, institutional, procedural, and domain facts over
+live-status updates and short-lived developments. Do not use this stage for a
+current news roundup; recent developments belong in the separate optional
+news-timeline workflow after explicit user opt-in.
 Describe disputed or uncertain contextual claims accurately. Do not repeat the
 resolution criteria as prose or introduce a competing interpretation of the
 selected question.
@@ -58,7 +61,7 @@ Keep the selected unit exactly unchanged, including every question, template
 placeholder, variable, and allowed value. Carry the
 `forecast_specification_id` returned by the prior workflow step.
 
-## Review and final approval
+## Review and approval
 
 Present the complete rendered context/background submission for review using
 the shared layout: selected unit, `---`, background information, `---`,
@@ -67,10 +70,18 @@ submission does not imply approval. If the user requests edits, resubmit the
 complete revised payload; do not alter already approved upstream stages.
 
 Only after explicit approval call `approve_forecast_specification` with
-`stage: "background_information"`. This is the final approval. Show only the
-returned forecast specification ID and exact question text, separated by
-`---`; put another `---` before the offer. Then offer to show the complete
-specification in chat. If they want to see it, retrieve it with
+`stage: "background_information"`. Then explicitly ask whether the user wants
+the optional recent-news timeline. Do not start `define-relevant-news` unless
+the user opts in. If the user declines, this is the final approved stage:
+present its returned forecast specification ID and exact question text, then
+offer to show the complete specification in chat. Do not repeat the ID and
+question if the approval output already showed them in the same exchange.
+
+If the user opts into news, continue with `define-relevant-news`; that workflow
+owns its separate timeline review and final rendering. If no qualifying items
+are found or the user selects none, leave the specification with its approved
+background only, then offer to show it. When the user chooses to see the
+complete specification, retrieve it with
 `get_approved_forecast_specification` using the same ID and present the complete
 result with the shared separators. Ask whether it looks correct. If it does
 not, ask what should change, update the affected workflow stages, and repeat

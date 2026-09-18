@@ -4,6 +4,7 @@ import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
+import { ForecastNewsTimeline } from "./news-timeline";
 import { alternativeForecastSpecificationSchema } from "./source-alternative";
 import {
   sourceHierarchyRankError,
@@ -42,7 +43,10 @@ export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
   })
   .strict()
   .superRefine((value, ctx) => {
-    if (value.approved_stage === "background_information") {
+    if (
+      value.approved_stage === "background_information" ||
+      value.approved_stage === "news_timeline"
+    ) {
       if (!value.forecast_question) {
         ctx.addIssue({
           code: "custom",
@@ -59,6 +63,7 @@ export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
         "resolution_sources",
         "resolution_criteria",
         "background_information",
+        "news_timeline",
       ] as const) {
         if (value[field] !== undefined) {
           ctx.addIssue({
@@ -254,6 +259,27 @@ export const backgroundInformationShape = {
     ),
 };
 
+export const newsTimelineShape = {
+  forecast_specification_id: optionalForecastSpecificationId,
+  unit_number: z
+    .number()
+    .int()
+    .describe(
+      "The 1-based number of the selected forecast specification unit, not a news-item unit number.",
+    ),
+  selected_unit: ConnectorDraftUnit.describe(
+    "The exact selected forecast specification unit whose optional news timeline is being defined.",
+  ),
+  news_timeline: ForecastNewsTimeline.describe(
+    "An optional newest-to-oldest timeline of succinct, factual, highly relevant news items with unique item unit numbers. Each summary must add information not already covered by the approved historical background or older news. Submit an empty list only when the user explicitly asks to remove a previously approved news timeline.",
+  ),
+  followUp: z
+    .string()
+    .describe(
+      "A follow-up asking which news-item unit numbers the user considers relevant, or whether they want changes. After filtering to those items, submit the selected timeline again and ask for explicit approval.",
+    ),
+};
+
 export const selectedUnitShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
@@ -298,6 +324,9 @@ export const resolutionCriteriaOutputSchema = workflowOutput({
 export const backgroundInformationOutputSchema = workflowOutput({
   ...backgroundInformationShape,
 });
+export const newsTimelineOutputSchema = workflowOutput({
+  ...newsTimelineShape,
+});
 export const selectedUnitOutputSchema = z
   .object({
     forecast_specification_id: ForecastSpecificationId,
@@ -316,11 +345,15 @@ export const foresightTools = {
       "workflow stage. Call this only after the user has confirmed that " +
       "stage in chat; submit_* tools do not imply approval. Approve stages " +
       "in order: selected_unit, defined_terms, resolution_sources, " +
-      "resolution_criteria, then background_information. On final " +
-      "background_information approval, include language_code in structured " +
-      "content but return only the forecast specification ID and exact question " +
-      "text in the user-facing summary. Then offer to show the complete approved " +
-      "specification in chat. If the user chooses to see it, call " +
+      "resolution_criteria, then background_information. Only after background " +
+      "information is approved, ask whether the user wants the optional " +
+      "news_timeline stage; never start it without an explicit yes. If they opt " +
+      "in, approve news_timeline after its separate review. Background approval " +
+      "when the user declines news, or news_timeline approval when they opt in, " +
+      "returns language_code in structured content and only the forecast " +
+      "specification ID and exact question text in the user-facing summary. " +
+      "After the optional-stage choice is settled, offer to show the complete " +
+      "approved specification in chat. If the user chooses to see it, call " +
       "get_approved_forecast_specification with that ID, show the complete " +
       "result, and ask whether it looks correct. If it does not, ask what should " +
       "change, revise the affected stages, and repeat the review.",
@@ -335,8 +368,9 @@ export const foresightTools = {
     title: "Get Approved Forecast Specification",
     description:
       "Retrieve the approved selected unit, definitions, resolution source " +
-      "records, resolution criteria, and background information saved during this chat; candidate drafts and workflow prompts " +
-      "are not returned. The result includes the immutable language_code for " +
+      "records, resolution criteria, background information, and optional " +
+      "approved news timeline saved during this chat; candidate drafts and " +
+      "workflow prompts are not returned. The result includes the immutable language_code for " +
       "the specification. " +
       "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
       "current MCP session, or provide the stable identifier returned by a " +
@@ -444,11 +478,38 @@ export const foresightTools = {
       "immutable language_code; the structured result returns that code. Optional background references are explanatory and do not alter the " +
       "approved resolution-source hierarchy. The submission does not imply user " +
       "approval; call approve_forecast_specification with stage " +
-      "background_information after the user agrees. That final approval includes " +
-      "language_code in structured content and shows only the forecast specification ID and question, then offer to show the " +
-      "complete approved specification in chat.",
+      "background_information after the user agrees. After that approval, ask " +
+      "whether the user explicitly wants the optional news timeline. Do not " +
+      "start news research automatically; if they decline, the background stage " +
+      "is final. A user who opts in must review and approve the separate " +
+      "news_timeline stage.",
     inputSchema: backgroundInformationShape,
     outputSchema: backgroundInformationOutputSchema,
+    annotations: {
+      readOnlyHint: false,
+      idempotentHint: true,
+    },
+  },
+  submit_news_timeline: {
+    title: "Submit Relevant News Timeline",
+    description:
+      "Validate and store the optional, factual, newest-to-oldest news " +
+      "timeline for a forecast specification. Call this only after the user " +
+      "explicitly opts in following approval of background_information. Carry " +
+      "the forecast_specification_id, exact selected unit, unit number, and " +
+      "immutable language_code. Each item must show its verified publication " +
+      "date, time when available, publisher, direct source URL, and a succinct " +
+      "objective summary. Include only highly relevant information that is new " +
+      "relative to the approved background and older timeline items. First ask " +
+      "the user which news-item unit numbers they consider relevant; then " +
+      "resubmit only those items and request explicit approval. The submission " +
+      "does not imply user approval; call approve_forecast_specification with " +
+      "stage news_timeline only after they approve the selected timeline. " +
+      "Do not submit an empty timeline when no news qualifies or the user " +
+      "selects none. Submit an empty list only when the user asks to remove an " +
+      "already approved news timeline, then obtain approval for that removal.",
+    inputSchema: newsTimelineShape,
+    outputSchema: newsTimelineOutputSchema,
     annotations: {
       readOnlyHint: false,
       idempotentHint: true,

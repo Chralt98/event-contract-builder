@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   DataSource,
   ForecastBackgroundInformation,
+  ForecastNewsTimeline,
   approvalStageSchema,
   canonicalizeForecastSpecificationLanguageCode,
   ForecastSpecificationLanguageCode,
@@ -174,15 +175,16 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("forecast approval stages include background information after resolution criteria", () => {
+  test("forecast approval stages put optional news after historical background", () => {
     expect(approvalStageSchema.options).toEqual([
       "selected_unit",
       "defined_terms",
       "resolution_sources",
       "resolution_criteria",
       "background_information",
+      "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(8);
+    expect(Object.keys(foresightTools)).toHaveLength(9);
   });
 
   test("final approval returns only the identifier and forecast question", () => {
@@ -206,6 +208,20 @@ describe("public forecast interface", () => {
         approved_stage: "background_information",
       }).success,
     ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...summary,
+        approved_stage: "news_timeline",
+        news_timeline: { items: [] },
+      }).success,
+    ).toBe(false);
+
+    expect(
+      schema.safeParse({
+        ...summary,
+        approved_stage: "news_timeline",
+      }).success,
+    ).toBe(true);
 
     const criteriaApproval = {
       forecast_specification_id: summary.forecast_specification_id,
@@ -299,6 +315,86 @@ describe("public forecast interface", () => {
           references: [
             ...backgroundInformation.references,
             ...backgroundInformation.references,
+          ],
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  test("news timeline requires unique item numbers and newest-to-oldest dates", () => {
+    const item = {
+      unit_number: 1,
+      published_at: "2026-09-17T10:30:00+02:00",
+      publisher: "Example News",
+      url: "https://news.example/latest",
+      summary: "The agency published its final decision today.",
+    };
+    const olderItem = {
+      ...item,
+      unit_number: 2,
+      published_at: "2026-09-16",
+      url: "https://news.example/earlier",
+      summary: "The agency opened a public consultation.",
+    };
+    const timeline = { items: [item, olderItem] };
+    const schema = z.object(foresightTools.submit_news_timeline.inputSchema);
+    const payload = {
+      unit_number: 1,
+      selected_unit: input.selected_unit,
+      news_timeline: timeline,
+      followUp: "Which news item units are relevant?",
+    };
+
+    expect(ForecastNewsTimeline.parse(timeline)).toEqual(timeline);
+    expect(ForecastNewsTimeline.parse({ items: [] })).toEqual({ items: [] });
+    expect(schema.safeParse(payload).success).toBe(true);
+    expect(
+      schema.safeParse({
+        ...payload,
+        news_timeline: { items: [] },
+      }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...payload,
+        news_timeline: { items: [item, { ...olderItem, unit_number: 1 }] },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        news_timeline: { items: [olderItem, item] },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        news_timeline: {
+          items: [
+            item,
+            {
+              ...olderItem,
+              unit_number: 3,
+              published_at: "2026-09-17T11:00:00+02:00",
+            },
+          ],
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        news_timeline: {
+          items: [
+            {
+              ...item,
+              published_at: "2026-09-17T00:15:00+14:00",
+            },
+            {
+              ...olderItem,
+              unit_number: 3,
+              published_at: "2026-09-16T18:00:00-02:00",
+            },
           ],
         },
       }).success,
@@ -532,7 +628,7 @@ describe("public forecast interface", () => {
       "Present the complete rendered Markdown returned by that approval call",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
-      "return only the forecast specification ID and exact question text",
+      "only the forecast specification ID and exact question text in the user-facing summary",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
       "offer to show the complete approved specification in chat",
@@ -550,7 +646,16 @@ describe("public forecast interface", () => {
       "do not alter the approved resolution-source hierarchy",
     );
     expect(foresightTools.submit_background_information.description).toContain(
-      "offer to show the complete approved specification in chat",
+      "Do not start news research automatically",
+    );
+    expect(foresightTools.submit_news_timeline.description).toContain(
+      "explicitly opts in following approval of background_information",
+    );
+    expect(foresightServerInstructions).toContain(
+      "After that approval, explicitly ask whether the user wants the optional recent-news timeline.",
+    );
+    expect(foresightServerInstructions).toContain(
+      "add no timeline and finish with the approved background-only specification",
     );
   });
 });

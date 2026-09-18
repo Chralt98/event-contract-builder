@@ -8,7 +8,8 @@ The first product under this umbrella is **Bleavit Foresight**:
 
 The current plugin drafts **forecast specifications**: selectable questions,
 precise definitions, independent resolution sources, resolution criteria,
-context/background information, and explicit approvals.
+historical context/background information, optional recent news, and explicit
+approvals.
 Probability monitoring is planned. Full event-contract drafting is outside the
 current plugin workflow; the general event-contract schema library remains
 available separately below.
@@ -18,7 +19,7 @@ Third-party workflow attributions and license notices are listed in
 
 ## Hosted service and repository boundary
 
-This repository contains the open-source library, plugin assets, six skills,
+This repository contains the open-source library, plugin assets, seven skills,
 and client-visible MCP interface. The hosted Bleavit Foresight service provides
 MCP execution, workflow state, rendering, and future monitoring services. Those
 operational components are not included in this repository.
@@ -109,8 +110,17 @@ does not update ChatGPT's connection metadata.
    `resolution_criteria` only after the user accepts the criteria.
 6. Use `define-background-information` and `submit_background_information`;
    approve `background_information` only after the user accepts the explanatory
-   context and any non-binding references.
-7. After final approval, show only the forecast specification ID and question,
+   historical context and any non-binding references. Then explicitly ask
+   whether the user wants an optional news timeline; do not proceed without a
+   yes.
+7. Only after opt-in, use `define-relevant-news` and `submit_news_timeline` to
+   present recent, relevant developments newest first. Each item has a
+   selectable unit number and only adds facts not already in the background or
+   older news. Resubmit the user's selected items for explicit approval at
+   `news_timeline`. If the user declines or selects no items, leave the
+   specification without news.
+8. After the user declines news or approves the optional timeline, show only
+   the forecast specification ID and question,
    then offer to show the complete specification in chat. If the user chooses
    to see it, call `get_approved_forecast_specification` with that ID and
    present the full result. Ask whether it looks correct; if changes are
@@ -134,7 +144,8 @@ for every binary question represented by the selected unit, plus broad shared
 rules for evidence, source handling, exceptions, and unresolved outcomes.
 Background information provides a neutral overview, relevant history, durable
 key factors, and optional supporting reference links. Any links are explanatory
-and do not change the approved resolution-source hierarchy.
+and do not change the approved resolution-source hierarchy. Recent news is
+separate, optional, and included in recall only after explicit approval.
 
 ## Package the plugin
 
