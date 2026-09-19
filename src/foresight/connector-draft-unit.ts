@@ -32,30 +32,26 @@ const ConnectorTemplateVariable = z.object({
 export const ConnectorDraftUnit = z
   .object({
     type: z
-      .enum(["binary", "scalar", "categorical", "template"])
+      .enum([
+        "binary",
+        "template",
+      ])
       .describe(
-        "Forecast specification shape. Binary uses question; scalar and categorical use questions; template uses question and variables.",
+        "Forecast specification shape. Binary uses question; template uses question and variables.",
       ),
     question: ConnectorDisplayQuestion.optional().describe(
-      "The single Yes/No question for a binary forecast specification, or placeholder-bearing template question whose every allowed substitution preserves one settlement framework.",
+      "The single Yes/No question for a binary forecast specification or the placeholder-bearing question for a template.",
     ),
-    questions: z
-      .array(ConnectorDisplayQuestion)
-      .min(2)
-      .optional()
-      .describe(
-        "The complete question set for a scalar or categorical forecast specification (at least two).",
-      ),
     variables: z
       .array(ConnectorTemplateVariable)
       .min(1)
       .optional()
       .describe(
-        "For a template, one entry per placeholder. Use only narrow finite parameters whose every allowed value and meaningful combination has the same settlement source, formula, procedure, methodology, interpretation, and legal/compliance analysis; otherwise draft separate units.",
+        "One entry per placeholder for a template. Values may be scalar ranges or categorical outcomes only when all values share one settlement framework.",
       ),
   })
   .describe(
-    "A forecast specification unit. Template placeholders must be narrow and finite; split cases that need a different qualifying rule, interpretation, source, settlement method, or legal/compliance analysis.",
+    "A binary or template forecast specification unit.",
   );
 
 export type ConnectorDraftUnitT = z.infer<typeof ConnectorDraftUnit>;

@@ -37,7 +37,7 @@ export const DisplayQuestionTemplate = z
     "Must contain at least one angle-bracket placeholder",
   )
   .describe(
-    "Trader-facing display-question template with angle-bracket placeholders, ending in '?'.",
+    "Trader-facing Yes/No display-question template with angle-bracket placeholders, ending in '?'. Phrase each placeholder as a grammatical slot so replacing it with every allowed value produces correct English; do not use the placeholder name as a stand-in for the values.",
   );
 
 export type DisplayQuestionTemplateT = z.infer<typeof DisplayQuestionTemplate>;
@@ -96,75 +96,44 @@ export const DraftUnit = z
       ),
     }),
     z.object({
-      type: z.literal("scalar"),
-      questions: z
-        .array(DisplayQuestion)
-        .min(2)
-        .describe(
-          "One binary question per numeric range (at least two). Ranges must not " +
-            "overlap and should cover the plausible space so exactly one " +
-            "resolves Yes.",
-        ),
-    }),
-    z.object({
-      type: z.literal("categorical"),
-      questions: z
-        .array(DisplayQuestion)
-        .min(2)
-        .describe(
-          "One binary question per mutually exclusive option (at least two); " +
-            "each asks whether that option occurs.",
-        ),
-    }),
-    z.object({
       type: z.literal("template"),
       question: DisplayQuestionTemplate,
-      variables: z
-        .array(TemplateVariable)
-        .min(1)
-        .superRefine((variables, ctx) => {
-          const names = variables.map(({ name }) => name);
-          if (new Set(names).size !== names.length) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Template variable names must be unique",
-            });
-          }
-        })
-        .describe(
-          "One entry per distinct placeholder. Use only narrow finite parameters whose every allowed value and meaningful combination shares the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
-        ),
+      variables: z.array(TemplateVariable).min(1),
     }),
   ])
   .superRefine((unit, ctx) => {
-    if (unit.type !== "template") return;
-
+    if (unit.type === "binary") return;
     const placeholders = [
       ...new Set(
         [...unit.question.matchAll(/<([^<>]+)>/g)].map((match) => match[1]!),
       ),
     ];
     const variableNames = unit.variables.map(({ name }) => name);
+    if (new Set(variableNames).size !== variableNames.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["variables"],
+        message: "Template variable names must be unique",
+      });
+    }
     const missing = placeholders.filter(
       (name) => !variableNames.includes(name),
     );
     const undeclared = variableNames.filter(
       (name) => !placeholders.includes(name),
     );
-
-    if (missing.length > 0 || undeclared.length > 0) {
-      const details = [
-        ...(missing.length > 0
-          ? [`missing variables: ${missing.join(", ")}`]
-          : []),
-        ...(undeclared.length > 0
-          ? [`undeclared variables: ${undeclared.join(", ")}`]
-          : []),
-      ].join("; ");
+    if (missing.length || undeclared.length) {
       ctx.addIssue({
         code: "custom",
         path: ["variables"],
-        message: `Template variables must match the question placeholders exactly (${details})`,
+        message: `Template variables must match the question placeholders exactly (${[
+          ...(missing.length
+            ? [`missing variables: ${missing.join(", ")}`]
+            : []),
+          ...(undeclared.length
+            ? [`undeclared variables: ${undeclared.join(", ")}`]
+            : []),
+        ].join("; ")})`,
       });
     }
   });

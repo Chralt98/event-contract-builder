@@ -22,6 +22,10 @@ not pad choices, collapse decisions, or treat agreement with unshown choices as
 an answer. Use this localized structure:
 
 ```text
+# Forecast Specification
+
+## Stage: Resolution Criteria
+
 **Selected Unit <unit_number>: <label>**
 - <exact complete unit>
 
@@ -49,8 +53,8 @@ answers, recompute the frontier, and continue until no decision remains.
 
 ## Criteria
 
-Create one `questionRules` entry for the exact binary or template question, or
-one for every exact scalar/categorical question. Template rules must apply one
+Create one `questionRule` object for the exact binary or template question.
+Template rules must apply one
 source, formula, procedure, and methodology uniformly to all substitutions; if
 treatment varies, return to drafting.
 

@@ -12,47 +12,18 @@ const museumTemplate = {
   ],
 };
 
-describe("DraftUnit template", () => {
-  test("accepts a template with exactly one variable per placeholder", () => {
+describe("DraftUnit templates", () => {
+  test("accepts a scalar template with finite values", () => {
     expect(DraftUnit.parse(museumTemplate)).toEqual(museumTemplate);
   });
 
-  test("rejects missing and undeclared variables", () => {
-    const missing = {
-      ...museumTemplate,
-      variables: [],
-    };
-    const undeclared = {
-      ...museumTemplate,
-      variables: [
-        ...museumTemplate.variables,
-        { name: "venue", values: ["City Museum"] },
-      ],
-    };
-
-    expect(DraftUnit.safeParse(missing).success).toBe(false);
-    expect(DraftUnit.safeParse(undeclared).success).toBe(false);
-  });
-
-  test("rejects duplicate variable names and duplicate values", () => {
-    const duplicateName = {
-      ...museumTemplate,
-      variables: [
-        ...museumTemplate.variables,
-        { name: "date", values: ["December 31, 2026"] },
-      ],
-    };
-    const duplicateValue = {
-      ...museumTemplate,
-      variables: museumTemplate.variables.map((variable) =>
-        variable.name === "date"
-          ? { ...variable, values: ["August 25", "August 25"] }
-          : variable,
-      ),
-    };
-
-    expect(DraftUnit.safeParse(duplicateName).success).toBe(false);
-    expect(DraftUnit.safeParse(duplicateValue).success).toBe(false);
+  test("rejects an empty variable list", () => {
+    expect(
+      DraftUnit.safeParse({
+        ...museumTemplate,
+        variables: [],
+      }).success,
+    ).toBe(false);
   });
 
   test("requires a placeholder-bearing question ending in a question mark", () => {
@@ -60,7 +31,7 @@ describe("DraftUnit template", () => {
       DraftUnit.safeParse({
         type: "template",
         question: "Will the dinosaur exhibition remain open through August 31?",
-        variables: [{ name: "date", values: ["August 31"] }],
+        variables: [{ name: "date", values: ["August 31", "September 30"] }],
       }).success,
     ).toBe(false);
     expect(
@@ -69,5 +40,40 @@ describe("DraftUnit template", () => {
         question: museumTemplate.question.slice(0, -1),
       }).success,
     ).toBe(false);
+  });
+
+  test("requires template variables to match question placeholders", () => {
+    expect(
+      DraftUnit.safeParse({
+        type: "template",
+        question: "Which range applies: <range>?",
+        variables: [{ name: "price", values: ["low", "high"] }],
+      }),
+    ).toMatchObject({
+      success: false,
+      error: {
+        issues: [
+          {
+            message:
+              "Template variables must match the question placeholders exactly (missing variables: range; undeclared variables: price)",
+          },
+        ],
+      },
+    });
+  });
+
+  test("allows a grammatical range slot with concrete range values", () => {
+    expect(
+      DraftUnit.safeParse({
+        type: "template",
+        question: "Will Bitcoin's BTC/USD price be <range> on January 19, 2027?",
+        variables: [
+          {
+            name: "range",
+            values: ["below $80,000", "$80,000 or more"],
+          },
+        ],
+      }),
+    ).toMatchObject({ success: true });
   });
 });

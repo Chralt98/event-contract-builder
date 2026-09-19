@@ -33,15 +33,13 @@ const input = {
 };
 
 const criteria = {
-  questionRules: [
-    {
+  questionRule: {
       question: input.selected_unit.question,
       resolvesYesWhen:
         "The approved source reports that measurable rainfall occurred before the question deadline.",
       resolvesNoWhen:
         "The approved source reports no measurable rainfall by the deadline, or the Yes condition is otherwise not met.",
     },
-  ],
   evidenceAndSourceRules:
     "Use the highest-ranked approved source that publishes a result by the deadline. Apply an official correction published before resolution.",
   exceptionAndUnresolvedRules:
@@ -265,12 +263,21 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow output instructions require verbatim canonical reviews", () => {
+  test("workflow output instructions require canonical reviews and advance after intermediate approval", () => {
     expect(foresightServerInstructions).toContain(
       "Every successful workflow submission and approval returns `review_markdown`",
     );
     expect(foresightServerInstructions).toContain(
-      "authoritative, complete user-facing result.",
+      "the\nauthoritative, complete user-facing result:",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Intermediate approval reviews are never user-facing",
+    );
+    expect(foresightServerInstructions).toContain(
+      "immediately invoke the next stage",
+    );
+    expect(foresightServerInstructions).toContain(
+      "present\nonly that next stage's review",
     );
   });
 
@@ -419,20 +426,18 @@ describe("public forecast interface", () => {
     expect(schema.safeParse(payload).success).toBe(true);
     expect(
       parseConnectorResolutionCriteria(criteria, input.selected_unit)
-        .questionRules[0]?.question,
+        .questionRule.question,
     ).toBe(input.selected_unit.question);
 
     const rankingCriteria = {
       ...criteria,
-      questionRules: [
-        {
+      questionRule: {
           question: input.selected_unit.question,
           resolvesYesWhen:
             "Resolve Yes when the approved source ranks the named item first after applying its own published tie-break procedure.",
           resolvesNoWhen:
             "Resolve No when the named item is not ranked first under that procedure.",
         },
-      ],
     };
     expect(
       schema.safeParse({
@@ -446,7 +451,7 @@ describe("public forecast interface", () => {
         ...payload,
         resolution_criteria: {
           ...criteria,
-          questionRules: [...criteria.questionRules, ...criteria.questionRules],
+          questionRule: undefined,
         },
       }).success,
     ).toBe(false);
@@ -463,37 +468,25 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("scalar, categorical, and template criteria cover their constituent binary questions", () => {
+  test("one template rule covers all allowed values", () => {
     const scalarUnit = {
-      type: "scalar" as const,
-      questions: [
-        "Will the value be below 10?",
-        "Will the value be from 10 through 19?",
-        "Will the value be at least 20?",
-      ],
+      type: "template" as const,
+      question: "Will the value be <range>?",
+      variables: [{ name: "range", values: ["below 10", "from 10 through 19", "at least 20"] }],
     };
     const categoricalUnit = {
-      type: "categorical" as const,
-      questions: [
-        "Will Candidate A win the election?",
-        "Will Candidate B win the election?",
-      ],
-    };
-    const templateUnit = {
       type: "template" as const,
       question: "Will <candidate> win the election?",
-      variables: [
-        { name: "candidate", values: ["Candidate A", "Candidate B"] },
-      ],
+      variables: [{ name: "candidate", values: ["Candidate A", "Candidate B"] }],
     };
-    const makeCriteria = (questions: string[]) => ({
-      questionRules: questions.map((question) => ({
+    const makeCriteria = (question: string) => ({
+      questionRule: {
         question,
         resolvesYesWhen:
           "The approved public evidence satisfies the exact condition stated by this question.",
         resolvesNoWhen:
           "The approved public evidence establishes the complementary outcome or the Yes condition is not met by the deadline.",
-      })),
+      },
       evidenceAndSourceRules:
         "Use the highest-ranked approved source that publishes the facts needed by the applicable question rule.",
       exceptionAndUnresolvedRules:
@@ -501,47 +494,43 @@ describe("public forecast interface", () => {
     });
 
     for (const { unit, questions } of [
-      { unit: scalarUnit, questions: scalarUnit.questions },
-      { unit: categoricalUnit, questions: categoricalUnit.questions },
-      { unit: templateUnit, questions: [templateUnit.question] },
+      { unit: scalarUnit, questions: [scalarUnit.question] },
+      { unit: categoricalUnit, questions: [categoricalUnit.question] },
     ]) {
-      const candidate = makeCriteria(questions);
+      const candidate = makeCriteria(questions[0]!);
       expect(
-        parseConnectorResolutionCriteria(candidate, unit).questionRules,
-      ).toHaveLength(questions.length);
+        parseConnectorResolutionCriteria(candidate, unit).questionRule,
+      ).toBeDefined();
     }
 
     expect(() =>
       parseConnectorResolutionCriteria(
-        makeCriteria(scalarUnit.questions.slice(0, 2)),
+        { ...makeCriteria("Will the value be <range>?"), questionRule: { ...makeCriteria("Will the value be <range>?").questionRule, question: "Will another value be <range>?" } },
         scalarUnit,
       ),
-    ).toThrow("questionRules must cover the selected unit exactly");
+    ).toThrow("questionRule must cover the selected unit exactly");
     expect(() =>
       parseConnectorResolutionCriteria(
-        makeCriteria([
-          ...categoricalUnit.questions,
-          "Will Candidate C win the election?",
-        ]),
+        { ...makeCriteria(categoricalUnit.question), questionRule: { ...makeCriteria(categoricalUnit.question).questionRule, question: "Will Candidate C win the election?" } },
         categoricalUnit,
       ),
-    ).toThrow("questionRules must cover the selected unit exactly");
+    ).toThrow("questionRule must cover the selected unit exactly");
   });
 
   test("resolution rule text can use concise or multi-sentence question-specific logic", () => {
     const conciseCriteria = {
       ...criteria,
-      questionRules: criteria.questionRules.map((rule) => ({
-        ...rule,
+      questionRule: {
+        ...criteria.questionRule,
         resolvesNoWhen: "Otherwise resolve No.",
-      })),
+      },
       exceptionAndUnresolvedRules:
         "A tie uses the source's published tie-break. A cancellation follows the platform policy.",
     };
 
     expect(
-      parseConnectorResolutionCriteria(conciseCriteria).questionRules[0]
-        ?.resolvesNoWhen,
+      parseConnectorResolutionCriteria(conciseCriteria).questionRule
+        .resolvesNoWhen,
     ).toBe("Otherwise resolve No.");
   });
 

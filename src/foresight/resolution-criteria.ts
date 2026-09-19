@@ -32,8 +32,8 @@ export const QuestionResolutionRule = z.object({
 });
 
 /**
- * Broad resolution criteria for every binary question represented by a
- * selected binary, scalar, categorical, or template unit.
+ * Resolution criteria for the single binary question represented by a
+ * selected binary or template unit.
  *
  * The schema structures only the universal parts of resolution. The actual
  * decision logic remains open text so forecasts can use comparisons,
@@ -42,21 +42,9 @@ export const QuestionResolutionRule = z.object({
  */
 export const ResolutionCriteria = z
   .object({
-    questionRules: z
-      .array(QuestionResolutionRule)
-      .min(1)
-      .superRefine((rules, ctx) => {
-        const questions = rules.map(({ question }) => question);
-        if (new Set(questions).size !== questions.length) {
-          ctx.addIssue({
-            code: "custom",
-            message:
-              "questionRules must contain at most one rule for each exact question.",
-          });
-        }
-      })
+    questionRule: QuestionResolutionRule
       .describe(
-        "One complete Yes/No rule for every binary question in the selected unit; a template uses its exact placeholder-bearing question once and the same source, formula, procedure, and methodology for every allowed substitution.",
+        "The complete Yes/No rule for the selected binary or template question; a template rule uses its exact placeholder-bearing question and applies uniformly to every allowed substitution.",
       ),
     evidenceAndSourceRules: ResolutionText.describe(
       "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",
@@ -80,9 +68,6 @@ function questionsForUnit(unit: DraftUnitT): string[] {
     case "binary":
     case "template":
       return [unit.question];
-    case "scalar":
-    case "categorical":
-      return unit.questions;
   }
 }
 
@@ -93,9 +78,7 @@ const ResolutionCriteriaForUnit = z
   })
   .superRefine(({ selectedUnit, resolutionCriteria }, ctx) => {
     const expected = questionsForUnit(selectedUnit);
-    const actual = resolutionCriteria.questionRules.map(
-      ({ question }) => question,
-    );
+    const actual = [resolutionCriteria.questionRule.question];
     const missing = expected.filter((question) => !actual.includes(question));
     const unexpected = actual.filter(
       (question) => !expected.includes(question),
@@ -112,8 +95,8 @@ const ResolutionCriteriaForUnit = z
       ].join("; ");
       ctx.addIssue({
         code: "custom",
-        path: ["resolutionCriteria", "questionRules"],
-        message: `questionRules must cover the selected unit exactly (${details}).`,
+        path: ["resolutionCriteria", "questionRule", "question"],
+        message: `questionRule must cover the selected unit exactly (${details}).`,
       });
     }
   });

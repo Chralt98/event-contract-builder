@@ -39,10 +39,14 @@ workflow follow-up in that language. Conversation may follow the user's latest
 language, but a language switch does not mutate the active record; offer to
 continue in the locked language or start a separate translated record.
 
-Every successful workflow submission and approval returns `review_markdown`. It is the
-authoritative, complete user-facing result. Reply with that exact string and
-nothing else: do not summarize, reword, reorder, omit fields, or add a
-preface. Translate only generated labels and fixed UI text; preserve
+Every successful workflow submission and approval returns `review_markdown`. 
+Return the `review_markdown` verbatim.
+For submissions, and for approvals that complete the workflow, it is the
+authoritative, complete user-facing result: reply with that exact string and
+nothing else. Intermediate approval reviews are never user-facing. Treat the
+approval as a silent transition, immediately invoke the next stage, and present
+only that next stage's review. Do not summarize, reword, reorder, omit fields,
+or add a preface. Translate only generated labels and fixed UI text; preserve
 data-bearing content exactly, including questions, definitions, placeholders,
 variable values, source identities, URLs, ranks, dates, and status codes.
 
@@ -61,15 +65,17 @@ Each pending-stage review uses this exact structure:
 <exact follow-up>
 ```
 
-Draft reviews replace `Selected Unit` with `Draft Units`. Approval and
-completion reviews retain the same outer headings and include only the content
-appropriate to that stage. A blocked workflow response identifies
+Draft reviews replace `Selected Unit` with `Draft Units`. Label draft units
+with plain 1-based numbers (`Unit 1`, `Unit 2`, `Unit 3`) and refer to those
+same numbers in the selection follow-up; do not add letter suffixes. Approval
+and completion reviews retain the same outer headings and include only the
+content appropriate to that stage. A blocked workflow response identifies
 `required_approval_stage`; approve that stage before retrying the blocked tool.
 
-Decision interviews use numbered questions and lettered options (`1.A`,
-`1.B`), never dotted numeric choices. Ask two or three substantive options plus
-a separate free-form fallback and a recommendation. Stage-specific interview
-logic and formats live in the relevant skill reference.
+Decision interviews within a stage use numbered questions and lettered options
+(`1.A`, `1.B`), never dotted numeric choices. Ask two or three substantive
+options plus a separate free-form fallback and a recommendation. Stage-specific
+interview logic and formats live in the relevant skill reference.
 
 ## Completion and exports
 
@@ -85,10 +91,12 @@ localized menu:
 
 After news is approved, declined, empty, or unavailable, omit option 4. Accept
 one or several menu numbers. Retrieve the record once, remove internal
-metadata, and show each requested YAML, JSON, or Markdown export completely in
-a labeled fenced block. Then ask whether the Forecast Specification looks
-correct; route requested changes through the affected stage and repeat its
-review and approvals.
+metadata, and serialize the complete returned record without reconstructing it
+from memory or summarizing it. Preserve every field and nested array or object
+when present, in each requested YAML, JSON, or Markdown export. Show
+each export completely in a labeled fenced block. Then ask whether the Forecast
+Specification looks correct; route requested changes through the affected stage
+and repeat its review and approvals.
 
 ## Validation errors
 

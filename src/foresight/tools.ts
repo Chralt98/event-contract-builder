@@ -111,8 +111,8 @@ export const draftedQuestionsShape = {
       "A new forecast draft must contain at least three distinct selectable forecast specification units.",
     )
     .superRefine((units, ctx) => {
-      const signatures = units.map(({ type, question, questions, variables }) =>
-        JSON.stringify({ type, question, questions, variables }),
+      const signatures = units.map(({ type, question, variables }) =>
+        JSON.stringify({ type, question, variables }),
       );
 
       if (new Set(signatures).size !== signatures.length) {
