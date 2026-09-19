@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { z } from "zod";
 import {
   DataSource,
@@ -260,10 +261,10 @@ describe("public forecast interface", () => {
 
   test("workflow output instructions require consistent section separators", () => {
     expect(foresightServerInstructions).toContain(
-      "show the exact selected unit first, then `---`",
+      "selected unit first, then `---`",
     );
     expect(foresightServerInstructions).toContain(
-      "Present the complete returned Markdown with the shared separators above",
+      "Add missing separators only; do not summarize, reorder",
     );
   });
 
@@ -538,146 +539,51 @@ describe("public forecast interface", () => {
     ).toBe("Otherwise resolve No.");
   });
 
-  test("criteria workflow instructions enforce the grilling round protocol", () => {
-    expect(foresightServerInstructions).toContain(
-      "Ask every currently answerable user-dependent decision separately",
+  test("keeps shared and stage-specific guidance in one owner", () => {
+    const criteriaSkill = readFileSync(
+      new URL(
+        "../../skills/define-resolution-criteria/SKILL.md",
+        import.meta.url,
+      ),
+      "utf8",
     );
-    expect(foresightServerInstructions).toContain("❓ **1 · <short title>**");
-    expect(foresightServerInstructions).toContain(
-      "**1.A** — **<option>** — <short consequence>",
+    const criteriaReference = readFileSync(
+      new URL(
+        "../../skills/define-resolution-criteria/references/criteria-spec.md",
+        import.meta.url,
+      ),
+      "utf8",
     );
+
     expect(foresightServerInstructions).toContain(
-      "Do not pad choices or treat recommendations or a combined confirmation as answered questions.",
-    );
-    expect(foresightServerInstructions).toContain(
-      "two or three distinct, reasonable possibilities",
-    );
-    expect(foresightServerInstructions).toContain(
-      "If none fits, state the result or behavior you want.",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Treat a free-form fallback as valid input",
-    );
-    expect(foresightServerInstructions).toContain(
-      "track the round count, and use the consistent question-round format above",
+      "Submission tools validate and store a pending stage; they never approve it.",
     );
     expect(foresightServerInstructions).toContain(
-      "🧭 **Question round <current> of <total>**",
-    );
-    expect(foresightServerInstructions).toContain("Never use dotted");
-    expect(foresightServerInstructions).toContain(
-      "numeric identifiers such as `1.1` or `2.2`",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Treat that code as immutable",
-    );
-    expect(foresightServerInstructions).toContain(
-      "start a separate specification in the newly requested language",
-    );
-    expect(foresightServerInstructions).not.toContain(
-      "Klärungsrunde <aktuell>",
-    );
-    expect(foresightServerInstructions).toContain(
-      "answering every question in that round in one response",
-    );
-    expect(foresightServerInstructions).toContain(
-      "explicitly accepting or rejecting each recommendation",
-    );
-    expect(foresightServerInstructions).toContain(
-      "call `submit_resolution_criteria` directly, exactly once",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Do not show a separate pre-submission criteria draft",
-    );
-    expect(foresightServerInstructions).toContain(
-      "this submitted criteria output is the single criteria review",
-    );
-    expect(foresightServerInstructions).not.toContain(
-      "obtain the user's explicit final confirmation",
-    );
-    expect(foresightServerInstructions).toContain(
-      "make the complete question round the final user-visible response for that turn",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Never emit the round only as commentary",
-    );
-    expect(foresightServerInstructions).toContain(
-      'follow it with a final response containing only a generic prompt such as "Please answer the questions."',
-    );
-    expect(foresightServerInstructions).toContain(
-      'render it simply as "Otherwise it resolves to No."',
-    );
-    expect(foresightServerInstructions).toContain(
-      "Do not repeat the Yes elements as a list of negative No subconditions.",
-    );
-    expect(foresightServerInstructions).toContain(
-      "treat the submission as rejected before persistence",
-    );
-    expect(foresightServerInstructions).toContain(
-      "show only the updated field and value that caused the error",
-    );
-    expect(foresightServerInstructions).toContain(
-      "the existing forecast specification was not changed",
-    );
-    expect(foresightTools.submit_resolution_criteria.description).toContain(
-      "only the corrected field and value",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Never show the Forecast Specification ID, language code, or approval payload",
-    );
-    expect(foresightServerInstructions).toContain(
-      "show only the standard five-option action menu",
-    );
-    expect(foresightServerInstructions).not.toContain(
-      "Present the complete rendered Markdown returned by that approval call",
-    );
-    expect(foresightTools.approve_forecast_specification.description).toContain(
-      "Never expose forecast_specification_id or language_code to the user",
-    );
-    expect(foresightTools.approve_forecast_specification.description).toContain(
-      "standard action menu for YAML, JSON, Markdown",
-    );
-    expect(foresightTools.approve_forecast_specification.description).toContain(
-      "PDF",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Do not present the complete Forecast Specification yet.",
-    );
-    expect(foresightServerInstructions).toContain(
-      'stage: "background_information"',
-    );
-    expect(foresightTools.submit_background_information.description).toContain(
-      "do not alter the approved resolution-source hierarchy",
-    );
-    expect(foresightTools.submit_background_information.description).toContain(
-      "Do not start news research automatically",
-    );
-    expect(foresightTools.submit_news_timeline.description).toContain(
-      "explicitly opts in following approval of background_information",
-    );
-    expect(foresightServerInstructions).toContain(
-      "After that approval, show only the standard five-option action menu.",
-    );
-    expect(foresightServerInstructions).toContain(
-      "add no timeline and finish with the approved background-only specification",
+      "Carry the returned `forecast_specification_id` and immutable `language_code`",
     );
     expect(foresightServerInstructions).toContain(
       "Show YAML in chat and download the YAML file",
     );
-    expect(foresightServerInstructions).toContain(
-      "show the complete result in a correctly labeled fenced code block",
+    expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
+    expect(foresightServerInstructions).not.toContain("current frontier");
+
+    expect(criteriaSkill).toContain(
+      "Read [references/criteria-spec.md](references/criteria-spec.md)",
     );
-    expect(foresightServerInstructions).toContain(
-      "The user may choose one or several",
+    expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
+    expect(criteriaReference).toContain("entire current frontier");
+    expect(criteriaReference).toContain("❓ **1 · <short title>**");
+    expect(criteriaReference).toContain("`resolvesYesWhen`");
+    expect(criteriaReference).toContain(
+      "the failed submission changed nothing",
     );
-    expect(foresightServerInstructions).toContain(
-      "menu numbers in one response",
-    );
-    expect(foresightServerInstructions).toContain(
-      "show the complete returned timeline and its follow-up in the same final user-visible response",
-    );
-    expect(foresightServerInstructions).toContain(
-      "fully visible in the immediately preceding assistant response",
-    );
+  });
+
+  test("keeps tool descriptions concise and delegates procedure to skills", () => {
+    for (const tool of Object.values(foresightTools)) {
+      expect(tool.description.length).toBeLessThanOrEqual(260);
+      expect(tool.description).not.toContain("language_code");
+      expect(tool.description).not.toContain("forecast_specification_id");
+    }
   });
 });

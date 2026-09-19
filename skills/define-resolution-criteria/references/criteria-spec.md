@@ -1,124 +1,83 @@
 # Resolution-criteria specification
 
-Read this reference when defining criteria for one selected forecast
-specification unit after its resolution sources have been approved.
+Convert one exact unit, its approved definitions, and its approved source
+hierarchy into deterministic rules for every binary question it represents.
 
-## Role and goal
+## Decision interview
 
-Convert the approved selected unit, definitions, and source hierarchy into
-rules that determine the Yes/No result of every binary question represented by
-that unit. Binary and template units contain one question or question pattern;
-scalar and categorical units contain multiple binary questions that must be
-resolved coherently as a set.
+Before drafting criteria, map only material user-dependent decisions as a
+dependency tree. Resolve factual prerequisites yourself. In each round, ask the
+entire current frontier: decisions whose prerequisites are settled. Never ask a
+downstream question with an unanswered prerequisite.
 
-The schema deliberately does not enumerate criterion kinds, comparators, or
-settlement mechanisms. A real-world question may depend on an occurrence,
-comparison, ranking, classification, calculation, duration, combination of
-facts, source-defined status, or another observable rule. Describe the method
-the question actually requires.
+Track the round number and an exact maximum when knowable, otherwise a
+conservative estimate that is updated when branches change. For an estimate,
+immediately suggest answering every question in the round, accepting or
+rejecting each recommendation, supplying custom fallbacks, and stating logical
+consequences in one response.
 
-## Required workflow context
-
-The input must contain exactly one complete selected unit, its 1-based unit
-number, the agreed definitions, and the approved resolution sources. Carry the
-`forecast_specification_id` returned by the previous workflow step. The source
-stage must already be approved before `submit_resolution_criteria` is called.
-
-Do not alter the selected unit. Keep every question, template placeholder,
-variable, and allowed value exactly unchanged.
-
-## Payload
-
-`submit_resolution_criteria` receives this shape:
+Each decision is a separate numbered question with two or three substantive
+lettered choices, a recommendation, and an unnumbered free-form fallback. Do
+not pad choices, collapse decisions, or treat agreement with unshown choices as
+an answer. Use this localized structure:
 
 ```text
-forecast_specification_id?: UUID
-unit_number: integer
-selected_unit: exact display-question unit
-resolution_criteria:
-  questionRules:
-    - question: exact binary question from the selected unit, or the exact template question
-      resolvesYesWhen: precise open-text rule
-      resolvesNoWhen: concise complement of the complete Yes condition
-  evidenceAndSourceRules: precise open text
-  exceptionAndUnresolvedRules: precise open text
-followUp: one question about agreement or requested changes
+**Selected Unit <unit_number>: <label>**
+- <exact complete unit>
+
+---
+
+🧭 **Question round <current> of <total> (exact)**
+
+❓ **1 · <short title>**
+<one question>
+
+**1.A** — **<option>** — <consequence>
+**1.B** — **<option>** — <consequence>
+
+➡️ **Recommendation:** Option 1.<letter> — <reason>
+↪️ If none fits, state the result or behavior you want.
+
+---
 ```
 
-The text fields may contain multiple sentences, formulas, source field names,
-dates, thresholds, categories, or other precise logic. They are not restricted
-to controlled comparator values or a closed rule taxonomy.
+For an estimate, use “of about <estimate> (estimate)” and place the round-
+reduction suggestion before question 1. Separate multiple questions with
+`---`, and keep the final separator. Make the complete round the final
+user-visible response for that turn, then wait. Record partial and free-form
+answers, recompute the frontier, and continue until no decision remains.
 
-## Question coverage
+## Criteria
 
-- For a binary unit, provide one rule for its exact `question`.
-- For a scalar unit, provide one rule for every exact question representing a
-  numeric range. Make boundary treatment consistent and prevent unintended
-  overlaps or gaps.
-- For a categorical unit, provide one rule for every exact option question.
-  State how the set handles multiple matches or no match when either is
-  realistically possible.
-- For a template unit, provide one rule for the exact placeholder-bearing
-  question. Preserve its placeholders and apply the same approved source,
-  formula, procedure, and methodology uniformly to every allowed substitution.
-  Do not express value-specific source or settlement mappings. If any value
-  changes the qualifying predicate, interpretation, or legal/compliance
-  analysis, stop and return to drafting so the affected cases are separate
-  units.
+Create one `questionRules` entry for the exact binary or template question, or
+one for every exact scalar/categorical question. Template rules must apply one
+source, formula, procedure, and methodology uniformly to all substitutions; if
+treatment varies, return to drafting.
 
-Each `resolvesYesWhen` rule states every necessary and sufficient condition for
-Yes, including the deadline. Each `resolvesNoWhen` rule is only the concise
-complement: No when the complete Yes condition is not met by the deadline. Do
-not repeat the Yes elements as separate negative subconditions. Together with
-the shared exception rules, the two conditions must not leave ordinary cases
-to resolver discretion.
+`resolvesYesWhen` states every necessary and sufficient condition, including
+the deadline. `resolvesNoWhen` is only the concise complement: No when the
+complete Yes condition is not met by the deadline. Do not repeat negative
+versions of every Yes element or force a closed criterion taxonomy.
 
-## Shared rules
+`evidenceAndSourceRules` identifies controlling public evidence and applies the
+approved hierarchy. Address corrections, revisions, conflicts, fallback, or
+non-publication only when relevant. `exceptionAndUnresolvedRules` handles only
+material boundaries, ties, multiple or absent matches, postponement,
+cancellation, or unresolved outcomes. Scalar and categorical rules must be
+coherent as a set.
 
-`evidenceAndSourceRules` identifies the public evidence that establishes the
-result and explains how the approved source hierarchy is applied. Include
-correction, revision, conflict, fallback, or non-publication treatment when it
-is relevant; do not add boilerplate for scenarios that cannot affect the unit.
+## Submission and recovery
 
-`exceptionAndUnresolvedRules` handles relevant boundary cases and states what
-happens when the ordinary question rules cannot determine an outcome. Consider
-ties, range boundaries, multiple or absent matches, postponement, cancellation,
-and missing evidence only as applicable. There is no required number of edge
-cases and no fixed ambiguity-disposition enum.
+After all interview decisions are settled, call
+`submit_resolution_criteria` once; the rendered submission is the only
+criteria review before approval. Do not show a separate draft. Render each rule
+as one prose paragraph ending with the localized equivalent of “Otherwise it
+resolves to No.” Do not append the internal No complement or repeat exact
+question text inside the criteria; grouped rules may use `Question 1`,
+`Question 2`, and so on.
 
-## Submission and approval
-
-Call `submit_resolution_criteria` once after the sources are approved. Present
-its complete returned Markdown with the shared layout: selected unit, `---`,
-resolution criteria, `---`, follow-up. The exact question is already displayed
-in the selected-unit block and must not be repeated inside the criteria. Render
-each question rule as one prose paragraph without Yes/No bullet points:
-`This question will resolve as Yes if <complete condition>, according to
-<source rule>. <relevant exception rule> Otherwise it resolves to No.` Keep the
-concise No sentence last. The visible paragraph does not append the internal
-`resolvesNoWhen` complement after the No sentence.
-Grouped units may use `Question 1`, `Question 2`, and so on as anchors without
-repeating the question text. Insert missing separators as presentation
-formatting only, without summarizing or changing the criteria.
-The submission remains pending until the user explicitly agrees. Only then
-call `approve_forecast_specification` with `stage: "resolution_criteria"` and
-the same `forecast_specification_id`. Criteria approval is not final approval;
-continue with `define-background-information`. Do not present the complete
-forecast specification until the background-information stage is approved.
-
-If the user requests a change, revise and resubmit the complete criteria
-payload. If a prerequisite is missing or the source hierarchy cannot establish
-the required fact, stop and route back to the relevant earlier workflow stage;
-do not silently substitute a proxy or invent a rule.
-
-## Validation-error recovery
-
-If submission returns an input-validation error, the payload was rejected
-before it was saved. Correct only the value at the reported field path, keep all
-other criteria unchanged, and retry using the complete corrected payload.
-
-After a successful retry, do not reproduce the complete resolution criteria or
-reopen review of unchanged fields. Show only the corrected field and value, and
-explain that the existing forecast specification was not changed while the
-failed submission was being repaired. If another validation error occurs, show
-only that next field and corrected value.
+After explicit approval, approve `resolution_criteria` and continue to
+background information; do not present the complete specification yet. If a
+validation error occurs, correct only the reported field and retry the full
+unchanged remainder. Show only the corrected field and value, explaining that
+the failed submission changed nothing.

@@ -28,9 +28,7 @@ export const approvalShape = {
 const forecastQuestionLinesSchema = z
   .array(z.string().min(1))
   .min(1)
-  .describe(
-    "The exact approved question text in unit order. Binary and template units use one item; scalar and categorical units include each question.",
-  );
+  .describe("Exact approved questions in unit order.");
 
 export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
   .partial()
@@ -110,27 +108,22 @@ export const definedTermsShape = {
   unit_number: z
     .number()
     .int()
-    .describe(
-      "The 1-based number of the selected unit as shown in the prior draft or supplied by an alternative forecast specification handoff.",
-    ),
+    .describe("The selected unit's 1-based draft number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The selected forecast specification unit being defined — same structure as a unit from submit_drafted_questions or an alternative forecast specification handoff.",
+    "The exact approved unit being defined.",
   ),
   definitions: Definitions.describe(
     "Map from each ambiguous term to its precise, unambiguous definition.",
   ),
   followUp: z
     .string()
-    .describe(
-      "A follow-up question asking the user whether they agree with the " +
-        "definitions or would like to change anything.",
-    ),
+    .describe("Ask whether the definitions are approved or need changes."),
 };
 
 export const draftedQuestionsShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
-    "The canonical BCP 47 language tag chosen for this new forecast specification. Every specification field and workflow follow-up must use this language for the lifetime of this record.",
+    "Immutable canonical BCP 47 language for this new record.",
   ),
   units: z
     .array(ConnectorDraftUnit)
@@ -151,19 +144,12 @@ export const draftedQuestionsShape = {
       }
     })
     .describe(
-      "At least three distinct drafted forecast specifications, each a single selectable unit: a binary question, " +
-        "the complete set of questions for one scalar or categorical forecast specification, " +
-        "or an additional placeholder-bearing template with finite, explicit values. " +
-        "A template is optional and valid only when every allowed value and meaningful combination preserves the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis; otherwise draft separate units. " +
-        "Include a direct interpretation and close reformulation or proxy interpretations that preserve the user's intent.",
+      "At least three distinct selectable units, including a direct interpretation and intent-preserving alternatives.",
     ),
   followUp: z
     .string()
     .describe(
-      "The required follow-up line asking which unit to use for further " +
-        "specification, or how the draft should be revised. Include a hint " +
-        "about the next steps: after the user selects a unit, define its " +
-        "ambiguous terms before reviewing resolution sources.",
+      "Ask which unit to use or revise, noting that term definition comes next.",
     ),
 };
 
@@ -172,11 +158,9 @@ export const resolutionSourceShape = {
   unit_number: z
     .number()
     .int()
-    .describe(
-      "The 1-based number of the selected unit as shown in the prior draft.",
-    ),
+    .describe("The selected unit's 1-based draft number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The selected forecast specification unit being sourced — same structure as a unit from submit_drafted_questions.",
+    "The exact approved unit being sourced.",
   ),
   sources: z
     .array(DataSource)
@@ -190,30 +174,23 @@ export const resolutionSourceShape = {
       }
     })
     .describe(
-      "The ranked resolution source hierarchy; default to a rank-1 primary and a rank-2 fallback from a different independent source agency. A second page, dataset, mirror, or re-publication from the same agency is not an independent fallback. A single rank-1 source is allowed but emits a warning.",
+      "Ranked source hierarchy; prefer an independent primary and fallback.",
     ),
   coverage_gaps: z
     .array(z.string().min(3))
     .min(1)
     .max(12)
     .optional()
-    .describe(
-      "Facts required by the selected forecast specification for which no authoritative primary source was found. Omit when every required fact has primary coverage.",
-    ),
+    .describe("Required facts lacking authoritative primary coverage."),
   alternative_forecast_specification: alternativeForecastSpecificationSchema
     .optional()
     .describe(
-      "A newly drafted nearby or proxy display-question unit with at least two independent source agencies, required by the workflow when source coverage is incomplete or no independent fallback can be found. This is a question proposal, not term definitions; only pass it as selected_unit to define-terms after the user chooses it.",
+      "A sourceable nearby or proxy unit proposed when coverage is inadequate.",
     ),
   followUp: z
     .string()
     .describe(
-      "A follow-up question asking the user whether the source hierarchy is " +
-        "right or would like to change anything. When only one source is " +
-        "supplied, explicitly ask whether to proceed with one source, use " +
-        "another forecast specification question with at least two independent " +
-        "sources, or provide a known fallback source. If primary coverage is " +
-        "missing, state that gap and offer the nearby/proxy alternative.",
+      "Ask whether to approve or revise the hierarchy and present required gap options.",
     ),
 };
 
@@ -222,20 +199,16 @@ export const resolutionCriteriaShape = {
   unit_number: z
     .number()
     .int()
-    .describe(
-      "The 1-based number of the selected unit as shown in the prior draft.",
-    ),
+    .describe("The selected unit's 1-based draft number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The selected forecast specification unit whose resolution criteria are being defined — same structure as a unit from submit_drafted_questions.",
+    "The exact approved unit receiving criteria.",
   ),
   resolution_criteria: ResolutionCriteria.describe(
-    "Broad source-grounded resolution criteria with one Yes/No rule for every binary question represented by the selected unit.",
+    "Source-grounded rules covering every represented binary question.",
   ),
   followUp: z
     .string()
-    .describe(
-      "A follow-up question asking whether the user agrees with the resolution criteria or would like anything changed.",
-    ),
+    .describe("Ask whether the criteria are approved or need changes."),
 };
 
 export const backgroundInformationShape = {
@@ -243,20 +216,16 @@ export const backgroundInformationShape = {
   unit_number: z
     .number()
     .int()
-    .describe(
-      "The 1-based number of the selected unit as shown in the prior draft.",
-    ),
+    .describe("The selected unit's 1-based draft number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The selected forecast specification unit whose context and background information is being defined — same structure as a unit from submit_drafted_questions.",
+    "The exact approved unit receiving background information.",
   ),
   background_information: ForecastBackgroundInformation.describe(
-    "Neutral, factual context and background information that helps the user understand the forecast without changing its question or resolution rules. Public references are optional.",
+    "Neutral explanatory context with optional public references.",
   ),
   followUp: z
     .string()
-    .describe(
-      "A follow-up question asking whether the user approves the context and background information or would like anything changed.",
-    ),
+    .describe("Ask whether the background is approved or needs changes."),
 };
 
 export const newsTimelineShape = {
@@ -264,39 +233,35 @@ export const newsTimelineShape = {
   unit_number: z
     .number()
     .int()
-    .describe(
-      "The 1-based number of the selected forecast specification unit, not a news-item unit number.",
-    ),
+    .describe("The selected forecast unit number, not a news-item number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The exact selected forecast specification unit whose optional news timeline is being defined.",
+    "The exact approved unit receiving optional news.",
   ),
   news_timeline: ForecastNewsTimeline.describe(
-    "An optional newest-to-oldest timeline of succinct, factual, highly relevant news items with unique item unit numbers. Each summary must add information not already covered by the approved historical background or older news. Submit an empty list only when the user explicitly asks to remove a previously approved news timeline.",
+    "Newest-first, incremental factual news; empty only for requested removal.",
   ),
   followUp: z
     .string()
-    .describe(
-      "A follow-up asking which news-item unit numbers the user considers relevant, or whether they want changes. After filtering to those items, submit the selected timeline again and ask for explicit approval.",
-    ),
+    .describe("Ask which news-item numbers to keep or revise."),
 };
 
 export const selectedUnitShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
-    "The canonical BCP 47 language tag for this forecast specification. Keep it unchanged when continuing; use the target language only when explicitly starting a new specification.",
+    "Existing record language, or target language for an explicit new record.",
   ),
   start_new_specification: z
     .boolean()
     .optional()
     .describe(
-      "Set true only when the user chooses to start a separate forecast specification branch, including a translated specification or a selected alternative. Omit forecast_specification_id in that case; the new record starts with no approvals and must receive fresh approval at every workflow stage.",
+      "True only for a separate alternative or translated record; then omit the old ID.",
     ),
   unit_number: z
     .number()
     .int()
-    .describe("The 1-based number of the unit selected from the draft."),
+    .describe("The selected unit's 1-based draft number."),
   selected_unit: ConnectorDraftUnit.describe(
-    "The exact display-question unit selected from the prior draft or an alternative forecast specification handoff.",
+    "The exact unit selected from a draft or alternative handoff.",
   ),
 };
 
@@ -341,24 +306,7 @@ export const foresightTools = {
   approve_forecast_specification: {
     title: "Approve Forecast Specification Stage",
     description:
-      "Record an explicit user approval for one pending forecast specification " +
-      "workflow stage. Call this only after the user has confirmed that " +
-      "stage in chat; submit_* tools do not imply approval. Approve stages " +
-      "in order: selected_unit, defined_terms, resolution_sources, " +
-      "resolution_criteria, then background_information. Only after background " +
-      "information is approved, ask whether the user wants the optional " +
-      "news_timeline stage; never start it without an explicit yes. If they opt " +
-      "in, approve news_timeline after its separate review. Background approval " +
-      "returns internal workflow metadata in structured content. Never expose " +
-      "forecast_specification_id or language_code to the user. After background " +
-      "approval, show only the standard action menu for YAML, JSON, Markdown, " +
-      "PDF, or the optional news timeline. After news is approved or skipped, " +
-      "show the same menu without the news option. If the user selects a format, " +
-      "call get_approved_forecast_specification internally, remove internal " +
-      "metadata, and provide every selected output. For YAML, JSON, and Markdown, " +
-      "always show the complete output in a labeled fenced code block and also " +
-      "create a downloadable file; accept one or more menu numbers in one reply. " +
-      "Then ask whether it looks correct.",
+      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Submissions remain pending until this tool succeeds.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -369,15 +317,7 @@ export const foresightTools = {
   get_approved_forecast_specification: {
     title: "Get Approved Forecast Specification",
     description:
-      "Retrieve the approved selected unit, definitions, resolution source " +
-      "records, resolution criteria, background information, and optional " +
-      "approved news timeline saved during this chat; candidate drafts and " +
-      "workflow prompts are not returned. The result includes the immutable language_code for " +
-      "the specification as internal metadata; never display language_code or " +
-      "forecast_specification_id in user-facing output or exports. " +
-      "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
-      "current MCP session, or provide the stable identifier returned by a " +
-      "workflow tool for an explicit cross-session HTTP handoff.",
+      "Retrieve the approved stages of one Forecast Specification. Omit the ID only for the current session's most recently updated record; provide it for an explicit HTTP handoff.",
     inputSchema: approvedForecastSpecificationLookupShape,
     outputSchema: approvedForecastSpecificationRecallSchema,
     annotations: {
@@ -388,16 +328,7 @@ export const foresightTools = {
   submit_defined_terms: {
     title: "Submit Defined Terms",
     description:
-      "Validate and store a pending set of term definitions for the forecast " +
-      "specification. Call this once after defining terms, passing the definitions as a " +
-      "term-to-definition map. When the unit came from an alternative forecast specification " +
-      "branch, define its terms from scratch and keep its supplied unit number. " +
-      "Write definitions and the follow-up in the specification's immutable " +
-      "language_code; the returned structured content includes that code. " +
-      "Carry forecast_specification_id from the prior workflow result when continuing a record. " +
-      "Submit and explicitly approve the selected unit first. This submission " +
-      "does not imply user approval; call approve_forecast_specification after the user " +
-      "agrees to the definitions.",
+      "Validate, store, and render pending definitions for an approved selected unit, using the exact unit and a term-to-definition map.",
     inputSchema: definedTermsShape,
     outputSchema: definedTermsOutputSchema,
     annotations: {
@@ -408,17 +339,7 @@ export const foresightTools = {
   submit_drafted_questions: {
     title: "Submit Drafted Questions",
     description:
-      "Validate and store a drafted set of display questions, " +
-      "organized into binary/scalar/categorical/template units. Call this once " +
-      "after the model has drafted questions for a new event, passing " +
-      "the draft as structured units and a canonical BCP 47 language_code " +
-      "chosen from the first user request or an explicit language choice. " +
-      "The code is immutable for the record; write every question and follow-up " +
-      "in that language. A forecast_specification_id is returned for later " +
-      "workflow steps; use template placeholders only for narrow, closed values " +
-      "that preserve one shared settlement source and method across every allowed combination. " +
-      "Carry it explicitly when a later HTTP call may use a " +
-      "new MCP session.",
+      "Validate, store, and render a new draft of selectable binary, scalar, categorical, or template units. This starts a record with an immutable specification language.",
     inputSchema: draftedQuestionsShape,
     outputSchema: draftedQuestionsOutputSchema,
     annotations: {
@@ -429,19 +350,7 @@ export const foresightTools = {
   submit_resolution_source: {
     title: "Resolution Source Hierarchy",
     description:
-      "Validate and store the detailed Resolution Source Hierarchy for a " +
-      "forecast specification unit. " +
-      "By default pass a rank-1 primary and a rank-2 fallback in the ranked " +
-      "array. A user-requested single rank-1 source is valid but emits a " +
-      "warning that asks whether to proceed with one source, switch to an " +
-      "alternative forecast specification with at least two independent " +
-      "sources, or provide a known fallback source. Call this once after definitions are approved, " +
-      "carrying the forecast_specification_id from the definitions result. " +
-      "Write source descriptions, coverage gaps, and the follow-up in the specification's immutable " +
-      "language_code; the structured result returns that code. For a template, " +
-      "verify that one identical hierarchy covers every allowed value; do not use value-specific sources. This submission " +
-      "does not imply approval of the detailed sources; call " +
-      "approve_forecast_specification after the user agrees to them.",
+      "Validate, store, and render a pending ranked source hierarchy after definitions are approved, including gaps or a proposed alternative when applicable.",
     inputSchema: resolutionSourceShape,
     outputSchema: resolutionSourceOutputSchema,
     annotations: {
@@ -452,18 +361,7 @@ export const foresightTools = {
   submit_resolution_criteria: {
     title: "Resolution Criteria",
     description:
-      "Validate and store broad source-grounded Resolution Criteria for every " +
-      "binary question represented by a forecast specification unit. Call this once after resolution sources " +
-      "are approved, carrying the forecast_specification_id from the source " +
-      "result and preserving the exact selected unit, including every template " +
-      "variable and allowed value. Write criteria and the follow-up in the " +
-      "specification's immutable language_code; the structured result returns " +
-      "that code. A template's one rule must apply uniformly to all substitutions using the same source, formula, procedure, and methodology; if any value needs different treatment, return to drafting and split the unit. The submission does not imply user approval; " +
-      "call approve_forecast_specification with stage resolution_criteria after " +
-      "the user agrees to the criteria, then continue to the background-information " +
-      "stage. If validation fails, correct only the " +
-      "reported field, retry with all other values unchanged, and show the user " +
-      "only the corrected field and value instead of the full criteria.",
+      "Validate, store, and render pending source-grounded criteria for every binary question represented by an exact unit after source approval.",
     inputSchema: resolutionCriteriaShape,
     outputSchema: resolutionCriteriaOutputSchema,
     annotations: {
@@ -474,18 +372,7 @@ export const foresightTools = {
   submit_background_information: {
     title: "Context and Background Information",
     description:
-      "Validate and store neutral, factual context and background " +
-      "information for a forecast specification. Call this once after resolution " +
-      "criteria are approved, carrying the forecast_specification_id and exact " +
-      "selected unit. Write context and the follow-up in the specification's " +
-      "immutable language_code; the structured result returns that code. Optional background references are explanatory and do not alter the " +
-      "approved resolution-source hierarchy. The submission does not imply user " +
-      "approval; call approve_forecast_specification with stage " +
-      "background_information after the user agrees. After that approval, ask " +
-      "whether the user explicitly wants the optional news timeline. Do not " +
-      "start news research automatically; if they decline, the background stage " +
-      "is final. A user who opts in must review and approve the separate " +
-      "news_timeline stage.",
+      "Validate, store, and render pending neutral background information after criteria approval; references are explanatory only.",
     inputSchema: backgroundInformationShape,
     outputSchema: backgroundInformationOutputSchema,
     annotations: {
@@ -496,25 +383,7 @@ export const foresightTools = {
   submit_news_timeline: {
     title: "Submit Relevant News Timeline",
     description:
-      "Validate and store the optional, factual, newest-to-oldest news " +
-      "timeline for a forecast specification. Call this only after the user " +
-      "explicitly opts in following approval of background_information. Carry " +
-      "the forecast_specification_id, exact selected unit, unit number, and " +
-      "immutable language_code. Each item must show its verified publication " +
-      "date, time when available, publisher, direct source URL, and a succinct " +
-      "objective summary. Include only highly relevant information that is new " +
-      "relative to the approved background and older timeline items. First ask " +
-      "the user which news-item unit numbers they consider relevant, showing " +
-      "the complete rendered candidate timeline and follow-up in the same final " +
-      "response; then resubmit only those items, show the complete selected " +
-      "timeline, and request explicit approval. Never replace either rendered " +
-      "timeline with a summary or approval question alone. The submission " +
-      "does not imply user approval; call approve_forecast_specification with " +
-      "stage news_timeline only after they approve the exact selected timeline " +
-      "that was fully visible in the immediately preceding assistant response. " +
-      "Do not submit an empty timeline when no news qualifies or the user " +
-      "selects none. Submit an empty list only when the user asks to remove an " +
-      "already approved news timeline, then obtain approval for that removal.",
+      "Validate, store, and render an optional newest-first news timeline after explicit opt-in and background approval. Use an empty timeline only to review removal of previously approved news.",
     inputSchema: newsTimelineShape,
     outputSchema: newsTimelineOutputSchema,
     annotations: {
@@ -525,18 +394,7 @@ export const foresightTools = {
   submit_selected_unit: {
     title: "Submit Selected Unit",
     description:
-      "Validate and store the user's selected display-question unit as a " +
-      "pending workflow stage. This submission does not imply approval. " +
-      "Carry the existing language_code unchanged. Only when the user chooses " +
-      "a separate specification branch (including a translation branch), set " +
-      "start_new_specification=true, " +
-      "omit forecast_specification_id, and pass the target language_code. " +
-      "This creates a new record with no approvals; translate only outputs from " +
-      "stages already approved, then obtain fresh approval for every stage in " +
-      "order. " +
-      "After the user confirms the selected unit in chat, call " +
-      "approve_forecast_specification with stage selected_unit before approving " +
-      "definitions or continuing the workflow.",
+      "Validate and store the exact selected display-question unit as pending. Start a new record only for a separate alternative or language branch.",
     inputSchema: selectedUnitShape,
     outputSchema: selectedUnitOutputSchema,
     annotations: {

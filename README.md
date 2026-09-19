@@ -99,54 +99,21 @@ does not update ChatGPT's connection metadata.
 
 ## Forecast workflow
 
-1. Draft at least three intent-aligned forecast specification units with
-   `draft-display-question` and `submit_drafted_questions`.
-2. Submit the chosen unit with `submit_selected_unit`, then record its explicit
-   approval with `approve_forecast_specification` at `selected_unit`.
-3. Use `define-terms` and `submit_defined_terms`; approve `defined_terms`.
-4. Use `define-resolution-source` and `submit_resolution_source`; approve
-   `resolution_sources` only after the user accepts the hierarchy.
-5. Use `define-resolution-criteria` and `submit_resolution_criteria`; approve
-   `resolution_criteria` only after the user accepts the criteria.
-6. Use `define-background-information` and `submit_background_information`;
-   approve `background_information` only after the user accepts the explanatory
-   historical context and any non-binding references. Then show the standard
-   menu: YAML, JSON, and Markdown are each displayed in chat and downloaded;
-   PDF is downloaded; recent news remains optional.
-7. Only after opt-in, use `define-relevant-news` and `submit_news_timeline` to
-   present recent, relevant developments newest first. Each item has a
-   selectable unit number and only adds facts not already in the background or
-   older news. Always display the complete proposed or filtered timeline before
-   asking for selection or approval. Resubmit the user's selected items for explicit approval at
-   `news_timeline`. If the user declines or selects no items, leave the
-   specification without news.
-8. After the user declines news or approves the optional timeline, show the
-   four output formats. Accept one or several format numbers. Retrieve the
-   Forecast Specification internally after the user chooses formats, omit its
-   internal ID and language code, display YAML, JSON, and Markdown in fenced
-   code blocks, and provide the corresponding download links. Ask whether it looks correct; if changes are
-   needed, update the affected stages and repeat the review.
+The workflow is: draft questions, select a unit, define terms, choose resolution
+sources, define resolution criteria, add background information, and optionally
+add recent news. Each submitted stage remains pending until the user explicitly
+approves it. `reduce-semantic-risk` supports focused interpretation audits.
 
-Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
-separate timing skill or trading/expiration approval stage. Event time boundaries
-still belong in the question and definitions when needed.
+Instruction ownership is deliberately split to avoid duplicate maintenance:
 
-Carry `forecast_specification_id` between tools, especially across HTTP sessions.
-The current backend stores records in memory; the ID is a bearer handoff, not an
-account credential. Recall includes only explicitly approved content. A newly
-selected alternative starts a separate record with fresh definitions and sources.
+- `src/foresight/instructions.md` owns cross-stage state, language, rendering,
+  approval, and export conventions.
+- Each `skills/*/SKILL.md` is a short workflow entry point.
+- Each skill reference owns that stage's semantic rules and detailed format.
+- `src/foresight/tools.ts` exposes concise tool intent and machine-enforced
+  schemas; it does not restate skill procedures.
 
-Forecast source records contain `id`, `rank`, `name`, `publisher`, `url`, and
-optional `datasetId`. Default to independent primary and fallback sources. When
-only one exists, the user can continue with one, choose another forecast question,
-or provide a fallback for evaluation. URLs are inspection locators, not fetched
-or verified by the backend. Resolution criteria contain one open Yes/No rule
-for every binary question represented by the selected unit, plus broad shared
-rules for evidence, source handling, exceptions, and unresolved outcomes.
-Background information provides relevant history, durable
-key factors, and optional supporting reference links. Any links are explanatory
-and do not change the approved resolution-source hierarchy. Recent news is
-separate, optional, and included in recall only after explicit approval.
+Change a rule at its owning layer rather than copying it into another one.
 
 ## Package the plugin
 

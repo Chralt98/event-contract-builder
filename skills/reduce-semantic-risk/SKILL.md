@@ -3,32 +3,24 @@ name: reduce-semantic-risk
 description: Review or refine forecast specification questions and terms to bound semantic risk; use before using a forecast specification or when auditing resolution rules, exceptions, and resolver discretion.
 ---
 
-# Purpose
+# Reduce semantic risk
 
-Make semantic risk bounded: make ordinary cases deterministic; expose exceptional cases before using a forecast specification; minimise unilateral discretion; create explicit meta-rules for genuinely unforeseen events; and ensure that whatever discretion remains is governed by transparent evidence, conflicts rules, escalation, and finality.
+Review only plausible ambiguities or missing rules that could change the
+outcome. Make ordinary cases mechanical with observable conditions and explicit
+rules for relevant boundaries, inputs, calculations, source precedence, and
+revisions.
 
-## Method
+For exceptional cases, replace open-ended judgment with narrow triggers,
+evidence requirements, fallback order, escalation, deadlines, correction
+windows, and finality where they matter. If an event cannot be enumerated, use
+a constrained meta-rule that identifies the decision-maker, governing
+principles, remedies, and how the original forecasting intent is preserved.
 
-Use the forecast specification's stored `language_code` for any proposed
-question, definition, rule, follow-up, or user-facing risk description. A change
-in the user's latest message language does not change the specification
-language; the host must create a separate record and obtain fresh approvals if
-the user chooses a translated specification.
+Present each unresolved issue with its semantic risk, the smallest rule that
+bounds it, and any decision the user must make. State the residual risk.
 
-1. Identify every interpretation, decision, or missing rule that could change the outcome, including relevant time boundaries, inputs, source precedence, and calculations.
-2. Make the ordinary resolution path mechanical. Use observable conditions and explicit rules for units, thresholds, inclusivity, rounding, revisions, ties, and source priority wherever they matter.
-3. Surface plausible exceptional cases before using a forecast specification. Address only material cases, such as unavailable, delayed, revised, or conflicting data; source replacement; event cancellation or postponement; and changes to a named entity or authority.
-4. Minimise unilateral discretion by replacing open-ended judgment with predefined triggers, evidence requirements, fallback order, and consequences.
-5. For events that cannot reasonably be enumerated, add narrow meta-rules that state who may classify the event, what principles constrain the decision, which remedies are available and in what order, and how the decision must preserve the forecast specification's stated forecasting intent.
-6. Govern any remaining discretion with a published evidence record, conflict disclosure and recusal rules, an escalation path, decision deadlines, a bounded correction or appeal window, and a clear point of finality.
-7. Present each unresolved issue with its semantic risk, the smallest proposed rule that bounds it, and any choice the user must make. Do not silently choose a policy that changes the forecast specification's intended event or outcome.
-
-## Boundaries
-
-- Review the forecast specification; do not add trading, payout, or full event-contract drafting requirements.
-
-- Do not claim that semantic risk can be eliminated; identify the bounded residual risk.
-- Do not invent facts, sources, authorities, deadlines, or user preferences.
-- Do not rewrite the forecast specification's intended event or outcome or approved source hierarchy without explicit user agreement.
-- Do not add remote edge cases merely for completeness; prioritize cases that are plausible or outcome-determinative.
-- Distinguish semantic robustness from legal or regulatory compliance; do not present this review as a legal conclusion.
+Do not invent facts, authorities, sources, deadlines, or preferences; add
+remote edge cases; rewrite the intended event; change approved sources without
+agreement; expand into trading, payout, full-contract, or legal-compliance
+review; or claim semantic risk can be eliminated. Follow the active record's
+server-wide language and approval rules.
