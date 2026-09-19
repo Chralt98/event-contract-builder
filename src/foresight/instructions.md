@@ -39,13 +39,32 @@ workflow follow-up in that language. Conversation may follow the user's latest
 language, but a language switch does not mutate the active record; offer to
 continue in the locked language or start a separate translated record.
 
-Tool Markdown is an English rendering scaffold. Translate only generated
-labels and fixed UI text. Preserve data-bearing content exactly, including
-questions, definitions, placeholders, variable values, source identities,
-URLs, ranks, dates, and status codes. For every reviewed stage, show the exact
-selected unit first, then `---`, the complete rendered stage, another `---`,
-and its follow-up. Add missing separators only; do not summarize, reorder, or
-expose raw structured content.
+Every successful workflow submission and approval returns `review_markdown`. It is the
+authoritative, complete user-facing result. Reply with that exact string and
+nothing else: do not summarize, reword, reorder, omit fields, or add a
+preface. Translate only generated labels and fixed UI text; preserve
+data-bearing content exactly, including questions, definitions, placeholders,
+variable values, source identities, URLs, ranks, dates, and status codes.
+
+Each pending-stage review uses this exact structure:
+
+```text
+# Forecast Specification
+## Stage: <stage name>
+### Selected Unit
+<exact selected unit>
+---
+### <stage name>
+<complete stage content>
+---
+## Next Action
+<exact follow-up>
+```
+
+Draft reviews replace `Selected Unit` with `Draft Units`. Approval and
+completion reviews retain the same outer headings and include only the content
+appropriate to that stage. A blocked workflow response identifies
+`required_approval_stage`; approve that stage before retrying the blocked tool.
 
 Decision interviews use numbered questions and lettered options (`1.A`,
 `1.B`), never dotted numeric choices. Ask two or three substantive options plus
@@ -54,23 +73,22 @@ logic and formats live in the relevant skill reference.
 
 ## Completion and exports
 
-After background approval, suppress the approval payload and show only this
+After background approval, the canonical completion review contains this
 localized menu:
 
 ```text
-1. Show YAML in chat and download the YAML file
-2. Show JSON in chat and download the JSON file
-3. Show Markdown in chat and download the Markdown file
-4. Download the PDF file
-5. Add the optional recent-news timeline
+1. Show YAML in chat
+2. Show JSON in chat
+3. Show Markdown in chat
+4. Add the optional recent-news timeline
 ```
 
-After news is approved, declined, empty, or unavailable, omit option 5. Accept
+After news is approved, declined, empty, or unavailable, omit option 4. Accept
 one or several menu numbers. Retrieve the record once, remove internal
-metadata, show complete YAML, JSON, and Markdown in labeled fenced blocks with
-matching download links, and provide PDF as a download. Then ask whether the
-Forecast Specification looks correct; route requested changes through the
-affected stage and repeat its review and approvals.
+metadata, and show each requested YAML, JSON, or Markdown export completely in
+a labeled fenced block. Then ask whether the Forecast Specification looks
+correct; route requested changes through the affected stage and repeat its
+review and approvals.
 
 ## Validation errors
 

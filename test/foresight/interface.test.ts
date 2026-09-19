@@ -110,6 +110,10 @@ describe("public forecast interface", () => {
     const unit = schema.properties!.selected_unit!;
     expect(unit).not.toHaveProperty("oneOf");
     expect(draftSchema.properties!.language_code).not.toHaveProperty("pattern");
+    expect(draftSchema.required).toEqual(
+      expect.arrayContaining(["language_code", "units", "followUp"]),
+    );
+    expect(draftSchema.properties).not.toHaveProperty("draft_units");
     expect(() => parseConnectorDraftUnit({ type: "binary" })).toThrow();
     expect(() =>
       parseConnectorDraftUnit({
@@ -145,6 +149,7 @@ describe("public forecast interface", () => {
         ...payload,
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
         units: [first, second, third],
+        review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(true);
     expect(
@@ -153,6 +158,7 @@ describe("public forecast interface", () => {
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
         language_code: undefined,
         units: [first, second, third],
+        review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(false);
     expect(
@@ -186,30 +192,28 @@ describe("public forecast interface", () => {
     expect(Object.keys(foresightTools)).toHaveLength(9);
   });
 
-  test("final approval returns only the identifier and forecast question", () => {
+  test("approval outputs carry a canonical review and final approval omits internal metadata", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
-    const summary = {
-      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-      language_code: "de",
-      forecast_question: [input.selected_unit.question],
+    const finalSummary = {
       approved_stage: "background_information" as const,
+      review_markdown: "# Forecast Specification\n\n## Stage: Complete",
     };
 
-    expect(schema.safeParse(summary).success).toBe(true);
+    expect(schema.safeParse(finalSummary).success).toBe(true);
     expect(
-      schema.safeParse({ ...summary, definitions: { deadline: "A deadline." } })
-        .success,
+      schema.safeParse({
+        ...finalSummary,
+        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+      }).success,
     ).toBe(false);
     expect(
       schema.safeParse({
-        forecast_specification_id: summary.forecast_specification_id,
-        language_code: undefined,
         approved_stage: "background_information",
       }).success,
     ).toBe(false);
     expect(
       schema.safeParse({
-        ...summary,
+        ...finalSummary,
         approved_stage: "news_timeline",
         news_timeline: { items: [] },
       }).success,
@@ -217,17 +221,19 @@ describe("public forecast interface", () => {
 
     expect(
       schema.safeParse({
-        ...summary,
+        ...finalSummary,
         approved_stage: "news_timeline",
       }).success,
     ).toBe(true);
 
     const criteriaApproval = {
-      forecast_specification_id: summary.forecast_specification_id,
+      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
       language_code: "de",
       unit_number: 1,
       selected_unit: input.selected_unit,
       approved_stage: "resolution_criteria" as const,
+      review_markdown:
+        "# Forecast Specification\n\n## Stage: Resolution Criteria Approved",
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
   });
@@ -259,12 +265,12 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow output instructions require consistent section separators", () => {
+  test("workflow output instructions require verbatim canonical reviews", () => {
     expect(foresightServerInstructions).toContain(
-      "selected unit first, then `---`",
+      "Every successful workflow submission and approval returns `review_markdown`",
     );
     expect(foresightServerInstructions).toContain(
-      "Add missing separators only; do not summarize, reorder",
+      "authoritative, complete user-facing result.",
     );
   });
 
@@ -561,9 +567,7 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Carry the returned `forecast_specification_id` and immutable `language_code`",
     );
-    expect(foresightServerInstructions).toContain(
-      "Show YAML in chat and download the YAML file",
-    );
+    expect(foresightServerInstructions).toContain("Show YAML in chat");
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
 

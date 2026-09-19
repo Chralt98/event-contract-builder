@@ -25,77 +25,56 @@ export const approvalShape = {
   ),
 };
 
-const forecastQuestionLinesSchema = z
-  .array(z.string().min(1))
+export const ReviewMarkdown = z
+  .string()
   .min(1)
-  .describe("Exact approved questions in unit order.");
+  .describe(
+    "Canonical complete Markdown review. Present this exact string verbatim to the user without summarizing, reordering, or adding content.",
+  );
 
-export const approvalOutputSchema = approvedForecastSpecificationRecallSchema
-  .partial()
-  .extend({
-    forecast_specification_id:
-      approvedForecastSpecificationRecallSchema.shape.forecast_specification_id,
-    language_code: ForecastSpecificationLanguageCode,
+export const approvalOutputSchema = z
+  .object({
+    forecast_specification_id: ForecastSpecificationId.optional(),
+    language_code: ForecastSpecificationLanguageCode.optional(),
+    unit_number: z.number().int().optional(),
+    selected_unit: ConnectorDraftUnit.optional(),
     approved_stage: approvalStageSchema,
-    forecast_question: forecastQuestionLinesSchema.optional(),
+    review_markdown: ReviewMarkdown,
   })
   .strict()
   .superRefine((value, ctx) => {
-    if (
+    const isFinal =
       value.approved_stage === "background_information" ||
-      value.approved_stage === "news_timeline"
-    ) {
-      if (!value.forecast_question) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["forecast_question"],
-          message:
-            "Final approval must return the exact approved forecast question.",
-        });
-      }
+      value.approved_stage === "news_timeline";
+    const internalFields = [
+      "forecast_specification_id",
+      "language_code",
+      "unit_number",
+      "selected_unit",
+    ] as const;
 
-      for (const field of [
-        "unit_number",
-        "selected_unit",
-        "definitions",
-        "resolution_sources",
-        "resolution_criteria",
-        "background_information",
-        "news_timeline",
-      ] as const) {
+    if (isFinal) {
+      for (const field of internalFields) {
         if (value[field] !== undefined) {
           ctx.addIssue({
             code: "custom",
             path: [field],
             message:
-              "Final approval returns only the forecast specification ID and question; retrieve the full specification only if the user chooses to see it.",
+              "Final approval must not expose internal workflow metadata.",
           });
         }
       }
       return;
     }
 
-    if (value.unit_number === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["unit_number"],
-        message: "Stage approval must include the selected unit number.",
-      });
-    }
-    if (value.selected_unit === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["selected_unit"],
-        message: "Stage approval must include the selected unit.",
-      });
-    }
-    if (value.forecast_question !== undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["forecast_question"],
-        message:
-          "The forecast question summary is only returned after final approval.",
-      });
+    for (const field of internalFields) {
+      if (value[field] === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: [field],
+          message: "Intermediate approval must identify the approved unit.",
+        });
+      }
     }
   });
 
@@ -271,6 +250,7 @@ const workflowOutput = <T extends z.ZodRawShape>(shape: T) =>
     .extend({
       forecast_specification_id: ForecastSpecificationId,
       language_code: ForecastSpecificationLanguageCode,
+      review_markdown: ReviewMarkdown,
     })
     .strict();
 
@@ -298,6 +278,7 @@ export const selectedUnitOutputSchema = z
     language_code: ForecastSpecificationLanguageCode,
     unit_number: selectedUnitShape.unit_number,
     selected_unit: selectedUnitShape.selected_unit,
+    review_markdown: ReviewMarkdown,
   })
   .strict();
 
