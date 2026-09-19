@@ -8,8 +8,6 @@ specification whose resolution criteria have been approved.
 The background information should help an informed non-specialist understand
 the event and the environment around it. Include:
 
-- a concise `overview` of what the forecast asks and the real-world event it
-  concerns;
 - `background` covering only relevant historical, institutional, procedural, or
   domain context;
 - `keyFactors` describing the main observable developments that could affect the
@@ -35,7 +33,7 @@ reference materially improves the context.
 Any supplied references are informational only. They do not determine
 settlement, change the approved resolution-source hierarchy, or become fallback
 resolution sources. Avoid citing a page merely because it mentions the topic; it
-should support a material claim in the overview, background, or key factors.
+should support a material claim in the background or key factors.
 
 ## Payload
 
@@ -46,7 +44,6 @@ forecast_specification_id?: UUID
 unit_number: integer
 selected_unit: exact display-question unit
 background_information:
-  overview: plain-language text
   background: relevant explanatory text
   keyFactors:
     - one relevant observable factor
@@ -70,19 +67,22 @@ submission does not imply approval. If the user requests edits, resubmit the
 complete revised payload; do not alter already approved upstream stages.
 
 Only after explicit approval call `approve_forecast_specification` with
-`stage: "background_information"`. Then explicitly ask whether the user wants
-the optional recent-news timeline. Do not start `define-relevant-news` unless
-the user opts in. If the user declines, this is the final approved stage:
-present its returned forecast specification ID and exact question text, then
-offer to show the complete specification in chat. Do not repeat the ID and
-question if the approval output already showed them in the same exchange.
+`stage: "background_information"`. Never display the returned internal ID,
+language code, structured payload, or repeat the forecast question. Show only
+the localized standard action menu: YAML in chat and as a download, JSON in
+chat and as a download, Markdown in chat and as a download, PDF as a download,
+or the optional recent-news timeline. Use `and`, not `or`, for the first three
+choices. Do not start `define-relevant-news` unless the user
+chooses that option.
 
 If the user opts into news, continue with `define-relevant-news`; that workflow
 owns its separate timeline review and final rendering. If no qualifying items
 are found or the user selects none, leave the specification with its approved
-background only, then offer to show it. When the user chooses to see the
-complete specification, retrieve it with
-`get_approved_forecast_specification` using the same ID and present the complete
-result with the shared separators. Ask whether it looks correct. If it does
-not, ask what should change, update the affected workflow stages, and repeat
-the complete review.
+background only, then show the four export options. When the user chooses one
+or more output numbers, retrieve the specification internally once with
+`get_approved_forecast_specification`, omit the internal ID and language code,
+and provide every requested clean output. Show YAML, JSON, and Markdown in
+labeled fenced code blocks and also provide a download link for each matching
+file; provide PDF as a download. Ask whether it looks correct. If it
+does not, ask what should change, update the affected workflow stages, and
+repeat the complete review.

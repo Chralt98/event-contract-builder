@@ -85,15 +85,20 @@ Carry the immutable `language_code` through the workflow; all specification
 content and follow-ups use that language.
 
 The first submission presents candidate items for selection and is pending.
-When the user selects news-item numbers, resubmit only those items in the same
-order, preserving their original numbers. Ask the user to approve that exact
-filtered timeline. If they request changes, revise and resubmit the complete
-timeline. Only after they explicitly approve the final displayed items call
+Show its complete rendered timeline and follow-up together in the same final
+user-visible response. Never replace the rendered items with a summary or an
+approval prompt alone. When the user selects news-item numbers, resubmit only
+those items in the same order, preserving their original numbers. Show the
+complete filtered timeline returned by the tool, then ask the user to approve
+that exact timeline. If they request changes, revise, resubmit, and display the
+complete timeline again. Only after they explicitly approve the exact timeline
+that was fully visible in the immediately preceding assistant response call
 `approve_forecast_specification` with `stage: "news_timeline"`.
 
 If research finds no qualifying items, or the user selects none, do not submit
 or approve an empty timeline. Leave the approved background information as the
-last saved content and finish without a news section.
+last saved content and finish without a news section. Show only the standard
+YAML, JSON, Markdown, and PDF output options.
 
 If the user later requests removal of all items from an already approved
 timeline, submit an empty `items` array and ask whether they explicitly approve
@@ -104,3 +109,12 @@ historical background intact.
 The news timeline is optional, non-binding context. It must not add, replace,
 or reorder the approved resolution sources or modify any upstream forecast
 specification stage.
+
+After final timeline approval, do not display the internal forecast
+specification ID, language code, structured approval payload, or repeated
+forecast question. Show only the four standard output options: YAML in chat and
+as a download, JSON in chat and as a download, Markdown in chat and as a
+download, and PDF as a download. The user may choose one or several option
+numbers. Retrieve the Forecast Specification only after the user chooses
+formats, strip internal metadata from the result, and show YAML, JSON, and
+Markdown in labeled fenced code blocks with a download link for each file.

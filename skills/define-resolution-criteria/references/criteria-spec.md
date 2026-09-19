@@ -39,7 +39,7 @@ resolution_criteria:
   questionRules:
     - question: exact binary question from the selected unit, or the exact template question
       resolvesYesWhen: precise open-text rule
-      resolvesNoWhen: precise open-text rule
+      resolvesNoWhen: concise complement of the complete Yes condition
   evidenceAndSourceRules: precise open text
   exceptionAndUnresolvedRules: precise open text
 followUp: one question about agreement or requested changes
@@ -66,10 +66,12 @@ to controlled comparator values or a closed rule taxonomy.
   analysis, stop and return to drafting so the affected cases are separate
   units.
 
-Each `resolvesYesWhen` rule states the necessary and sufficient conditions for
-Yes. Each `resolvesNoWhen` rule states the complement, deadline treatment, and
-any explicit No condition. Together with the shared exception rules, the two
-conditions must not leave ordinary cases to resolver discretion.
+Each `resolvesYesWhen` rule states every necessary and sufficient condition for
+Yes, including the deadline. Each `resolvesNoWhen` rule is only the concise
+complement: No when the complete Yes condition is not met by the deadline. Do
+not repeat the Yes elements as separate negative subconditions. Together with
+the shared exception rules, the two conditions must not leave ordinary cases
+to resolver discretion.
 
 ## Shared rules
 
@@ -88,8 +90,16 @@ cases and no fixed ambiguity-disposition enum.
 
 Call `submit_resolution_criteria` once after the sources are approved. Present
 its complete returned Markdown with the shared layout: selected unit, `---`,
-resolution criteria, `---`, follow-up. Insert missing separators as
-presentation formatting only, without summarizing or changing the criteria.
+resolution criteria, `---`, follow-up. The exact question is already displayed
+in the selected-unit block and must not be repeated inside the criteria. Render
+each question rule as one prose paragraph without Yes/No bullet points:
+`This question will resolve as Yes if <complete condition>, according to
+<source rule>. <relevant exception rule> Otherwise it resolves to No.` Keep the
+concise No sentence last. The visible paragraph does not append the internal
+`resolvesNoWhen` complement after the No sentence.
+Grouped units may use `Question 1`, `Question 2`, and so on as anchors without
+repeating the question text. Insert missing separators as presentation
+formatting only, without summarizing or changing the criteria.
 The submission remains pending until the user explicitly agrees. Only then
 call `approve_forecast_specification` with `stage: "resolution_criteria"` and
 the same `forecast_specification_id`. Criteria approval is not final approval;

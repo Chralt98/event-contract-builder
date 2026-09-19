@@ -27,7 +27,7 @@ export const QuestionResolutionRule = z.object({
     "Necessary and sufficient conditions under which this question resolves Yes.",
   ),
   resolvesNoWhen: ResolutionText.describe(
-    "Conditions under which this question resolves No, including the complement of the Yes rule and any deadline treatment.",
+    "Concise complement of the complete Yes rule: the question resolves No when the necessary-and-sufficient Yes condition is not met by the deadline. Do not enumerate the Yes elements again as separate negative conditions.",
   ),
 });
 

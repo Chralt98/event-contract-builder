@@ -48,8 +48,6 @@ const criteria = {
 };
 
 const backgroundInformation = {
-  overview:
-    "This forecast asks whether measurable rainfall will occur on the specified day.",
   background:
     "The local observatory publishes daily weather measurements for the surrounding area.",
   keyFactors: [
@@ -265,7 +263,7 @@ describe("public forecast interface", () => {
       "show the exact selected unit first, then `---`",
     );
     expect(foresightServerInstructions).toContain(
-      "present the complete returned Markdown with the shared separators above",
+      "Present the complete returned Markdown with the shared separators above",
     );
   });
 
@@ -285,7 +283,6 @@ describe("public forecast interface", () => {
       backgroundInformation,
     );
     expect(Object.keys(ForecastBackgroundInformation.shape)).toEqual([
-      "overview",
       "background",
       "keyFactors",
       "references",
@@ -545,30 +542,31 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Ask every currently answerable user-dependent decision separately",
     );
-    expect(foresightServerInstructions).toContain("❓ **Qn** - **title**");
+    expect(foresightServerInstructions).toContain("❓ **1 · <short title>**");
+    expect(foresightServerInstructions).toContain(
+      "**1.A** — **<option>** — <short consequence>",
+    );
     expect(foresightServerInstructions).toContain(
       "Do not pad choices or treat recommendations or a combined confirmation as answered questions.",
     );
     expect(foresightServerInstructions).toContain(
-      "no more than three distinct, reasonable possibilities",
+      "two or three distinct, reasonable possibilities",
     );
     expect(foresightServerInstructions).toContain(
-      "if none of the choices fits",
+      "If none fits, state the result or behavior you want.",
     );
     expect(foresightServerInstructions).toContain(
-      "Treat that free-form response as valid input, not a fourth option",
+      "Treat a free-form fallback as valid input",
     );
     expect(foresightServerInstructions).toContain(
-      "track the round count, and start every round with the current round number and maximum expected number of rounds",
+      "track the round count, and use the consistent question-round format above",
     );
     expect(foresightServerInstructions).toContain(
-      "🧭 Grilling round 1 of 1 total (exact).",
+      "🧭 **Question round <current> of <total>**",
     );
+    expect(foresightServerInstructions).toContain("Never use dotted");
     expect(foresightServerInstructions).toContain(
-      "🧭 Grilling round 2 of about 2 total (estimate).",
-    );
-    expect(foresightServerInstructions).toContain(
-      "translate these into the locked specification language",
+      "numeric identifiers such as `1.1` or `2.2`",
     );
     expect(foresightServerInstructions).toContain(
       "Treat that code as immutable",
@@ -598,13 +596,19 @@ describe("public forecast interface", () => {
       "obtain the user's explicit final confirmation",
     );
     expect(foresightServerInstructions).toContain(
-      "make the complete grilling round the final user-visible response for that turn",
+      "make the complete question round the final user-visible response for that turn",
     );
     expect(foresightServerInstructions).toContain(
       "Never emit the round only as commentary",
     );
     expect(foresightServerInstructions).toContain(
       'follow it with a final response containing only a generic prompt such as "Please answer the questions."',
+    );
+    expect(foresightServerInstructions).toContain(
+      'render it simply as "Otherwise it resolves to No."',
+    );
+    expect(foresightServerInstructions).toContain(
+      "Do not repeat the Yes elements as a list of negative No subconditions.",
     );
     expect(foresightServerInstructions).toContain(
       "treat the submission as rejected before persistence",
@@ -619,25 +623,25 @@ describe("public forecast interface", () => {
       "only the corrected field and value",
     );
     expect(foresightServerInstructions).toContain(
-      "present only the returned `forecast_specification_id` and exact forecast question text",
+      "Never show the Forecast Specification ID, language code, or approval payload",
     );
     expect(foresightServerInstructions).toContain(
-      "offer to show the complete specification in chat",
+      "show only the standard five-option action menu",
     );
     expect(foresightServerInstructions).not.toContain(
       "Present the complete rendered Markdown returned by that approval call",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
-      "only the forecast specification ID and exact question text in the user-facing summary",
+      "Never expose forecast_specification_id or language_code to the user",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
-      "offer to show the complete approved specification in chat",
+      "standard action menu for YAML, JSON, Markdown",
     );
-    expect(
-      foresightTools.approve_forecast_specification.description,
-    ).not.toContain("download");
+    expect(foresightTools.approve_forecast_specification.description).toContain(
+      "PDF",
+    );
     expect(foresightServerInstructions).toContain(
-      "Do not present the complete forecast specification yet.",
+      "Do not present the complete Forecast Specification yet.",
     );
     expect(foresightServerInstructions).toContain(
       'stage: "background_information"',
@@ -652,10 +656,28 @@ describe("public forecast interface", () => {
       "explicitly opts in following approval of background_information",
     );
     expect(foresightServerInstructions).toContain(
-      "After that approval, explicitly ask whether the user wants the optional recent-news timeline.",
+      "After that approval, show only the standard five-option action menu.",
     );
     expect(foresightServerInstructions).toContain(
       "add no timeline and finish with the approved background-only specification",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Show YAML in chat and download the YAML file",
+    );
+    expect(foresightServerInstructions).toContain(
+      "show the complete result in a correctly labeled fenced code block",
+    );
+    expect(foresightServerInstructions).toContain(
+      "The user may choose one or several",
+    );
+    expect(foresightServerInstructions).toContain(
+      "menu numbers in one response",
+    );
+    expect(foresightServerInstructions).toContain(
+      "show the complete returned timeline and its follow-up in the same final user-visible response",
+    );
+    expect(foresightServerInstructions).toContain(
+      "fully visible in the immediately preceding assistant response",
     );
   });
 });

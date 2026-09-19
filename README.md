@@ -110,20 +110,21 @@ does not update ChatGPT's connection metadata.
    `resolution_criteria` only after the user accepts the criteria.
 6. Use `define-background-information` and `submit_background_information`;
    approve `background_information` only after the user accepts the explanatory
-   historical context and any non-binding references. Then explicitly ask
-   whether the user wants an optional news timeline; do not proceed without a
-   yes.
+   historical context and any non-binding references. Then show the standard
+   menu: YAML, JSON, and Markdown are each displayed in chat and downloaded;
+   PDF is downloaded; recent news remains optional.
 7. Only after opt-in, use `define-relevant-news` and `submit_news_timeline` to
    present recent, relevant developments newest first. Each item has a
    selectable unit number and only adds facts not already in the background or
-   older news. Resubmit the user's selected items for explicit approval at
+   older news. Always display the complete proposed or filtered timeline before
+   asking for selection or approval. Resubmit the user's selected items for explicit approval at
    `news_timeline`. If the user declines or selects no items, leave the
    specification without news.
-8. After the user declines news or approves the optional timeline, show only
-   the forecast specification ID and question,
-   then offer to show the complete specification in chat. If the user chooses
-   to see it, call `get_approved_forecast_specification` with that ID and
-   present the full result. Ask whether it looks correct; if changes are
+8. After the user declines news or approves the optional timeline, show the
+   four output formats. Accept one or several format numbers. Retrieve the
+   Forecast Specification internally after the user chooses formats, omit its
+   internal ID and language code, display YAML, JSON, and Markdown in fenced
+   code blocks, and provide the corresponding download links. Ask whether it looks correct; if changes are
    needed, update the affected stages and repeat the review.
 
 Use `reduce-semantic-risk` when reviewing interpretation risks. There is no
@@ -142,7 +143,7 @@ or provide a fallback for evaluation. URLs are inspection locators, not fetched
 or verified by the backend. Resolution criteria contain one open Yes/No rule
 for every binary question represented by the selected unit, plus broad shared
 rules for evidence, source handling, exceptions, and unresolved outcomes.
-Background information provides a neutral overview, relevant history, durable
+Background information provides relevant history, durable
 key factors, and optional supporting reference links. Any links are explanatory
 and do not change the approved resolution-source hierarchy. Recent news is
 separate, optional, and included in recall only after explicit approval.

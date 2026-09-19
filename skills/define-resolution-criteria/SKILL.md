@@ -35,15 +35,19 @@ tool call.
    checklist questions.
 2. Identify the current frontier: every decision whose prerequisites are
    settled and that can be answered without guessing.
-3. Track the grilling-round count from the first question round. Before the
-   questions in every round, state the current round and the maximum number of
-   grilling rounds expected for this session. Write every specification-related
+3. Track the question-round count from the first round. Before the questions in
+   every round, state the current round and the maximum number of rounds
+   expected for this session. Write every specification-related
    question, progress line, fixed label, and follow-up in the immutable language
    identified by the current record's `language_code`. The English examples
    below show the format; translate them into that language instead of
-   inferring a new language from the latest message. For example:
-   `🧭 Grilling round 1 of 1 total (exact).` and
-   `🧭 Grilling round 2 of about 2 total (estimate).` When the mapped design tree
+   inferring a new language from the latest message. Number questions `1`, `2`,
+   and so on, label each question's choices `A`, `B`, and optionally `C`, and
+   refer to each choice with a combined identifier such as `1.A`, `1.B`, or
+   `2.A`. Never use dotted numeric identifiers such as `1.1` or `2.2`. For
+   example:
+   `🧭 **Question round 1 of 1 (exact)**` and
+   `🧭 **Question round 2 of about 2 (estimate)**`. When the mapped design tree
    makes the maximum knowable, mark it exact. When adaptive branches or
    unresolved user input prevent an exact count, give a conservative estimate
    instead. On an estimated round, immediately add a
@@ -82,36 +86,44 @@ tool call.
 
    ---
 
-   🧭 Grilling round <current> of <total> total (exact).
+   🧭 **Question round <current> of <total> (exact)**
 
-   ❓ **Q1** - **<short question title>**: <question with at most three explicit choices>
+   ❓ **1 · <short question title>**
+   <one clear question>
 
-   ↪️ If none of these options fits, tell me what you would prefer or how you would like to proceed instead.
+   **1.A** — **<option>** — <short consequence>
+   **1.B** — **<option>** — <short consequence>
+   **1.C** — **<option>** — <short consequence>
 
-   ➡️ <Recommendation>
+   ➡️ **Recommendation:** Option 1.<letter> — <brief reason>
+   ↪️ If none of these options fits, state the result or behavior you want.
 
    ---
 
-   ❓ **Q2** - **<short question title>**: <question with at most three explicit choices>
+   ❓ **2 · <short question title>**
+   <one clear question>
 
-   ↪️ If none of these options fits, tell me what you would prefer or how you would like to proceed instead.
+   **2.A** — **<option>** — <short consequence>
+   **2.B** — **<option>** — <short consequence>
 
-   ➡️ <Recommendation>
+   ➡️ **Recommendation:** Option 2.<letter> — <brief reason>
+   ↪️ If none of these options fits, state the result or behavior you want.
 
    ---
    ```
 
    If the maximum is only an estimate, translate the English example
-   `🧭 Grilling round <current> of about <estimate> total (estimate).` into the
+   `🧭 **Question round <current> of about <estimate> (estimate)**` into the
    locked specification language, then put the round-reduction
    suggestion immediately below it. The progress line and suggestion must
-   appear before `Q1` in every round, including the final round. The maximum
+   appear before question `1` in every round, including the final round. The maximum
    counts question rounds only; it does not count criteria submission or its
    single user approval.
 
    Number questions consecutively within the round. Include the question title,
-   no more than three decision options, the free-form fallback invitation, and
-   the recommended option in the same round. The `---` separator belongs
+   two or three lettered decision options with full identifiers such as `1.A`,
+   the free-form fallback invitation, and the recommended option in the same
+   round. Never present only a recommendation. The `---` separator belongs
    between questions and after the final question.
 
 5. Wait for the user's answers, record the settled decisions, and recompute
@@ -163,8 +175,12 @@ frontier, and ask the remaining questions before proceeding.
      value-specific mappings. If any value changes the qualifying predicate,
      interpretation, or legal/compliance analysis, stop and return to drafting
      so the cases can be separate units.
-5. State complete `resolvesYesWhen` and `resolvesNoWhen` conditions for each
-   entry. Use whatever source-grounded logic the question requires, including
+5. State the complete necessary-and-sufficient condition in `resolvesYesWhen`,
+   including every qualifying element and the deadline. Keep `resolvesNoWhen`
+   to the concise complement: the question resolves No when the complete Yes
+   condition is not met by the deadline. Do not repeat the Yes elements as a
+   list of separate negative conditions or add independent No requirements.
+   Use whatever source-grounded logic the question requires, including
    comparisons, occurrences, rankings, calculations, classifications,
    durations, combinations, or source-defined statuses. These are examples,
    not a closed list. Do not force a criterion kind or comparator vocabulary.
@@ -185,9 +201,16 @@ frontier, and ask the remaining questions before proceeding.
    wants changes, all in the locked language. The structured result returns the
    same `language_code`. This submission is pending and does not imply approval.
 8. Present the tool's complete returned Markdown with the shared layout:
-   selected unit, `---`, resolution criteria, `---`, follow-up. Insert missing
-   separators as presentation formatting only. Translate renderer-generated
-   labels and fixed UI text into the locked specification language. After
+   selected unit, `---`, resolution criteria, `---`, follow-up. The selected
+   question appears only in the selected-unit block. Do not repeat it inside
+   the criteria. Render each rule as one prose paragraph without Yes/No bullet
+   points, following this localized pattern: `This question will resolve as Yes
+if <complete condition>, according to <source rule>. <relevant exception
+rule> Otherwise it resolves to No.` Keep the concise No sentence last. Do not render the internal
+   `resolvesNoWhen` complement after the No sentence. For grouped units, identify
+   rules only as Question 1, Question 2, and so on without repeating their full
+   text. Insert missing separators as presentation formatting only. Translate
+   renderer-generated labels and fixed UI text into the locked specification language. After
    the user agrees, call `approve_forecast_specification` with
    `stage: "resolution_criteria"`. The workflow is not complete at this point:
    continue with `define-background-information` and do not present the complete

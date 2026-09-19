@@ -22,12 +22,6 @@ export type BackgroundReferenceT = z.infer<typeof BackgroundReference>;
 /** User-facing context that helps readers understand a forecast specification. */
 export const ForecastBackgroundInformation = z
   .object({
-    overview: z
-      .string()
-      .min(10)
-      .describe(
-        "Concise plain-language overview of what the forecast asks and the real-world event it concerns.",
-      ),
     background: z
       .string()
       .min(10)

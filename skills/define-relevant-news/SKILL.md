@@ -53,27 +53,37 @@ requirements.
    revised. Write every field and follow-up in the record's immutable
    `language_code`. Present the complete returned Markdown with the shared
    layout: selected forecast unit, `---`, relevant news timeline, `---`,
-   follow-up. Translate renderer-generated labels and fixed UI text into the
-   locked specification language.
+   follow-up. The complete timeline and the follow-up must appear together in
+   the same final user-visible response. Never replace the timeline with a
+   summary such as “the items are compiled” or show only the approval question.
+   Translate renderer-generated labels and fixed UI text into the locked
+   specification language.
 7. Treat the user's item-number response as a selection, not as approval of the
    exact final timeline. If they select one or more items, retain only those
    items, preserve their original news-item unit numbers and newest-to-oldest
    order, and resubmit the selected timeline with a follow-up asking whether
-   they approve these exact items or want changes. Resubmit the complete
-   corrected timeline whenever they request edits. Only after explicit
-   approval of the displayed final timeline call
+   they approve these exact items or want changes. Show the complete selected
+   timeline returned by that resubmission before asking for approval. Resubmit
+   and display the complete corrected timeline whenever they request edits.
+   Only after explicit approval of the exact timeline that was fully visible
+   in the immediately preceding assistant response call
    `approve_forecast_specification` with `stage: "news_timeline"`.
 8. If the user selects no items from the proposed timeline, do not submit or
    approve it. Confirm that the specification will remain without news and
-   offer to show the complete approved specification. If the user later asks
+   show the standard YAML, JSON, Markdown, and PDF options. If the user later asks
    to remove all items from an already approved timeline, submit an empty
    `items` array with a follow-up asking whether they explicitly approve the
    removal; call `approve_forecast_specification` with
    `stage: "news_timeline"` only after that confirmation. The approved
    background remains in place and recall omits the empty news timeline.
-   After final news approval, present only the returned specification ID and
-   exact forecast question, then offer to show the complete approved
-   specification. Retrieve it only if the user chooses to see it.
+   After final news approval, never display the returned internal ID, language
+   code, approval payload, or repeat the forecast question. Show only the
+   standard options: YAML in chat and as a download, JSON in chat and as a
+   download, Markdown in chat and as a download, and PDF as a download. Accept
+   one or more option numbers in a single reply. Retrieve the Forecast
+   Specification internally only after the user chooses formats, and remove
+   internal metadata from every output. Show YAML, JSON, and Markdown in
+   labeled fenced code blocks and provide a download link for each file.
 
 ## Guardrails
 

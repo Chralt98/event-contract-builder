@@ -40,19 +40,23 @@ source, payload, review, and final-approval requirements.
    the complete background-information payload. After the user explicitly
    approves it, call `approve_forecast_specification` with
    `stage: "background_information"`.
-6. At the end of this workflow, explicitly ask whether the user wants the
-   optional recent-news timeline. Do not run `define-relevant-news`
-   automatically. If the user opts in, continue with that skill only after the
-   background approval is recorded. If they decline, finish with the
-   background-only specification and offer to show it.
-7. When the user declines news, present only the final approval's
-   `forecast_specification_id` and exact forecast question text, separated by
-   `---`, then offer to show the complete specification in chat. If the user
-   wants to see it, call `get_approved_forecast_specification` with the same ID
-   and present its complete rendering with the shared separators. Then ask
-   whether it looks correct; if not, ask what should change and revise the
-   affected workflow stages before repeating the review. If news is approved,
-   use the final rendering instructions in `define-relevant-news`.
+6. At the end of this workflow, show only the localized standard action menu:
+   YAML in chat and as a download, JSON in chat and as a download, Markdown in
+   chat and as a download, PDF as a download, or the optional recent-news
+   timeline. Use `and`, not `or`, for the first three choices. Do not show
+   the internal forecast specification ID, language code, approval payload, or
+   repeat the forecast question. Do not run `define-relevant-news`
+   automatically. If the user chooses news, continue with that skill only
+   after the background approval is recorded.
+7. When the user chooses one or more output numbers, call
+   `get_approved_forecast_specification` internally once and provide every
+   requested clean output without `forecast_specification_id` or
+   `language_code`. For YAML, JSON, and Markdown, show the complete output in a
+   correctly labeled fenced code block and place a download link for the
+   matching file directly below it. For PDF, provide the download link.
+   Then ask whether it looks correct; if not, ask what should change and revise
+   the affected workflow stages before repeating the review. If news is
+   approved, use the final rendering instructions in `define-relevant-news`.
 
 ## Guardrails
 

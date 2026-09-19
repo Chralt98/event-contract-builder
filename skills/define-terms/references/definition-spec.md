@@ -43,6 +43,11 @@ Do not define words with one obvious meaning in context. Do not define data sour
 - Make each definition precise enough to resolve a dispute.
 - Cite a relevant methodology or authoritative reference when needed to make the meaning precise, without turning the definition into a separate source-selection step.
 - Do not invent facts or silently resolve ambiguity by guessing. If the context is insufficient, ask for clarification instead.
+- When clarification offers two or three definition choices for one or more
+  terms, number the terms and use capital letters for their choices. Refer to
+  choices as `1.A`, `1.B`, `2.A`, and so on. Do not use `1.1`, `1.2`, or other
+  dotted numeric choice identifiers, because they are easy to confuse with the
+  next term number.
 - Return a map from each ambiguous term to its definition. An empty map is valid when no genuine ambiguity remains.
 
 ## Submission format

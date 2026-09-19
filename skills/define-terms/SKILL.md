@@ -28,6 +28,12 @@ Read [references/definition-spec.md](references/definition-spec.md) before analy
    `submit_defined_terms`.
 2. Analyze the exact selected unit for terms that a forecast user or resolution authority could reasonably interpret in more than one way.
 3. Propose concise, dispute-resistant definitions without rewriting the selected questions.
+   If a term has several materially different, defensible definitions and the
+   user's choice is required, present the choices before submission. Number the
+   terms `1`, `2`, and so on; label their choices with combined identifiers
+   `1.A`, `1.B`, `2.A`, and so on. Never use dotted numeric identifiers such as
+   `1.1` or `2.2`. The user may answer several choices compactly, for example
+   `1.A, 2.B`.
 4. After selected-unit approval has succeeded, call `submit_defined_terms`
    once with the carried `forecast_specification_id` when one is available, the unit number,
    exact selected unit, definitions map, and a follow-up asking whether the

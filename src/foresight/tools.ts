@@ -349,14 +349,16 @@ export const foresightTools = {
       "information is approved, ask whether the user wants the optional " +
       "news_timeline stage; never start it without an explicit yes. If they opt " +
       "in, approve news_timeline after its separate review. Background approval " +
-      "when the user declines news, or news_timeline approval when they opt in, " +
-      "returns language_code in structured content and only the forecast " +
-      "specification ID and exact question text in the user-facing summary. " +
-      "After the optional-stage choice is settled, offer to show the complete " +
-      "approved specification in chat. If the user chooses to see it, call " +
-      "get_approved_forecast_specification with that ID, show the complete " +
-      "result, and ask whether it looks correct. If it does not, ask what should " +
-      "change, revise the affected stages, and repeat the review.",
+      "returns internal workflow metadata in structured content. Never expose " +
+      "forecast_specification_id or language_code to the user. After background " +
+      "approval, show only the standard action menu for YAML, JSON, Markdown, " +
+      "PDF, or the optional news timeline. After news is approved or skipped, " +
+      "show the same menu without the news option. If the user selects a format, " +
+      "call get_approved_forecast_specification internally, remove internal " +
+      "metadata, and provide every selected output. For YAML, JSON, and Markdown, " +
+      "always show the complete output in a labeled fenced code block and also " +
+      "create a downloadable file; accept one or more menu numbers in one reply. " +
+      "Then ask whether it looks correct.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -371,7 +373,8 @@ export const foresightTools = {
       "records, resolution criteria, background information, and optional " +
       "approved news timeline saved during this chat; candidate drafts and " +
       "workflow prompts are not returned. The result includes the immutable language_code for " +
-      "the specification. " +
+      "the specification as internal metadata; never display language_code or " +
+      "forecast_specification_id in user-facing output or exports. " +
       "Omit forecast_specification_id for the most recently updated forecast specification only in the " +
       "current MCP session, or provide the stable identifier returned by a " +
       "workflow tool for an explicit cross-session HTTP handoff.",
@@ -501,10 +504,14 @@ export const foresightTools = {
       "date, time when available, publisher, direct source URL, and a succinct " +
       "objective summary. Include only highly relevant information that is new " +
       "relative to the approved background and older timeline items. First ask " +
-      "the user which news-item unit numbers they consider relevant; then " +
-      "resubmit only those items and request explicit approval. The submission " +
+      "the user which news-item unit numbers they consider relevant, showing " +
+      "the complete rendered candidate timeline and follow-up in the same final " +
+      "response; then resubmit only those items, show the complete selected " +
+      "timeline, and request explicit approval. Never replace either rendered " +
+      "timeline with a summary or approval question alone. The submission " +
       "does not imply user approval; call approve_forecast_specification with " +
-      "stage news_timeline only after they approve the selected timeline. " +
+      "stage news_timeline only after they approve the exact selected timeline " +
+      "that was fully visible in the immediately preceding assistant response. " +
       "Do not submit an empty timeline when no news qualifies or the user " +
       "selects none. Submit an empty list only when the user asks to remove an " +
       "already approved news timeline, then obtain approval for that removal.",
