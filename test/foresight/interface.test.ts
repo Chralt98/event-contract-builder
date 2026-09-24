@@ -46,20 +46,8 @@ const criteria = {
     "If no approved source can establish the result by the resolution deadline, apply the platform's documented unresolved-outcome policy.",
 };
 
-const backgroundInformation = {
-  background:
-    "The local observatory publishes daily weather measurements for the surrounding area.",
-  keyFactors: [
-    "Changes in the local weather system before the observation period.",
-  ],
-  references: [
-    {
-      title: "Observatory weather information",
-      publisher: "City Observatory",
-      url: "https://observatory.example/weather",
-    },
-  ],
-};
+const backgroundInformation =
+  "The local observatory publishes daily weather measurements for the surrounding area.";
 
 describe("public forecast interface", () => {
   test("simplified forecast sources do not weaken the full contract schema", () => {
@@ -322,7 +310,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("background information allows omitted references and validates supplied ones", () => {
+  test("background information is plain text without subheadings or references", () => {
     const schema = z.object(
       foresightTools.submit_background_information.inputSchema,
     );
@@ -337,25 +325,17 @@ describe("public forecast interface", () => {
     expect(ForecastBackgroundInformation.parse(backgroundInformation)).toEqual(
       backgroundInformation,
     );
-    expect(Object.keys(ForecastBackgroundInformation.shape)).toEqual([
-      "background",
-      "keyFactors",
-      "references",
-    ]);
-    const { references: _references, ...backgroundWithoutReferences } =
-      backgroundInformation;
     expect(
-      schema.safeParse({
-        ...payload,
-        background_information: backgroundWithoutReferences,
+      ForecastBackgroundInformation.safeParse({
+        background: backgroundInformation,
       }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       schema.safeParse({
         ...payload,
         background_information: {
-          ...backgroundWithoutReferences,
-          references: [],
+          background: backgroundInformation,
+          keyFactors: ["Market developments"],
         },
       }).success,
     ).toBe(false);
@@ -363,10 +343,13 @@ describe("public forecast interface", () => {
       schema.safeParse({
         ...payload,
         background_information: {
-          ...backgroundInformation,
+          background: backgroundInformation,
           references: [
-            ...backgroundInformation.references,
-            ...backgroundInformation.references,
+            {
+              title: "Observatory weather information",
+              publisher: "City Observatory",
+              url: "https://observatory.example/weather",
+            },
           ],
         },
       }).success,

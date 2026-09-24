@@ -199,9 +199,7 @@ export const backgroundInformationShape = {
   selected_unit: ConnectorDraftUnit.describe(
     "The exact approved unit receiving background information.",
   ),
-  background_information: ForecastBackgroundInformation.describe(
-    "Neutral explanatory context with optional public references.",
-  ),
+  background_information: ForecastBackgroundInformation,
   followUp: z
     .string()
     .describe("Ask whether the background is approved or needs changes."),
@@ -353,7 +351,7 @@ export const foresightTools = {
   submit_background_information: {
     title: "Context and Background Information",
     description:
-      "Validate, store, and render pending neutral background information after criteria approval; references are explanatory only.",
+      "Validate, store, and render pending neutral background information after criteria approval.",
     inputSchema: backgroundInformationShape,
     outputSchema: backgroundInformationOutputSchema,
     annotations: {
