@@ -39,7 +39,7 @@ workflow follow-up in that language. Conversation may follow the user's latest
 language, but a language switch does not mutate the active record; offer to
 continue in the locked language or start a separate translated record.
 
-Every successful workflow submission and approval returns `review_markdown`. 
+Every successful workflow submission and approval returns `review_markdown`.
 Return the `review_markdown` verbatim.
 For submissions, and for approvals that complete the workflow, it is the
 authoritative, complete user-facing result: reply with that exact string and

@@ -53,10 +53,9 @@ answers, recompute the frontier, and continue until no decision remains.
 
 ## Criteria
 
-Create one `questionRule` object for the exact binary or template question.
-Template rules must apply one
-source, formula, procedure, and methodology uniformly to all substitutions; if
-treatment varies, return to drafting.
+Create one `questionRule` object for the exact unit question. When variables are
+present, the rule must apply one source, formula, procedure, and methodology
+uniformly to all substitutions; if treatment varies, return to drafting.
 
 `resolvesYesWhen` states every necessary and sufficient condition, including
 the deadline. `resolvesNoWhen` is only the concise complement: No when the

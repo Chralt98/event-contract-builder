@@ -6,8 +6,8 @@ description: Identify and register independent authoritative resolution sources 
 # Define resolution sources
 
 Read [references/source-spec.md](references/source-spec.md) before research. It
-is the sole source for coverage, independence, template, locator, and fallback
-rules.
+is the sole source for coverage, independence, variable-value, locator, and
+fallback rules.
 
 1. Require one exact selected unit with approved definitions.
 2. Research the complete hierarchy and any gaps or alternative internally.

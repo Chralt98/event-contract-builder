@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-/**
- * A single user-facing display question: the actual question a user would
- * see on a forecast specification platform, with every placeholder already filled
- * in (a concrete team, date, threshold, etc.).
- *
- * A display question is the resolved, user-facing string shown to users.
- * It is distinct from any forecast specification-level product name or description.
- */
+/** One user-facing forecast question, optionally parameterized by variables. */
 export const DisplayQuestion = z
   .string()
   .min(10)
@@ -15,29 +8,9 @@ export const DisplayQuestion = z
   // Keep this as a runtime refinement rather than a regex so connector
   // validators cannot double-escape the generated JSON Schema pattern.
   .refine((value) => value.endsWith("?"), "Must end with ?")
-  .describe("User-facing display question, ending in '?'");
+  .describe("User-facing forecast question, ending in '?'");
 
 export type DisplayQuestionT = z.infer<typeof DisplayQuestion>;
-
-/**
- * A display-question template. Unlike `DisplayQuestion`, this deliberately
- * retains one or more angle-bracket placeholders for a configurable forecast specification
- * family, for example `<date>` or `<match>`.
- */
-export const DisplayQuestionTemplate = z
-  .string()
-  .min(10)
-  .max(200)
-  .refine((value) => value.endsWith("?"), "Must end with ?")
-  .refine(
-    (value) => [...value.matchAll(/<([^<>]+)>/g)].length > 0,
-    "Must contain at least one angle-bracket placeholder",
-  )
-  .describe(
-    "User-facing Yes/No display-question template with angle-bracket placeholders, ending in '?'. Phrase each placeholder as a grammatical slot so replacing it with every allowed value produces correct English; do not use the placeholder name as a stand-in for the values.",
-  );
-
-export type DisplayQuestionTemplateT = z.infer<typeof DisplayQuestionTemplate>;
 
 /** One named placeholder and the concrete values offered for it. */
 export const TemplateVariable = z.object({
@@ -77,32 +50,21 @@ export const TemplateVariable = z.object({
 
 export type TemplateVariableT = z.infer<typeof TemplateVariable>;
 
-/**
- * A selectable draft unit. A template carries one placeholder-bearing question
- * and named finite variables; values may represent scalar ranges or categories.
- */
+/** Every selectable unit uses this one parameterized shape. */
 export const DraftUnit = z
-  .discriminatedUnion("type", [
-    z.object({
-      type: z.literal("binary"),
-      question: DisplayQuestion.describe(
-        "The single Yes/No display question, ending in '?'.",
-      ),
-    }),
-    z.object({
-      type: z.literal("template"),
-      question: DisplayQuestionTemplate,
-      variables: z.array(TemplateVariable).min(1),
-    }),
-  ])
+  .object({
+    question: DisplayQuestion.describe(
+      "The forecast question; use angle-bracket placeholders only for declared variables.",
+    ),
+    variables: z.array(TemplateVariable).optional(),
+  })
   .superRefine((unit, ctx) => {
-    if (unit.type === "binary") return;
     const placeholders = [
       ...new Set(
         [...unit.question.matchAll(/<([^<>]+)>/g)].map((match) => match[1]!),
       ),
     ];
-    const variableNames = unit.variables.map(({ name }) => name);
+    const variableNames = (unit.variables ?? []).map(({ name }) => name);
     if (new Set(variableNames).size !== variableNames.length) {
       ctx.addIssue({
         code: "custom",

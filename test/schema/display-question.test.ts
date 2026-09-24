@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { DraftUnit } from "../../src/schema/display-question";
 
 const museumTemplate = {
-  type: "template" as const,
   question: "Will the museum's dinosaur exhibition remain open through <date>?",
   variables: [
     {
@@ -12,24 +11,28 @@ const museumTemplate = {
   ],
 };
 
-describe("DraftUnit templates", () => {
-  test("accepts a scalar template with finite values", () => {
+describe("DraftUnit schema", () => {
+  test("accepts a variable-backed question with finite values", () => {
     expect(DraftUnit.parse(museumTemplate)).toEqual(museumTemplate);
   });
 
-  test("rejects an empty variable list", () => {
+  test("accepts a binary question with no variables", () => {
     expect(
       DraftUnit.safeParse({
-        ...museumTemplate,
+        question: "Will the museum's dinosaur exhibition remain open?",
+      }).success,
+    ).toBe(true);
+    expect(
+      DraftUnit.safeParse({
+        question: "Will the museum's dinosaur exhibition remain open?",
         variables: [],
       }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
-  test("requires a placeholder-bearing question ending in a question mark", () => {
+  test("requires variables to be represented by placeholders and a question mark", () => {
     expect(
       DraftUnit.safeParse({
-        type: "template",
         question: "Will the dinosaur exhibition remain open through August 31?",
         variables: [{ name: "date", values: ["August 31", "September 30"] }],
       }).success,
@@ -45,7 +48,6 @@ describe("DraftUnit templates", () => {
   test("requires template variables to match question placeholders", () => {
     expect(
       DraftUnit.safeParse({
-        type: "template",
         question: "Which range applies: <range>?",
         variables: [{ name: "price", values: ["low", "high"] }],
       }),
@@ -65,8 +67,8 @@ describe("DraftUnit templates", () => {
   test("allows a grammatical range slot with concrete range values", () => {
     expect(
       DraftUnit.safeParse({
-        type: "template",
-        question: "Will Bitcoin's BTC/USD price be <range> on January 19, 2027?",
+        question:
+          "Will Bitcoin's BTC/USD price be <range> on January 19, 2027?",
         variables: [
           {
             name: "range",

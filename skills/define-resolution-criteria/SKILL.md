@@ -1,6 +1,6 @@
 ---
 name: define-resolution-criteria
-description: Define source-grounded resolution criteria for every binary question represented by a selected binary, scalar, categorical, or template forecast specification after its resolution sources are approved.
+description: Define source-grounded resolution criteria for the question represented by a selected forecast specification after its resolution sources are approved.
 ---
 
 # Define resolution criteria

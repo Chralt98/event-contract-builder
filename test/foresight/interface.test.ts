@@ -25,7 +25,6 @@ const source = {
 const input = {
   unit_number: 1,
   selected_unit: {
-    type: "binary" as const,
     question: "Will it rain tomorrow?",
   },
   sources: [source],
@@ -34,12 +33,12 @@ const input = {
 
 const criteria = {
   questionRule: {
-      question: input.selected_unit.question,
-      resolvesYesWhen:
-        "The approved source reports that measurable rainfall occurred before the question deadline.",
-      resolvesNoWhen:
-        "The approved source reports no measurable rainfall by the deadline, or the Yes condition is otherwise not met.",
-    },
+    question: input.selected_unit.question,
+    resolvesYesWhen:
+      "The approved source reports that measurable rainfall occurred before the question deadline.",
+    resolvesNoWhen:
+      "The approved source reports no measurable rainfall by the deadline, or the Yes condition is otherwise not met.",
+  },
   evidenceAndSourceRules:
     "Use the highest-ranked approved source that publishes a result by the deadline. Apply an official correction published before resolution.",
   exceptionAndUnresolvedRules:
@@ -112,10 +111,13 @@ describe("public forecast interface", () => {
       expect.arrayContaining(["language_code", "units", "followUp"]),
     );
     expect(draftSchema.properties).not.toHaveProperty("draft_units");
-    expect(() => parseConnectorDraftUnit({ type: "binary" })).toThrow();
+    expect(
+      parseConnectorDraftUnit({
+        question: "Will it rain tomorrow?",
+      }),
+    ).toEqual({ question: "Will it rain tomorrow?" });
     expect(() =>
       parseConnectorDraftUnit({
-        type: "binary",
         question: "No question mark here",
       }),
     ).toThrow();
@@ -126,7 +128,6 @@ describe("public forecast interface", () => {
       foresightTools.submit_drafted_questions.inputSchema,
     );
     const unit = (question: string) => ({
-      type: "binary" as const,
       question,
     });
     const first = unit("Will the event happen by the deadline?");
@@ -167,7 +168,6 @@ describe("public forecast interface", () => {
         ...payload,
         units: [
           {
-            type: "scalar" as const,
             questions: [
               "Will the event happen before the deadline?",
               "Will the event happen on or after the deadline?",
@@ -432,12 +432,12 @@ describe("public forecast interface", () => {
     const rankingCriteria = {
       ...criteria,
       questionRule: {
-          question: input.selected_unit.question,
-          resolvesYesWhen:
-            "Resolve Yes when the approved source ranks the named item first after applying its own published tie-break procedure.",
-          resolvesNoWhen:
-            "Resolve No when the named item is not ranked first under that procedure.",
-        },
+        question: input.selected_unit.question,
+        resolvesYesWhen:
+          "Resolve Yes when the approved source ranks the named item first after applying its own published tie-break procedure.",
+        resolvesNoWhen:
+          "Resolve No when the named item is not ranked first under that procedure.",
+      },
     };
     expect(
       schema.safeParse({
@@ -470,14 +470,19 @@ describe("public forecast interface", () => {
 
   test("one template rule covers all allowed values", () => {
     const scalarUnit = {
-      type: "template" as const,
       question: "Will the value be <range>?",
-      variables: [{ name: "range", values: ["below 10", "from 10 through 19", "at least 20"] }],
+      variables: [
+        {
+          name: "range",
+          values: ["below 10", "from 10 through 19", "at least 20"],
+        },
+      ],
     };
     const categoricalUnit = {
-      type: "template" as const,
       question: "Will <candidate> win the election?",
-      variables: [{ name: "candidate", values: ["Candidate A", "Candidate B"] }],
+      variables: [
+        { name: "candidate", values: ["Candidate A", "Candidate B"] },
+      ],
     };
     const makeCriteria = (question: string) => ({
       questionRule: {
@@ -505,13 +510,25 @@ describe("public forecast interface", () => {
 
     expect(() =>
       parseConnectorResolutionCriteria(
-        { ...makeCriteria("Will the value be <range>?"), questionRule: { ...makeCriteria("Will the value be <range>?").questionRule, question: "Will another value be <range>?" } },
+        {
+          ...makeCriteria("Will the value be <range>?"),
+          questionRule: {
+            ...makeCriteria("Will the value be <range>?").questionRule,
+            question: "Will another value be <range>?",
+          },
+        },
         scalarUnit,
       ),
     ).toThrow("questionRule must cover the selected unit exactly");
     expect(() =>
       parseConnectorResolutionCriteria(
-        { ...makeCriteria(categoricalUnit.question), questionRule: { ...makeCriteria(categoricalUnit.question).questionRule, question: "Will Candidate C win the election?" } },
+        {
+          ...makeCriteria(categoricalUnit.question),
+          questionRule: {
+            ...makeCriteria(categoricalUnit.question).questionRule,
+            question: "Will Candidate C win the election?",
+          },
+        },
         categoricalUnit,
       ),
     ).toThrow("questionRule must cover the selected unit exactly");

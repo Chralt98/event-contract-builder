@@ -21,7 +21,7 @@ export const QuestionResolutionRule = z.object({
     .trim()
     .min(1)
     .describe(
-      "Exact binary display question from the selected unit, or the exact placeholder-bearing question for a template unit; one template rule must apply uniformly to all allowed substitutions.",
+      "Exact question from the selected unit; when variables are present, the rule applies uniformly to every allowed substitution.",
     ),
   resolvesYesWhen: ResolutionText.describe(
     "Necessary and sufficient conditions under which this question resolves Yes.",
@@ -32,8 +32,7 @@ export const QuestionResolutionRule = z.object({
 });
 
 /**
- * Resolution criteria for the single binary question represented by a
- * selected binary or template unit.
+ * Resolution criteria for the single Yes/No question represented by a unit.
  *
  * The schema structures only the universal parts of resolution. The actual
  * decision logic remains open text so forecasts can use comparisons,
@@ -42,10 +41,9 @@ export const QuestionResolutionRule = z.object({
  */
 export const ResolutionCriteria = z
   .object({
-    questionRule: QuestionResolutionRule
-      .describe(
-        "The complete Yes/No rule for the selected binary or template question; a template rule uses its exact placeholder-bearing question and applies uniformly to every allowed substitution.",
-      ),
+    questionRule: QuestionResolutionRule.describe(
+      "The complete Yes/No rule for the exact selected question; when variables are present, it applies uniformly to every allowed substitution.",
+    ),
     evidenceAndSourceRules: ResolutionText.describe(
       "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",
     ),
@@ -64,11 +62,7 @@ export type ResolutionCriteriaT = z.infer<typeof ResolutionCriteria>;
 export type ConnectorResolutionCriteriaT = ResolutionCriteriaT;
 
 function questionsForUnit(unit: DraftUnitT): string[] {
-  switch (unit.type) {
-    case "binary":
-    case "template":
-      return [unit.question];
-  }
+  return [unit.question];
 }
 
 const ResolutionCriteriaForUnit = z

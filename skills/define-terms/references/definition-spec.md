@@ -7,10 +7,10 @@ unclear. Do not define obvious words, sources, resolution authorities,
 reporting entities, deadlines, or observation periods that belong to later
 stages.
 
-Keep the entire selected unit unchanged. For templates, analyze the common
-wording and full value set without choosing or instantiating a value. A selected
-source-review alternative uses its supplied unit and number, starts with no
-inherited definitions, and returns to source review afterward.
+Keep the entire selected unit unchanged. When variables are present, analyze
+the common wording and full value set without choosing or instantiating a
+value. A selected source-review alternative uses its supplied unit and number,
+starts with no inherited definitions, and returns to source review afterward.
 
 Each definition is neutral, dispute-resistant, and at most two sentences.
 Cite an authoritative methodology only when needed to fix meaning. Never guess

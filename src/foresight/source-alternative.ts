@@ -24,7 +24,7 @@ export const alternativeForecastSpecificationSchema = z.object({
       "The 1-based unit number to use if the user selects this alternative and continues with define-terms.",
     ),
   display_question_unit: ConnectorDraftUnit.describe(
-    "A newly drafted alternative display-question unit. It is not selected yet and must contain only the new forecast specification question(s), placeholders, variables, and allowed values; pass it as selected_unit to define-terms only after the user chooses it.",
+    "A newly drafted alternative question with optional variables. It is not selected yet; pass it as selected_unit to define-terms only after the user chooses it.",
   ),
   rationale: z
     .string()

@@ -7,13 +7,10 @@ different kinds of observable logic.
 
 ## Forecast specifications
 
-The Foresight workflow stores one rule for every binary question represented by
-the selected unit:
-
-- a binary unit has one rule;
-- a scalar or categorical unit has one rule per question in its question set;
-- a template unit has one rule for its placeholder-bearing question and the
-  rule covers every allowed substitution.
+The Foresight workflow uses one question and one rule for each unit. A unit
+without variables is binary. Scalar and categorical units use named variables
+and one placeholder-bearing question; that rule
+covers every allowed substitution.
 
 Each rule states when the exact question resolves Yes and when it resolves No.
 Shared text describes the evidence and approved-source handling, followed by

@@ -13,38 +13,36 @@ it and do not submit.
 
 Produce at least three distinct selectable units: one direct interpretation
 and at least two close reformulations, measurable proxies, or better-specified
-interpretations that preserve the user's intent. A scalar or categorical
-template is a complete selectable unit and may replace repeated per-outcome
-questions when all values share one settlement framework.
+interpretations that preserve the user's intent. Every unit contains one
+Yes/No question. For a binary forecast,
+omit `variables` or use an empty list; the question has no placeholders. For a
+scalar or categorical forecast, include named finite variables with allowed
+values and use matching angle-bracket placeholders in the question. Values may
+be non-overlapping ranges on one numeric measure or mutually exclusive
+categorical outcomes.
 
-- **Binary:** one Yes/No question.
-- **Template:** one placeholder-bearing Yes/No question with one or more named
-  finite variables. Values may be non-overlapping scalar ranges or mutually
-  exclusive categorical outcomes.
+For variable-backed units, place each placeholder in a grammatical slot whose
+surrounding words work with every allowed value after substitution. Values
+must be complete phrases for that slot, not labels that only make sense when
+the placeholder name is read; for example, use “Will the price be <range>?”
+with values such as “below $80,000” and “$200,000 or more”, not “Which <range> applies?”.
+Before submitting, mentally substitute every allowed value into the question
+and verify that each resulting question is grammatical, natural, and faithful
+to the intended meaning. Revise the wording or values whenever any substitution
+fails that check.
 
-Template units are always selected as a whole. Place each placeholder in a
-grammatical slot whose surrounding words work with every allowed value after
-substitution. Values must be complete phrases for that slot, not labels that
-only make sense when the placeholder name is read; for example, use “Will the
-price be <range>?” with values such as “below $80,000” and “$200,000 or more”,
-not “Which <range> applies?”.
-Before submitting a template, mentally substitute every allowed value into the
-question and verify that each resulting question is grammatical, natural, and
-faithful to the intended meaning. Revise the placeholder's surrounding wording
-or the values whenever any substitution fails that check.
+## Variable invariance
 
-## Template invariance
-
-Use a template only for at least two related values with stable wording.
+Use variables only for at least two related values with stable wording.
 Replace each varying finite parameter with one descriptive placeholder such as
 `<range>` or `<candidate>` and list its values under a same-named variable.
 Every value and meaningful combination must retain the same qualifying
 predicate, interpretation, jurisdiction, legal/compliance treatment,
 authoritative source hierarchy, source identity, formula, settlement procedure,
 and methodology. If any value needs a different rule, source, settlement
-method, or interpretation, split it into a separate unit. Never use a broad
-wildcard placeholder or add values merely to create a template. Selection never
-instantiates one template value.
+method, or interpretation, split the unit. Never use a broad wildcard or add
+values merely to create a variable. Selection preserves the complete unit and
+does not instantiate one variable value.
 
 ## Source-review alternative
 

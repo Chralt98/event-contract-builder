@@ -13,10 +13,10 @@ further sources only for a concrete failure mode or an approved multi-source
 definition. A second page, dataset, mirror, republication, or alias of one
 agency is not an independent fallback.
 
-For templates, one identical hierarchy must cover every allowed value and
-meaningful combination. Never create value-specific source mappings. If the
-shared hierarchy fails, record the gap and return to drafting to split the
-unit.
+When variables are present, one identical hierarchy must cover every allowed
+value and meaningful combination. Never create value-specific source mappings.
+If the shared hierarchy fails, record the gap and return to drafting to split
+the unit.
 
 ## Locator policy
 

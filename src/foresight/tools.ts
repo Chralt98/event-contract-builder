@@ -111,8 +111,8 @@ export const draftedQuestionsShape = {
       "A new forecast draft must contain at least three distinct selectable forecast specification units.",
     )
     .superRefine((units, ctx) => {
-      const signatures = units.map(({ type, question, variables }) =>
-        JSON.stringify({ type, question, variables }),
+      const signatures = units.map(({ question, variables }) =>
+        JSON.stringify({ question, variables: variables ?? [] }),
       );
 
       if (new Set(signatures).size !== signatures.length) {
@@ -320,7 +320,7 @@ export const foresightTools = {
   submit_drafted_questions: {
     title: "Submit Drafted Questions",
     description:
-      "Validate, store, and render a new draft of selectable binary, scalar, categorical, or template units. This starts a record with an immutable specification language.",
+      "Validate, store, and render a new draft of forecast questions with optional variables for binary, scalar, or categorical specifications. This starts a record with an immutable specification language.",
     inputSchema: draftedQuestionsShape,
     outputSchema: draftedQuestionsOutputSchema,
     annotations: {
