@@ -50,6 +50,9 @@ reduction suggestion before question 1. Separate multiple questions with
 `---`, and keep the final separator. Make the complete round the final
 user-visible response for that turn, then wait. Record partial and free-form
 answers, recompute the frontier, and continue until no decision remains.
+After each answer, if the frontier is empty, immediately construct and submit
+the criteria in that same turn; do not end with a status message or another
+pre-submission response.
 
 ## Criteria
 
@@ -82,10 +85,18 @@ After all interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
 criteria review before approval. Do not show a separate draft. Render a binary
 rule as one prose paragraph ending with the localized equivalent of “Otherwise
-it resolves to No.” For a categorical unit, render each value with its
-category-specific binary question and the same Yes/No prose. Do not append the
-internal No complement or repeat the original unit question inside the
-criteria; grouped rules may use `Question 1`, `Question 2`, and so on.
+it resolves to No.” For a scalar unit, render the shared question and rule once
+and list the allowed values for each referenced variable as bullets. For a
+categorical unit, when every category question and Yes rule share a text
+template after replacing each outcome value exactly once, render that shared
+question and rule once with the unreferenced outcome-variable placeholder,
+followed by the allowed outcomes as bullets. Numeric-range outcomes may also
+be compacted when they form one exhaustive, contiguous range set, the shared
+question template matches, and every Yes rule confirms the matching bounds.
+Otherwise, render each value with its category-specific binary question and
+the same Yes/No prose. Do not append the internal No complement or repeat the
+original unit question inside the criteria; grouped rules may use `Question 1`,
+`Question 2`, and so on.
 
 After explicit approval, approve `resolution_criteria` and continue to
 background information; do not present the complete specification yet. If a
