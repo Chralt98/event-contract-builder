@@ -87,16 +87,12 @@ criteria review before approval. Do not show a separate draft. Render a binary
 rule as one prose paragraph ending with the localized equivalent of “Otherwise
 it resolves to No.” For a scalar unit, render the shared question and rule once
 and list the allowed values for each referenced variable as bullets. For a
-categorical unit, when every category question and Yes rule share a text
-template after replacing each outcome value exactly once, render that shared
-question and rule once with the unreferenced outcome-variable placeholder,
-followed by the allowed outcomes as bullets. Numeric-range outcomes may also
-be compacted when they form one exhaustive, contiguous range set, the shared
-question template matches, and every Yes rule confirms the matching bounds.
-Otherwise, render each value with its category-specific binary question and
-the same Yes/No prose. Do not append the internal No complement or repeat the
-original unit question inside the criteria; grouped rules may use `Question 1`,
-`Question 2`, and so on.
+categorical unit, when category questions and Yes rules each share a text
+template with one differing segment, render each shared template once and list
+the outcomes with any differing question or condition text. Otherwise, render
+each value with its category-specific binary question and Yes/No rule. Do not
+append the internal No complement or repeat the original unit question inside
+the criteria; grouped rules may use `Question 1`, `Question 2`, and so on.
 
 After explicit approval, approve `resolution_criteria` and continue to
 background information; do not present the complete specification yet. If a
