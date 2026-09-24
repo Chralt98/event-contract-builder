@@ -183,7 +183,7 @@ export const resolutionCriteriaShape = {
     "The exact approved unit receiving criteria.",
   ),
   resolution_criteria: ResolutionCriteria.describe(
-    "Source-grounded Yes/No criteria for the exact selected unit, including one binary question rule per categorical value.",
+    "One complete source-grounded Yes/No rule for the exact selected-unit question, applicable to every declared value and combination.",
   ),
   followUp: z
     .string()
@@ -340,7 +340,7 @@ export const foresightTools = {
   submit_resolution_criteria: {
     title: "Resolution Criteria",
     description:
-      "Validate, store, and render source-grounded Yes/No criteria for an exact unit, including one binary rule per categorical value, after source approval.",
+      "Validate and store one source-grounded Yes/No rule for the exact selected-unit question and all its allowed values after source approval.",
     inputSchema: resolutionCriteriaShape,
     outputSchema: resolutionCriteriaOutputSchema,
     annotations: {

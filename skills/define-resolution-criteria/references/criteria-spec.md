@@ -56,43 +56,38 @@ pre-submission response.
 
 ## Criteria
 
-Create one `questionRule` object for the exact unit question. For a binary unit,
-state its complete Yes/No rule. For a categorical unit, include one
-`outcomeQuestionRules` entry for every allowed outcome value. Each entry names
-that value, states a binary question asking whether that value is the answer to
-the unit question, and gives that question's Yes/No rule. Use the same
-`resolvesYesWhen` and `resolvesNoWhen` fields as for a binary unit. When
-question placeholders are also present, each category question and its rule
-must apply uniformly to every allowed substitution; if treatment varies,
-return to drafting.
+Create one `questionRule` object whose `question` exactly matches the selected
+unit question, including its placeholders. Give it one `resolvesYesWhen` and
+one `resolvesNoWhen`; do not create separate questions or rules for categorical
+outcomes, scalar ranges, or placeholder values. Use the selected unit's declared
+values as the complete set of possible substitutions or outcomes, and state
+one Yes/No rule that applies uniformly to every allowed value and meaningful
+combination. Refer to placeholders by their declared names where needed. If a
+single complete rule cannot cover the selected unit uniformly, report that the
+unit needs revision instead of expanding the criteria by value.
 
-For each binary question, `resolvesYesWhen` states every necessary and
-sufficient condition, including the deadline. `resolvesNoWhen` is only the
-concise complement: No when the complete Yes condition is not met by the
-deadline. Do not repeat negative versions of every Yes element or force a
-closed criterion taxonomy.
+`resolvesYesWhen` states every necessary and sufficient condition, including
+the deadline, for all allowed values. `resolvesNoWhen` is only the concise
+complement: No when the complete Yes condition is not met by the deadline. Do
+not repeat negative versions of every Yes element or force a closed criterion
+taxonomy.
 
 `evidenceAndSourceRules` identifies controlling public evidence and applies the
 approved hierarchy. Address corrections, revisions, conflicts, fallback, or
 non-publication only when relevant. `exceptionAndUnresolvedRules` handles only
 material boundaries, ties, multiple or absent matches, postponement,
-cancellation, or unresolved outcomes. Apply shared evidence, source, and
-exception rules consistently to every category question.
+cancellation, or unresolved outcomes. Apply the evidence, source, and exception
+rules consistently to every allowed value.
 
 ## Submission and recovery
 
 After all interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
-criteria review before approval. Do not show a separate draft. Render a binary
-rule as one prose paragraph ending with the localized equivalent of “Otherwise
-it resolves to No.” For a scalar unit, render the shared question and rule once
-and list the allowed values for each referenced variable as bullets. For a
-categorical unit, when category questions and Yes rules each share a text
-template with one differing segment, render each shared template once and list
-the outcomes with any differing question or condition text. Otherwise, render
-each value with its category-specific binary question and Yes/No rule. Do not
-append the internal No complement or repeat the original unit question inside
-the criteria; grouped rules may use `Question 1`, `Question 2`, and so on.
+criteria review before approval. Do not show a separate draft. Render the
+question once, followed by its single Yes/No rule. The selected unit already
+displays its placeholders and allowed values; do not duplicate them as
+per-value criteria. Do not append the internal No complement or repeat the
+original unit question inside the criteria.
 
 After explicit approval, approve `resolution_criteria` and continue to
 background information; do not present the complete specification yet. If a

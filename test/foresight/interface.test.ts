@@ -492,7 +492,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("categorical values each receive a Yes/No resolution question", () => {
+  test("one Yes/No rule covers scalar and categorical unit values", () => {
     const scalarUnit = {
       question: "Will the value be <range>?",
       variables: [
@@ -526,43 +526,16 @@ describe("public forecast interface", () => {
         "Apply the stated range boundaries, source tie-breaking procedure, or template substitution as applicable; otherwise use the documented unresolved-outcome policy.",
     });
 
-    const categoricalCriteria = {
-      questionRule: {
-        question: categoricalUnit.question,
-        outcomeQuestionRules: [
-          {
-            outcome: "Democratic Party",
-            question:
-              "Will the Democratic Party control the U.S. Senate after the 2026 election?",
-            resolvesYesWhen:
-              "The Democratic Party holds the Senate majority after the 2026 election.",
-            resolvesNoWhen:
-              "The Democratic Party does not hold the Senate majority after the 2026 election.",
-          },
-          {
-            outcome: "Republican Party",
-            question:
-              "Will the Republican Party control the U.S. Senate after the 2026 election?",
-            resolvesYesWhen:
-              "The Republican Party holds the Senate majority after the 2026 election.",
-            resolvesNoWhen:
-              "The Republican Party does not hold the Senate majority after the 2026 election.",
-          },
-        ],
-      },
-      evidenceAndSourceRules:
-        "Use the highest-ranked approved source that publishes Senate control facts.",
-      exceptionAndUnresolvedRules:
-        "Apply the documented unresolved-outcome policy if the source does not establish a listed outcome.",
-    };
-
     for (const { unit, candidate } of [
       { unit: scalarUnit, candidate: makeCriteria(scalarUnit.question) },
-      { unit: categoricalUnit, candidate: categoricalCriteria },
+      {
+        unit: categoricalUnit,
+        candidate: makeCriteria(categoricalUnit.question),
+      },
     ]) {
       expect(
         parseConnectorResolutionCriteria(candidate, unit).questionRule,
-      ).toBeDefined();
+      ).toMatchObject({ question: unit.question });
     }
 
     expect(() =>
@@ -576,36 +549,16 @@ describe("public forecast interface", () => {
         },
         scalarUnit,
       ),
-    ).toThrow("questionRule must cover the selected unit exactly");
+    ).toThrow(
+      "questionRule.question must exactly match selectedUnit.question.",
+    );
     expect(() =>
       parseConnectorResolutionCriteria(
-        {
-          ...categoricalCriteria,
-          questionRule: {
-            ...categoricalCriteria.questionRule,
-            question: "Will Candidate C win the election?",
-          },
-        },
-        categoricalUnit,
-      ),
-    ).toThrow("questionRule must cover the selected unit exactly");
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        {
-          ...categoricalCriteria,
-          questionRule: {
-            ...categoricalCriteria.questionRule,
-            outcomeQuestionRules:
-              categoricalCriteria.questionRule.outcomeQuestionRules.map(
-                (rule, index) =>
-                  index === 1 ? { ...rule, outcome: "Green Party" } : rule,
-              ),
-          },
-        },
+        makeCriteria("Will Candidate C win the election?"),
         categoricalUnit,
       ),
     ).toThrow(
-      "Category question rules must cover the selected unit's allowed values exactly",
+      "questionRule.question must exactly match selectedUnit.question.",
     );
   });
 
