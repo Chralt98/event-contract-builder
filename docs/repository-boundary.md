@@ -42,13 +42,13 @@ Private development protects subsequent implementation changes, not old copies.
 The forecast-focused changes were ported by behavior, without merging a separate
 operational implementation into the public repository:
 
-| Commit                                | Result                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------- |
-| `2e8726f` remove define timing        | Four skills; selection proceeds directly to definitions. Full-library timing remains.   |
-| `ffca421` add refresh plugin          | Portable refresh command with marketplace source verification.                          |
-| `2733ec9` simplify resolution sources | Forecast source records contain identity, rank, publisher, URL and optional dataset ID. |
-| `ceb91ca` forecast terminology        | Forecast tool names, fields and workflow text; the umbrella package identity remains.   |
-| `ef1083c` fallback source hint        | Continue with one source, change the question, or supply a fallback for evaluation.     |
+| Commit                                | Result                                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `2e8726f` remove define timing        | Four skills; selection proceeds directly to definitions. Full-library timing remains.            |
+| `ffca421` add refresh plugin          | Portable refresh command with marketplace source verification.                                   |
+| `2733ec9` simplify resolution sources | Forecast source records contain identity, rank, publisher, optional URL and optional dataset ID. |
+| `ceb91ca` forecast terminology        | Forecast tool names, fields and workflow text; the umbrella package identity remains.            |
+| `ef1083c` fallback source hint        | Continue with one source, change the question, or supply a fallback for evaluation.              |
 
 The Bleavit Foresight display-name correction is retained.
 Neither publishing nor Git history rewriting is part of the migration.

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import {
+  alternativeForecastSpecificationSchema,
   DataSource,
   ForecastBackgroundInformation,
   ForecastNewsTimeline,
@@ -95,6 +96,46 @@ describe("public forecast interface", () => {
         false,
       );
     }
+  });
+
+  test("resolution sources may identify social accounts without a URL", () => {
+    const accountSource = {
+      id: "truth-social-account",
+      rank: 1,
+      name: "Verified account @realDonaldTrump",
+      publisher: "Truth Social",
+    };
+    const schema = z.object(
+      foresightTools.submit_resolution_source.inputSchema,
+    );
+
+    expect(DataSource.parse(accountSource)).toEqual(accountSource);
+    expect(
+      schema.safeParse({ ...input, sources: [accountSource] }).success,
+    ).toBe(true);
+  });
+
+  test("alternative forecast sources may use non-URL identities", () => {
+    const result = alternativeForecastSpecificationSchema.safeParse({
+      unit_number: 2,
+      display_question_unit: {
+        question: "Will the account publish the announcement?",
+      },
+      rationale:
+        "This nearby interpretation can be resolved through direct account records.",
+      sources: [
+        {
+          name: "Verified account @example",
+          publisher: "Social Platform One",
+        },
+        {
+          name: "Official post archive",
+          publisher: "Independent Archive Service",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
   });
 
   test("connector shape stays flat while runtime validates domain invariants", () => {

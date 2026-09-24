@@ -18,11 +18,17 @@ value and meaningful combination. Never create value-specific source mappings.
 If the shared hierarchy fails, record the gap and return to drafting to split
 the unit.
 
-## Locator policy
+## Source identity and locator policy
 
-The source `url` is the public place where that publisher is reasonably
-expected to publish the future fact, not proof that the fact already exists.
-Choose in this order:
+Identify each source specifically by its `name` and `publisher`. This can be a
+web page, a social media account, a named feed, or another traceable source.
+Include `url` when the source has a direct public web address; omit it when the
+source is identified by an account handle or another non-URL identity. Do not
+invent a URL for sources that do not have one.
+
+For web-addressable sources, use the public place where that publisher is
+reasonably expected to publish the future fact, not proof that the fact already
+exists. Choose in this order:
 
 1. A durable event-specific or recurring results page explicitly intended for
    the relevant result.

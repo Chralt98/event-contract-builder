@@ -4,9 +4,22 @@ import { sourceIndependenceError } from "./source-validation";
 
 /** A concise source identity used for an alternative forecast specification suggestion. */
 export const alternativeSourceIdentitySchema = z.object({
-  name: z.string().min(3),
-  publisher: z.string().min(2),
-  url: z.url(),
+  name: z
+    .string()
+    .min(3)
+    .describe(
+      "Specific source identity, such as a results page, social media account, or data feed.",
+    ),
+  publisher: z
+    .string()
+    .min(2)
+    .describe("Organization or platform publishing or providing the source."),
+  url: z
+    .url()
+    .optional()
+    .describe(
+      "Optional direct URL for a web-addressable source. Omit when the source is identified by an account, feed, or other specific name.",
+    ),
 });
 
 /**

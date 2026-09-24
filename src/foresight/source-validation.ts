@@ -18,7 +18,7 @@ export function sourceHierarchyRankError(
  * same agency is not an independent fallback source.
  */
 export function sourceIndependenceError(
-  sources: readonly { publisher: string; url: string }[],
+  sources: readonly { publisher: string; url?: string }[],
 ): string | undefined {
   const publishers = new Map<string, string>();
   for (const source of sources) {
@@ -37,6 +37,7 @@ export function sourceIndependenceError(
 
   const urls = new Set<string>();
   for (const source of sources) {
+    if (!source.url) continue;
     const key = normalizeUrl(source.url);
     if (urls.has(key)) {
       return (
