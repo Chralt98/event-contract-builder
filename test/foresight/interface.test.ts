@@ -468,7 +468,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("one template rule covers all allowed values", () => {
+  test("categorical values each receive a Yes/No resolution question", () => {
     const scalarUnit = {
       question: "Will the value be <range>?",
       variables: [
@@ -479,9 +479,13 @@ describe("public forecast interface", () => {
       ],
     };
     const categoricalUnit = {
-      question: "Will <candidate> win the election?",
+      question:
+        "Which party will control the U.S. Senate after the 2026 election?",
       variables: [
-        { name: "candidate", values: ["Candidate A", "Candidate B"] },
+        {
+          name: "party",
+          values: ["Democratic Party", "Republican Party"],
+        },
       ],
     };
     const makeCriteria = (question: string) => ({
@@ -498,11 +502,40 @@ describe("public forecast interface", () => {
         "Apply the stated range boundaries, source tie-breaking procedure, or template substitution as applicable; otherwise use the documented unresolved-outcome policy.",
     });
 
-    for (const { unit, questions } of [
-      { unit: scalarUnit, questions: [scalarUnit.question] },
-      { unit: categoricalUnit, questions: [categoricalUnit.question] },
+    const categoricalCriteria = {
+      questionRule: {
+        question: categoricalUnit.question,
+        outcomeQuestionRules: [
+          {
+            outcome: "Democratic Party",
+            question:
+              "Will the Democratic Party control the U.S. Senate after the 2026 election?",
+            resolvesYesWhen:
+              "The Democratic Party holds the Senate majority after the 2026 election.",
+            resolvesNoWhen:
+              "The Democratic Party does not hold the Senate majority after the 2026 election.",
+          },
+          {
+            outcome: "Republican Party",
+            question:
+              "Will the Republican Party control the U.S. Senate after the 2026 election?",
+            resolvesYesWhen:
+              "The Republican Party holds the Senate majority after the 2026 election.",
+            resolvesNoWhen:
+              "The Republican Party does not hold the Senate majority after the 2026 election.",
+          },
+        ],
+      },
+      evidenceAndSourceRules:
+        "Use the highest-ranked approved source that publishes Senate control facts.",
+      exceptionAndUnresolvedRules:
+        "Apply the documented unresolved-outcome policy if the source does not establish a listed outcome.",
+    };
+
+    for (const { unit, candidate } of [
+      { unit: scalarUnit, candidate: makeCriteria(scalarUnit.question) },
+      { unit: categoricalUnit, candidate: categoricalCriteria },
     ]) {
-      const candidate = makeCriteria(questions[0]!);
       expect(
         parseConnectorResolutionCriteria(candidate, unit).questionRule,
       ).toBeDefined();
@@ -523,15 +556,33 @@ describe("public forecast interface", () => {
     expect(() =>
       parseConnectorResolutionCriteria(
         {
-          ...makeCriteria(categoricalUnit.question),
+          ...categoricalCriteria,
           questionRule: {
-            ...makeCriteria(categoricalUnit.question).questionRule,
+            ...categoricalCriteria.questionRule,
             question: "Will Candidate C win the election?",
           },
         },
         categoricalUnit,
       ),
     ).toThrow("questionRule must cover the selected unit exactly");
+    expect(() =>
+      parseConnectorResolutionCriteria(
+        {
+          ...categoricalCriteria,
+          questionRule: {
+            ...categoricalCriteria.questionRule,
+            outcomeQuestionRules:
+              categoricalCriteria.questionRule.outcomeQuestionRules.map(
+                (rule, index) =>
+                  index === 1 ? { ...rule, outcome: "Green Party" } : rule,
+              ),
+          },
+        },
+        categoricalUnit,
+      ),
+    ).toThrow(
+      "Category question rules must cover the selected unit's allowed values exactly",
+    );
   });
 
   test("resolution rule text can use concise or multi-sentence question-specific logic", () => {
@@ -545,9 +596,12 @@ describe("public forecast interface", () => {
         "A tie uses the source's published tie-break. A cancellation follows the platform policy.",
     };
 
+    const parsedConciseCriteria =
+      parseConnectorResolutionCriteria(conciseCriteria);
     expect(
-      parseConnectorResolutionCriteria(conciseCriteria).questionRule
-        .resolvesNoWhen,
+      "resolvesNoWhen" in parsedConciseCriteria.questionRule
+        ? parsedConciseCriteria.questionRule.resolvesNoWhen
+        : undefined,
     ).toBe("Otherwise resolve No.");
   });
 

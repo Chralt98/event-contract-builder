@@ -30,13 +30,19 @@ describe("DraftUnit schema", () => {
     ).toBe(true);
   });
 
-  test("requires variables to be represented by placeholders and a question mark", () => {
+  test("supports categorical outcome values without placeholders", () => {
     expect(
       DraftUnit.safeParse({
-        question: "Will the dinosaur exhibition remain open through August 31?",
-        variables: [{ name: "date", values: ["August 31", "September 30"] }],
+        question:
+          "Which party will control the U.S. Senate after the 2026 election?",
+        variables: [
+          {
+            name: "party",
+            values: ["Democratic Party", "Republican Party"],
+          },
+        ],
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       DraftUnit.safeParse({
         ...museumTemplate,
@@ -45,7 +51,7 @@ describe("DraftUnit schema", () => {
     ).toBe(false);
   });
 
-  test("requires template variables to match question placeholders", () => {
+  test("requires every question placeholder to have a declared variable", () => {
     expect(
       DraftUnit.safeParse({
         question: "Which range applies: <range>?",
@@ -57,7 +63,7 @@ describe("DraftUnit schema", () => {
         issues: [
           {
             message:
-              "Template variables must match the question placeholders exactly (missing variables: range; undeclared variables: price)",
+              "Every question placeholder must have a same-named variable (missing variables: range)",
           },
         ],
       },

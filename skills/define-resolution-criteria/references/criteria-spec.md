@@ -1,7 +1,7 @@
 # Resolution-criteria specification
 
 Convert one exact unit, its approved definitions, and its approved source
-hierarchy into deterministic rules for every binary question it represents.
+hierarchy into deterministic Yes/No rules for its question.
 
 ## Decision interview
 
@@ -53,31 +53,39 @@ answers, recompute the frontier, and continue until no decision remains.
 
 ## Criteria
 
-Create one `questionRule` object for the exact unit question. When variables are
-present, the rule must apply one source, formula, procedure, and methodology
-uniformly to all substitutions; if treatment varies, return to drafting.
+Create one `questionRule` object for the exact unit question. For a binary unit,
+state its complete Yes/No rule. For a categorical unit, include one
+`outcomeQuestionRules` entry for every allowed outcome value. Each entry names
+that value, states a binary question asking whether that value is the answer to
+the unit question, and gives that question's Yes/No rule. Use the same
+`resolvesYesWhen` and `resolvesNoWhen` fields as for a binary unit. When
+question placeholders are also present, each category question and its rule
+must apply uniformly to every allowed substitution; if treatment varies,
+return to drafting.
 
-`resolvesYesWhen` states every necessary and sufficient condition, including
-the deadline. `resolvesNoWhen` is only the concise complement: No when the
-complete Yes condition is not met by the deadline. Do not repeat negative
-versions of every Yes element or force a closed criterion taxonomy.
+For each binary question, `resolvesYesWhen` states every necessary and
+sufficient condition, including the deadline. `resolvesNoWhen` is only the
+concise complement: No when the complete Yes condition is not met by the
+deadline. Do not repeat negative versions of every Yes element or force a
+closed criterion taxonomy.
 
 `evidenceAndSourceRules` identifies controlling public evidence and applies the
 approved hierarchy. Address corrections, revisions, conflicts, fallback, or
 non-publication only when relevant. `exceptionAndUnresolvedRules` handles only
 material boundaries, ties, multiple or absent matches, postponement,
-cancellation, or unresolved outcomes. Scalar and categorical rules must be
-coherent as a set.
+cancellation, or unresolved outcomes. Apply shared evidence, source, and
+exception rules consistently to every category question.
 
 ## Submission and recovery
 
 After all interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
-criteria review before approval. Do not show a separate draft. Render each rule
-as one prose paragraph ending with the localized equivalent of “Otherwise it
-resolves to No.” Do not append the internal No complement or repeat exact
-question text inside the criteria; grouped rules may use `Question 1`,
-`Question 2`, and so on.
+criteria review before approval. Do not show a separate draft. Render a binary
+rule as one prose paragraph ending with the localized equivalent of “Otherwise
+it resolves to No.” For a categorical unit, render each value with its
+category-specific binary question and the same Yes/No prose. Do not append the
+internal No complement or repeat the original unit question inside the
+criteria; grouped rules may use `Question 1`, `Question 2`, and so on.
 
 After explicit approval, approve `resolution_criteria` and continue to
 background information; do not present the complete specification yet. If a

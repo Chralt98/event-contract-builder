@@ -36,8 +36,8 @@ export const Meta = z
     productName: ProductName,
     /**
      * The trader-facing forecast question as a consumer platform would phrase
-     * this contract for retail traders. Variable-backed questions use
-     * placeholders with allowed values; binary questions have no variables.
+     * this contract for retail traders. Finite variables may appear as
+     * question placeholders or list categorical outcomes alongside the text.
      * Distinct from `productName`, which is the
      * contract-level phrasing and may still carry placeholders like `<team>`.
      */

@@ -1,8 +1,7 @@
 import { z } from "zod";
 
 /**
- * Trader-facing forecast question. A question may be standalone or may contain
- * placeholders paired with finite variables on its draft unit.
+ * Trader-facing forecast question with optional parameter or outcome values.
  */
 export const DisplayQuestion = z
   .string()
@@ -15,17 +14,17 @@ export const DisplayQuestion = z
 
 export type DisplayQuestionT = z.infer<typeof DisplayQuestion>;
 
-/** One named placeholder and the concrete values offered for it. */
+/** One named finite parameter or categorical outcome set. */
 export const TemplateVariable = z.object({
   name: z
     .string()
     .min(1)
     .refine(
       (value) => value === value.trim() && !/[<>]/.test(value),
-      "Must be a trimmed placeholder name without angle brackets",
+      "Must be a trimmed variable name without angle brackets",
     )
     .describe(
-      "Name of a narrow, finite parameter such as a date, match, city, or candidate, not an open-ended event or outcome category.",
+      "Name of a narrow, finite parameter or outcome dimension such as a date, match, city, candidate, or party.",
     ),
   values: z
     .array(
@@ -47,17 +46,17 @@ export const TemplateVariable = z.object({
       }
     })
     .describe(
-      "Explicit closed list of concrete values. Every value and meaningful combination must use the same settlement source, formula, procedure, and methodology, with the same event interpretation and legal/compliance analysis.",
+      "Explicit closed list of values. Values may fill a same-named question placeholder or define the categorical outcomes of a question without appearing in its wording. Every value and meaningful combination must use the same settlement source, formula, procedure, methodology, event interpretation, and legal/compliance analysis.",
     ),
 });
 
 export type TemplateVariableT = z.infer<typeof TemplateVariable>;
 
-/** Every selectable forecast uses one question-and-variables shape. */
+/** Every selectable forecast uses one question-and-values shape. */
 export const DraftUnit = z
   .object({
     question: DisplayQuestion.describe(
-      "The forecast question; use angle-bracket placeholders only for declared variables.",
+      "The forecast question. Any angle-bracket placeholder must have a same-named declared variable; categorical outcome variables need not appear as placeholders.",
     ),
     variables: z.array(TemplateVariable).optional(),
   })
@@ -72,32 +71,55 @@ export const DraftUnit = z
       ctx.addIssue({
         code: "custom",
         path: ["variables"],
-        message: "Template variable names must be unique",
+        message: "Variable names must be unique",
       });
     }
     const missing = placeholders.filter(
       (name) => !variableNames.includes(name),
     );
-    const undeclared = variableNames.filter(
+    const unreferenced = variableNames.filter(
       (name) => !placeholders.includes(name),
     );
-    if (missing.length || undeclared.length) {
+    if (missing.length) {
       ctx.addIssue({
         code: "custom",
         path: ["variables"],
-        message: `Template variables must match the question placeholders exactly (${[
-          ...(missing.length
-            ? [`missing variables: ${missing.join(", ")}`]
-            : []),
-          ...(undeclared.length
-            ? [`undeclared variables: ${undeclared.join(", ")}`]
-            : []),
-        ].join("; ")})`,
+        message: `Every question placeholder must have a same-named variable (missing variables: ${missing.join(", ")})`,
       });
+    }
+    if (unreferenced.length > 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["variables"],
+        message:
+          "A categorical question may have only one outcome variable that is not represented by a placeholder",
+      });
+    }
+    for (const name of unreferenced) {
+      const variable = unit.variables?.find(
+        (candidate) => candidate.name === name,
+      );
+      if (variable && variable.values.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["variables"],
+          message: `Categorical outcome variable '${name}' must contain at least two values`,
+        });
+      }
     }
   });
 
 export type DraftUnitT = z.infer<typeof DraftUnit>;
+
+/** Return the optional categorical outcome variable, if the unit declares one. */
+export function categoricalOutcomeVariable(
+  unit: DraftUnitT,
+): TemplateVariableT | undefined {
+  const placeholders = new Set(
+    [...unit.question.matchAll(/<([^<>]+)>/g)].map((match) => match[1]!),
+  );
+  return (unit.variables ?? []).find(({ name }) => !placeholders.has(name));
+}
 
 /**
  * Glossary mapping each key term to its precise, unambiguous definition.
@@ -105,6 +127,8 @@ export type DraftUnitT = z.infer<typeof DraftUnit>;
  */
 export const Definitions = z
   .record(z.string().min(1), z.string().min(1))
-  .describe("Glossary of key terms used in the contract: word → definition");
+  .describe(
+    "Glossary of key terms used in the specification: word → definition",
+  );
 
 export type DefinitionsT = z.infer<typeof Definitions>;

@@ -31,6 +31,6 @@ describe("parseConnectorDraftUnit", () => {
           { name: "region", values: ["north", "south"] },
         ],
       }),
-    ).toThrow("Template variable names must be unique");
+    ).toThrow("Variable names must be unique");
   });
 });

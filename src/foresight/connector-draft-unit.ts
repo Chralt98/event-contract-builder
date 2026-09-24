@@ -5,15 +5,15 @@ import { DraftUnit, type DraftUnitT } from "./display-question";
  * Connector-safe representation of a draft unit.
  *
  * Keep the wire schema flat and restore the domain invariants in the tool
- * handler. Every unit contains one question; variables are optional for a
- * standalone binary question.
+ * handler. Variables may substitute into question placeholders or describe
+ * categorical outcomes that are listed beside the question.
  */
 const ConnectorDisplayQuestion = z
   .string()
   .min(10)
   .max(200)
   .describe(
-    "User-facing forecast question, ending in '?'; placeholders are optional when there are no variables.",
+    "User-facing forecast question, ending in '?'; categorical outcome values may be listed without appearing as placeholders.",
   );
 
 const ConnectorTemplateVariable = z.object({
@@ -21,26 +21,26 @@ const ConnectorTemplateVariable = z.object({
     .string()
     .min(1)
     .describe(
-      "Name of one narrow, finite parameter such as a date, match, city, or candidate; do not use an open-ended event or outcome category.",
+      "Name of one narrow, finite parameter or outcome dimension such as a date, match, city, candidate, or party.",
     ),
   values: z
     .array(z.string().min(1))
     .min(1)
     .describe(
-      "Explicit closed set of concrete values. Every value and meaningful combination must share the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
+      "Explicit closed set of values. Values may fill a same-named question placeholder or define categorical outcomes without appearing in the question. Every value and meaningful combination must share the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
     ),
 });
 
 export const ConnectorDraftUnit = z
   .object({
     question: ConnectorDisplayQuestion.describe(
-      "The forecast question; it may omit placeholders when variables are absent.",
+      "The forecast question. Any question placeholder must have a same-named variable; categorical outcome variables need not appear as placeholders.",
     ),
     variables: z
       .array(ConnectorTemplateVariable)
       .optional()
       .describe(
-        "Omit or use an empty list for a binary question. Otherwise provide one named finite variable per question placeholder; its values may be scalar ranges or categorical outcomes only when all values share one settlement framework.",
+        "Use variables for question parameters or categorical outcome values. A categorical question has one unreferenced outcome variable; every question placeholder must have a same-named variable.",
       ),
   })
   .describe("A forecast question with optional finite variables.");
