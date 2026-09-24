@@ -335,7 +335,6 @@ describe("public forecast interface", () => {
         ...payload,
         background_information: {
           background: backgroundInformation,
-          keyFactors: ["Market developments"],
         },
       }).success,
     ).toBe(false);
