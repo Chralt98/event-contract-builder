@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Install or refresh this checkout using the installed plugin-creator helpers."""
+"""Install or refresh this checkout in the local Codex plugin cache."""
 
 import argparse
+from datetime import datetime, timedelta, timezone
 import importlib.util
 import json
 import os
@@ -9,6 +10,37 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+
+
+def read_marketplace_name(marketplace, helpers):
+    helper = helpers / "read_marketplace_name.py"
+    if helper.is_file():
+        return subprocess.check_output(
+            [sys.executable, str(helper), "--marketplace-path", str(marketplace)], text=True
+        ).strip()
+    payload = json.loads(marketplace.read_text())
+    name = payload.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(f"Marketplace has no valid name: {marketplace}")
+    return name.strip()
+
+
+def update_plugin_cachebuster(root, helpers, package, manifest):
+    helper = helpers / "update_plugin_cachebuster.py"
+    if helper.is_file():
+        subprocess.run([sys.executable, str(helper), str(root)], check=True)
+        return
+
+    base_version = package.get("version")
+    if not isinstance(base_version, str) or not base_version.strip():
+        raise ValueError("package.json must define a version before refreshing the plugin")
+    version = manifest.get("version")
+    timestamp = datetime.now(timezone.utc).replace(microsecond=0)
+    while version == f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}":
+        timestamp += timedelta(seconds=1)
+    manifest["version"] = f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}"
+    manifest_path = root / ".codex-plugin/plugin.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
 
 
 def main():
@@ -22,9 +54,8 @@ def main():
     root = Path(__file__).resolve().parent.parent
     codex_dir = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
     helpers = Path(os.environ.get("CODEX_PLUGIN_CREATOR", str(codex_dir / "skills/.system/plugin-creator"))) / "scripts"
-    for name in ("create_basic_plugin.py", "read_marketplace_name.py", "update_plugin_cachebuster.py"):
-        if not (helpers / name).is_file():
-            raise ValueError("Set CODEX_PLUGIN_CREATOR to the installed plugin-creator skill directory")
+    if args.setup and not (helpers / "create_basic_plugin.py").is_file():
+        raise ValueError("`--setup` requires plugin-creator; set CODEX_PLUGIN_CREATOR to its installed skill directory")
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
     package = json.loads((root / "package.json").read_text())
     if manifest["name"] != "bleavit-foresight" or package.get("name") != "event-contract-builder":
@@ -109,7 +140,7 @@ def main():
                 orphan.unlink()
         if marketplace != Path.home() / ".agents/plugins/marketplace.json":
             subprocess.run(["codex", "plugin", "marketplace", "add", str(marketplace.parent)], check=True)
-    marketplace_name = subprocess.check_output([sys.executable, str(helpers / "read_marketplace_name.py"), "--marketplace-path", str(marketplace)], text=True).strip()
+    marketplace_name = read_marketplace_name(marketplace, helpers)
     payload = json.loads(marketplace.read_text())
     entries = [entry for entry in payload["plugins"] if entry.get("name") == name]
     if len(entries) != 1 or entries[0]["source"].get("source") != "local":
@@ -120,7 +151,7 @@ def main():
     if args.check:
         print(f"Verified {name}@{marketplace_name}: {root}")
         return
-    subprocess.run([sys.executable, str(helpers / "update_plugin_cachebuster.py"), str(root)], check=True)
+    update_plugin_cachebuster(root, helpers, package, manifest)
     subprocess.run(["bun", "x", "--no-install", "prettier", str(root / ".codex-plugin/plugin.json"), "--write"], check=True)
     installed = json.loads(subprocess.check_output(["codex", "plugin", "add", f"{name}@{marketplace_name}", "--json"], text=True))
     cache = Path(installed["installedPath"])

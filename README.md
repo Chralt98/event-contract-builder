@@ -69,10 +69,11 @@ For a local ChatGPT app mapping, copy the example and replace its placeholder:
 cp .app.example.json .app.json
 ```
 
-`.app.json` stays ignored; it identifies your own ChatGPT connection. The installed
-plugin-creator helpers and Codex CLI are required for the following commands.
-Set `CODEX_PLUGIN_CREATOR` only if the skill is installed somewhere other than
-`$CODEX_HOME/skills/.system/plugin-creator` (default `~/.codex`).
+`.app.json` stays ignored; it identifies your own ChatGPT connection. Bun and
+the Codex CLI are required for refresh and check. The `--setup` command also
+requires the plugin-creator skill; set `CODEX_PLUGIN_CREATOR` if it is installed
+somewhere other than `$CODEX_HOME/skills/.system/plugin-creator` (default
+`~/.codex`).
 
 ```sh
 # First setup, or repair a missing personal-marketplace source link:
@@ -103,6 +104,9 @@ The workflow is: draft questions, select a unit, define terms, choose resolution
 sources, define resolution criteria, add background information, and optionally
 add recent news. Each submitted stage remains pending until the user explicitly
 approves it. `reduce-semantic-risk` supports focused interpretation audits.
+
+Question drafting in Bleavit Foresight is informed by Metaculus’s
+[question-writing guidance](https://www.metaculus.com/faq/).
 
 Instruction ownership is deliberately split to avoid duplicate maintenance:
 

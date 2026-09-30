@@ -56,6 +56,44 @@ pre-submission response.
 
 ## Criteria
 
+Start `resolvesYesWhen` with a complete future-tense sentence naming the Yes
+condition and broad source; keep specific source links in
+`evidenceAndSourceRules`.
+
+Audit the complete criteria, including evidence and exception rules, for
+outcome-bearing terms introduced beyond the selected unit. Define any term
+whose ambiguity could change the resolution in the criteria itself, using an
+observable, source-grounded meaning. If materially different defensible
+meanings require the user's choice, resolve it in the decision interview
+before submission.
+
+Make the criteria as determinate as possible: state observable conditions and
+controlling evidence so different resolvers can apply them consistently with
+little room for judgment or after-the-fact disputes.
+
+Make the criteria actionable for a resolver: specify what to check and how to
+apply the outcome condition, evidence hierarchy, and relevant exceptions. State
+steps in order when sequence affects the result; use examples when they clarify
+application. For source-derived values, specify settings that can materially
+change the result, such as query terms, geographic scope, date window, or
+aggregation.
+
+Cross-check the selected question against the resolution conditions: its event,
+subject, scope, thresholds, outcomes, and time frame must match, without implying
+a different trigger or resolution date. If they materially diverge, do not
+submit criteria; report that the unit needs revision. Once the user selects a
+revised unit, start it as a separate record and follow the shared approval
+order, including new approvals for definitions and sources before drafting
+criteria.
+
+Before submission, test the rule against plausible edge cases and borderline
+scenarios where a condition or evidence path may not apply cleanly. Clarify the
+outcome for material cases; omit speculative cases that cannot affect
+resolution. Also identify assumptions the rule depends on, such as an event
+occurring, a report being issued, or a data series remaining comparable, and
+specify how plausible failures affect resolution, including any fallback or
+unresolved treatment.
+
 Create one `questionRule` object whose `question` exactly matches the selected
 unit question, including its placeholders. Give it one `resolvesYesWhen` and
 one `resolvesNoWhen`; do not create separate questions or rules for categorical
@@ -72,12 +110,31 @@ complement: No when the complete Yes condition is not met by the deadline. Do
 not repeat negative versions of every Yes element or force a closed criterion
 taxonomy.
 
+Use plain language for an informed non-specialist, avoiding jargon and
+preferring words to symbols when precision is unchanged. Use LaTeX math
+delimiters for equations when they improve precision: inline `\( ... \)` or
+display `\[ ... \]`. Define variables and units in ordinary text as well.
+
 `evidenceAndSourceRules` identifies controlling public evidence and applies the
-approved hierarchy. Address corrections, revisions, conflicts, fallback, or
-non-publication only when relevant. `exceptionAndUnresolvedRules` handles only
-material boundaries, ties, multiple or absent matches, postponement,
-cancellation, or unresolved outcomes. Apply the evidence, source, and exception
-rules consistently to every allowed value.
+approved hierarchy. Address corrections, revisions, conflicts, fallback,
+non-publication, or methodology changes only when relevant. For estimates that
+may be revised, name the controlling release (such as preliminary or final) or
+the date from which the latest available value counts. For finite numeric or
+date ranges, state what happens if the value falls outside all listed outcomes.
+When a methodology change affects an estimate, specify the controlling method,
+how material changes are handled, and what comparable fallback or unresolved
+treatment applies. After relevant sources and fallbacks are exhausted,
+distinguish insufficient or conflicting evidence from evidence that the Yes
+condition failed. In
+`exceptionAndUnresolvedRules`, distinguish
+**Ambiguous** cases, where available evidence cannot establish the outcome,
+from **Annulled** cases, where reality is clear but the question or criteria
+cannot fairly map it to an outcome. State the disposition for each; do not
+assume platform-specific scoring or refund behavior, and never treat missing
+proof as No. Use this field only for material boundaries, ties, multiple or
+absent matches, postponement, cancellation, invalidated assumptions,
+underspecified criteria, or unresolved outcomes. Apply the evidence, source,
+and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
