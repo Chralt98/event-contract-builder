@@ -105,13 +105,16 @@ localized menu:
 ```
 
 After news is approved, declined, empty, or unavailable, omit option 4. Accept
-one or several menu numbers. Retrieve the record once, remove internal
-metadata, and serialize the complete returned record without reconstructing it
-from memory or summarizing it. Preserve every field and nested array or object
-when present, in each requested YAML, JSON, or Markdown export. Show
-each export completely in a labeled fenced block. Then ask whether the Forecast
-Specification looks correct; route requested changes through the affected stage
-and repeat its review and approvals.
+one or several menu numbers and retrieve the record once, removing internal
+metadata from exports. Preserve the complete returned record and its exact
+field names and nested structure in YAML and JSON. For Markdown, present the
+user-meaningful content in readable prose with human-facing headings and lists;
+do not expose schema property names, internal IDs, or variable identifiers.
+When `get_approved_forecast_specification` returns a reader-facing Markdown
+rendering in `content[0].text`, use that rendering for the Markdown export.
+Show each requested export completely in a labeled fenced block. Then ask
+whether the Forecast Specification looks correct; route requested changes
+through the affected stage and repeat its review and approvals.
 
 ## Validation errors
 

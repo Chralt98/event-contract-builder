@@ -12,9 +12,9 @@ selection, removal, and approval rules.
 1. Require explicit opt-in after background approval.
 2. Research original sources, build the qualified timeline, and call
    `submit_news_timeline` with the candidates.
-3. Treat the user's item numbers as selection, resubmit that exact subset, and
-   show it in full. Approve `news_timeline` only after the user approves the
-   fully visible selected timeline.
+3. For keep-all with no changes, treat the already visible proposal as
+   approved and approve `news_timeline` directly. For a subset or edits,
+   resubmit the exact selection, show it in full, and wait for approval.
 4. If nothing qualifies or nothing is selected, keep the background-only
    record and show the server-defined export menu.
 
