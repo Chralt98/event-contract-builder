@@ -1,13 +1,23 @@
 {
   "name": "bleavit-foresight",
-  "version": "0.2.0+codex.20261001073927",
+  "version": "0.2.0+codex.20261001090516",
   "description": "ChatGPT plugin for creating forecast specifications.",
   "author": {
     "name": "Christopher Maximilian Altmann",
     "url": "https://github.com/Chralt98"
   },
   "license": "Apache-2.0",
-  "keywords": ["forecast-specifications", "mcp", "chatgpt", "codex", "skills"],
+  "keywords": [
+    "forecast specification",
+    "forecast question",
+    "conditional forecast",
+    "term definition",
+    "resolution criteria",
+    "resolution sources",
+    "semantic risk",
+    "event contract",
+    "prediction market"
+  ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
   "apps": "./.app.json",

@@ -1,4 +1,4 @@
-import { copyFile, rm } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,8 +33,3 @@ for (const command of [
   const code = await child.exited;
   if (code !== 0) process.exit(code);
 }
-
-await copyFile(
-  resolve(root, "src/foresight/instructions.md"),
-  resolve(root, "dist/src/foresight/instructions.md"),
-);

@@ -1,7 +1,4 @@
-// These instructions are maintained as Markdown for easy editing.
-import { readFileSync } from "node:fs";
+// The Markdown remains the sole source; Bun inlines it when building the package.
+import instructions from "./instructions.md" with { type: "text" };
 
-export const foresightServerInstructions = readFileSync(
-  new URL("./instructions.md", import.meta.url),
-  "utf8",
-);
+export const foresightServerInstructions = instructions;

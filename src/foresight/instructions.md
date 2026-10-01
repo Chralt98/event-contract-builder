@@ -22,10 +22,10 @@ Carry the returned `forecast_specification_id` and immutable `language_code`
 between calls. They are internal metadata: never expose them in chat, errors,
 approval summaries, or exports. A new language or selected alternative is a
 new record: set `start_new_specification: true`, omit the old ID, and obtain new
-approvals. An omitted ID resolves only within the current MCP session; an
-explicit ID may address the process-lifetime HTTP handoff registry. The ID is a
-bearer handoff, not authentication, and in-memory data disappears when the
-server stops.
+approvals. An omitted ID resolves only within a stateful MCP session, when one
+exists; stateless HTTP requests require the explicit ID to continue. An
+explicit ID may address the server's handoff store. The ID is a bearer handoff,
+not authentication. Record retention depends on the hosting service.
 
 `get_approved_forecast_specification` returns approved stages only. Call it
 when the user asks to recall a specification or chooses an export format, not

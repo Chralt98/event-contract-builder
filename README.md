@@ -130,9 +130,11 @@ This creates `out/bleavit-foresight.zip` and an unpacked plugin directory
 from an explicit asset allowlist. The archive includes the skills, manifest, MCP
 configuration and license notices, including `THIRD_PARTY_LICENSES.md`. It
 excludes the library build, development files and local app mapping. Its manifest
-omits the local `apps` reference. Configure the
-MCP endpoint for the service or local server you intend to use. This command
-does not publish anything.
+omits the local `apps` reference. By default, its MCP configuration points to
+`https://foresight.bleavit.com/mcp`; override this for another environment with
+`bun run package:plugin -- --mcp-url https://your-endpoint.example/mcp`. The
+tracked `.mcp.json` remains pointed at localhost for local development. This
+command does not publish anything.
 
 ## Library (schema)
 

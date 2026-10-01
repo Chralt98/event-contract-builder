@@ -1,13 +1,24 @@
 #!/usr/bin/env python3
 """Build a plugin-only archive from an explicit public asset allowlist."""
 
+import argparse
 import json
 from pathlib import Path
 import shutil
 import zipfile
 
 root = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    "--mcp-url",
+    default="https://foresight.bleavit.com/mcp",
+    help="MCP endpoint to put in the distributable ZIP",
+)
+args = parser.parse_args()
 manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
+mcp_config = json.loads((root / ".mcp.json").read_text())
+for server in mcp_config["mcpServers"].values():
+    server["url"] = args.mcp_url
 plugin_name = manifest["name"]
 output = root / "out" / plugin_name
 if output.exists():
@@ -25,7 +36,6 @@ manifest.pop("apps", None)
 (output / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
 shutil.copytree(root / "skills", output / "skills")
 for name in (
-    ".mcp.json",
     ".app.example.json",
     "LICENSE",
     "NOTICE",
@@ -33,6 +43,7 @@ for name in (
     "DISCLAIMER.md",
 ):
     shutil.copyfile(root / name, output / name)
+(output / ".mcp.json").write_text(json.dumps(mcp_config, indent=2) + "\n")
 archive = output.parent / f"{plugin_name}.zip"
 with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
     for path in sorted(output.rglob("*")):
