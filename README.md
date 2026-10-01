@@ -131,10 +131,18 @@ from an explicit asset allowlist. The archive includes the skills, manifest, MCP
 configuration and license notices, including `THIRD_PARTY_LICENSES.md`. It
 excludes the library build, development files and local app mapping. Its manifest
 omits the local `apps` reference. By default, its MCP configuration points to
-`https://foresight.bleavit.com/mcp`; override this for another environment with
+`https://api.foresight.bleavit.com/mcp`; override this for another environment with
 `bun run package:plugin -- --mcp-url https://your-endpoint.example/mcp`. The
 tracked `.mcp.json` remains pointed at localhost for local development. This
 command does not publish anything.
+
+## Product website
+
+The static product site lives in `site/` and is intended for Cloudflare Pages at
+`https://foresight.bleavit.com`. The MCP Worker uses the separate host
+`https://api.foresight.bleavit.com/mcp`. Keep the product overview and public
+support and policy pages in the site; do not include Worker secrets or D1
+configuration there.
 
 ## Library (schema)
 

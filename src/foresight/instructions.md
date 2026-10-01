@@ -25,7 +25,11 @@ new record: set `start_new_specification: true`, omit the old ID, and obtain new
 approvals. An omitted ID resolves only within a stateful MCP session, when one
 exists; stateless HTTP requests require the explicit ID to continue. An
 explicit ID may address the server's handoff store. The ID is a bearer handoff,
-not authentication. Record retention depends on the hosting service.
+not authentication. On the hosted Cloudflare Worker, records expire 30 days
+after their most recent update. Expired records are inaccessible and are
+removed on access or by an hourly cleanup. Call
+`delete_forecast_specification` only after the user explicitly asks to delete a
+record and provides its ID; deletion is immediate and permanent.
 
 `get_approved_forecast_specification` returns approved stages only. Call it
 when the user asks to recall a specification or chooses an export format, not

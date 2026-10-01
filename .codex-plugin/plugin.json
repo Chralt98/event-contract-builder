@@ -34,7 +34,12 @@
       "How to use the forecast specification workflow?"
     ],
     "brandColor": "#1F6FEB",
-    "websiteURL": "https://github.com/Chralt98/event-contract-builder"
+    "composerIcon": "./assets/foresight-icon.png",
+    "logo": "./assets/foresight-icon.png",
+    "websiteURL": "https://foresight.bleavit.com/",
+    "supportURL": "https://foresight.bleavit.com/support/",
+    "privacyPolicyURL": "https://foresight.bleavit.com/privacy/",
+    "termsOfServiceURL": "https://foresight.bleavit.com/terms/"
   },
   "homepage": "https://github.com/Chralt98/event-contract-builder#readme",
   "repository": "https://github.com/Chralt98/event-contract-builder"

@@ -82,6 +82,16 @@ export const approvedForecastSpecificationLookupShape = {
   forecast_specification_id: optionalForecastSpecificationId,
 };
 
+export const deleteForecastSpecificationShape = {
+  forecast_specification_id: ForecastSpecificationId.describe(
+    "The exact forecast specification record the user explicitly asked to delete.",
+  ),
+};
+
+export const deleteForecastSpecificationOutputSchema = z
+  .object({ deleted: z.literal(true) })
+  .strict();
+
 export const definedTermsShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -294,7 +304,9 @@ export const foresightTools = {
     outputSchema: approvalOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: false,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   get_approved_forecast_specification: {
@@ -305,7 +317,22 @@ export const foresightTools = {
     outputSchema: approvedForecastSpecificationRecallSchema,
     annotations: {
       readOnlyHint: true,
+      destructiveHint: false,
       idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  delete_forecast_specification: {
+    title: "Delete Forecast Specification",
+    description:
+      "Immediately and permanently delete one stored Forecast Specification. Call only when the user explicitly asks to delete it and supplies its forecast specification ID.",
+    inputSchema: deleteForecastSpecificationShape,
+    outputSchema: deleteForecastSpecificationOutputSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_defined_terms: {
@@ -316,7 +343,9 @@ export const foresightTools = {
     outputSchema: definedTermsOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_drafted_questions: {
@@ -327,7 +356,9 @@ export const foresightTools = {
     outputSchema: draftedQuestionsOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_resolution_source: {
@@ -338,7 +369,9 @@ export const foresightTools = {
     outputSchema: resolutionSourceOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_resolution_criteria: {
@@ -349,7 +382,9 @@ export const foresightTools = {
     outputSchema: resolutionCriteriaOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_background_information: {
@@ -360,7 +395,9 @@ export const foresightTools = {
     outputSchema: backgroundInformationOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_news_timeline: {
@@ -371,7 +408,9 @@ export const foresightTools = {
     outputSchema: newsTimelineOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
   submit_selected_unit: {
@@ -382,7 +421,9 @@ export const foresightTools = {
     outputSchema: selectedUnitOutputSchema,
     annotations: {
       readOnlyHint: false,
+      destructiveHint: true,
       idempotentHint: true,
+      openWorldHint: false,
     },
   },
 } as const;

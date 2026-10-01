@@ -11,7 +11,7 @@ root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     "--mcp-url",
-    default="https://foresight.bleavit.com/mcp",
+    default="https://api.foresight.bleavit.com/mcp",
     help="MCP endpoint to put in the distributable ZIP",
 )
 args = parser.parse_args()
@@ -35,6 +35,11 @@ if plugin_name != "event-contract-builder":
 manifest.pop("apps", None)
 (output / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
 shutil.copytree(root / "skills", output / "skills")
+(output / "assets").mkdir()
+shutil.copyfile(
+    root / "site/assets/foresight-icon.png",
+    output / "assets/foresight-icon.png",
+)
 for name in (
     ".app.example.json",
     "LICENSE",
