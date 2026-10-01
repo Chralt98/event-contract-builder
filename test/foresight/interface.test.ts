@@ -243,7 +243,7 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(9);
+    expect(Object.keys(foresightTools)).toHaveLength(10);
   });
 
   test("approval outputs carry a canonical review and final approval omits internal metadata", () => {

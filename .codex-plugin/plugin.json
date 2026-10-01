@@ -1,7 +1,7 @@
 {
   "name": "bleavit-foresight",
   "version": "0.2.0+codex.20261001090516",
-  "description": "ChatGPT plugin for creating forecast specifications.",
+  "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
     "url": "https://github.com/Chralt98"
@@ -23,8 +23,8 @@
   "apps": "./.app.json",
   "interface": {
     "displayName": "Bleavit Foresight",
-    "shortDescription": "Create forecast specifications.",
-    "longDescription": "ChatGPT plugin for creating forecast specifications.",
+    "shortDescription": "Create forecast specifications",
+    "longDescription": "Built for forecasters and researchers, Bleavit Foresight guides users through an interactive, approval-based workflow. It drafts concise questions from new events, forecasts, or outcomes; clarifies ambiguous terms; identifies independent, authoritative resolution sources; and develops source-grounded resolution criteria. Users can add neutral background information and, with explicit opt-in, a concise timeline of relevant recent news. A semantic-risk review can examine wording, exceptions, and resolution rules. The plugin supports research and specification drafting; it does not predict outcomes.",
     "developerName": "Christopher Maximilian Altmann",
     "category": "Productivity",
     "capabilities": ["Interactive"],

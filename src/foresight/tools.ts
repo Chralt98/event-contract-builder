@@ -304,7 +304,7 @@ export const foresightTools = {
     outputSchema: approvalOutputSchema,
     annotations: {
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: true,
       idempotentHint: true,
       openWorldHint: false,
     },
