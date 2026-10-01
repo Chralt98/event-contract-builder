@@ -86,6 +86,33 @@ describe("public forecast interface", () => {
     }
   });
 
+  test("conditional sources use an independently validated hierarchy", () => {
+    const schema = z.object(
+      foresightTools.submit_resolution_source.inputSchema,
+    );
+    const conditionalUnit = {
+      question: "Will Alice win the election?",
+      condition: {
+        statement: "Alice appears on the final ballot",
+        ifUnmet: "annulled" as const,
+      },
+    };
+    expect(
+      schema.safeParse({
+        ...input,
+        selected_unit: conditionalUnit,
+        condition_sources: [source],
+      }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...input,
+        selected_unit: conditionalUnit,
+        condition_sources: [{ ...source, rank: 2 }],
+      }).success,
+    ).toBe(false);
+  });
+
   test("resolution sources may identify social accounts without a URL", () => {
     const accountSource = {
       id: "truth-social-account",
@@ -559,6 +586,57 @@ describe("public forecast interface", () => {
     ).toThrow(
       "questionRule.question must exactly match selectedUnit.question.",
     );
+  });
+
+  test("conditional criteria match the selected condition statement exactly", () => {
+    const selectedUnit = {
+      question: "Will Alice win the election?",
+      condition: {
+        statement: "Alice appears on the final ballot",
+        ifUnmet: "annulled" as const,
+      },
+    };
+    const conditionCriteria = {
+      statement: selectedUnit.condition.statement,
+      resolvesMetWhen: "The official ballot lists Alice.",
+      resolvesUnmetWhen: "The final ballot does not list Alice.",
+      evidenceAndSourceRules: "Use the election authority's final ballot.",
+      exceptionAndUnresolvedRules:
+        "If no final ballot is available, treat the condition as unresolved.",
+    };
+    const conditionalCriteria = {
+      ...criteria,
+      questionRule: {
+        ...criteria.questionRule,
+        question: selectedUnit.question,
+      },
+      conditionCriteria,
+    };
+    expect(
+      parseConnectorResolutionCriteria(conditionalCriteria, selectedUnit)
+        .conditionCriteria?.statement,
+    ).toBe(selectedUnit.condition.statement);
+    expect(() =>
+      parseConnectorResolutionCriteria(criteria, selectedUnit),
+    ).toThrow("Conditional units require conditionCriteria");
+    expect(() =>
+      parseConnectorResolutionCriteria(
+        {
+          ...conditionalCriteria,
+          conditionCriteria: {
+            ...conditionCriteria,
+            statement: "Alice registers to run",
+          },
+        },
+        selectedUnit,
+      ),
+    ).toThrow("must exactly match selectedUnit.condition.statement");
+    expect(() =>
+      parseConnectorResolutionCriteria(
+        { ...criteria, conditionCriteria },
+        input.selected_unit,
+      ),
+    ).toThrow("Unconditional units cannot have conditionCriteria");
   });
 
   test("resolution rule text can use concise or multi-sentence question-specific logic", () => {

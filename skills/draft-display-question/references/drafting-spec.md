@@ -40,6 +40,26 @@ use variables for finite parameters, with matching angle-bracket placeholders.
 Values may be non-overlapping ranges on one numeric measure or mutually
 exclusive categorical outcomes.
 
+When the user's outcome depends on a separate event, draft that event as the
+unit's `condition` at this stage. State the prerequisite declaratively (for
+example, `A law is enacted on or before June 30, 2027, 23:59 UTC`); it does not
+need to be a question. State its cutoff explicitly and distinguish it from the
+forecast's resolution deadline. If a unit intentionally allows multiple cutoff
+dates, those dates can be represented by a `condition_date` placeholder. For
+example, `A law is enacted on or before <condition_date>` could allow
+`June 30, 2027, 23:59 UTC` and `September 30, 2027, 23:59 UTC`. If there is
+only one cutoff, write that date directly in the condition. Every allowed
+condition date must be on or before the forecast's resolution deadline; ask if
+either date or their ordering is unclear. Avoid saying only "the deadline"
+without naming the condition cutoff. Each candidate must show the outcome
+question, the observable condition, and the disposition if the condition is
+established as unmet (`annulled` or `resolve-no`). The pair must express the
+user's intended forecast together; do not fold a prerequisite into ordinary
+outcome wording or silently choose its unmet disposition. Do not treat lack of
+evidence that the condition held as proof it was unmet. An unconditional
+candidate is acceptable only when it preserves the user's intent. Use
+`resolve-no` only for a binary Yes/No outcome.
+
 For every numeric question, specify the unit used (e.g., “Will Berlin’s average
 temperature exceed 20 degrees Celsius in July 2027?”). For numeric or date-range
 outcomes, use non-overlapping ranges with explicit boundary inclusion and set
@@ -55,6 +75,8 @@ example, use “Will the price be <range>?” with values such as “below $80,0
 and “$200,000 or more”, not “Which <range> applies?”. Check every substitution
 for grammar and faithful meaning. For categorical units, values are outcome
 labels and do not need to appear in the question text.
+For conditional units, check substitutions in both the outcome question and
+condition statement.
 
 ## Variable invariance
 
@@ -62,9 +84,10 @@ Use variables for finite values that belong to one unit. A variable may
 parameterize wording through a same-named placeholder, or it may list the
 categorical outcomes without a placeholder. A categorical unit uses one
 unreferenced outcome variable with at least two allowed values. Every value and
-meaningful combination must retain the same qualifying predicate,
-interpretation, jurisdiction, legal/compliance treatment, authoritative source
-hierarchy, source identity, formula, settlement procedure, and methodology. If
+meaningful combination must retain the same qualifying predicate, condition,
+unmet disposition, interpretation, jurisdiction, legal/compliance treatment,
+authoritative source hierarchy, source identity, formula, settlement procedure,
+and methodology. If
 any value needs a different rule, source, settlement method, or interpretation,
 split the unit. Never use a broad wildcard or add values merely to create a
 variable. Selection preserves the complete unit and does not instantiate one

@@ -111,8 +111,8 @@ export const draftedQuestionsShape = {
       "A new forecast draft must contain at least three distinct selectable forecast specification units.",
     )
     .superRefine((units, ctx) => {
-      const signatures = units.map(({ question, variables }) =>
-        JSON.stringify({ question, variables: variables ?? [] }),
+      const signatures = units.map(({ question, variables, condition }) =>
+        JSON.stringify({ question, variables: variables ?? [], condition }),
       );
 
       if (new Set(signatures).size !== signatures.length) {
@@ -132,6 +132,18 @@ export const draftedQuestionsShape = {
     ),
 };
 
+const sourceHierarchy = z
+  .array(DataSource)
+  .min(1, "At least one rank-1 primary source is required.")
+  .superRefine((sources, ctx) => {
+    const rankError = sourceHierarchyRankError(sources);
+    if (rankError) ctx.addIssue({ code: "custom", message: rankError });
+    const independenceError = sourceIndependenceError(sources);
+    if (independenceError) {
+      ctx.addIssue({ code: "custom", message: independenceError });
+    }
+  });
+
 export const resolutionSourceShape = {
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -141,20 +153,12 @@ export const resolutionSourceShape = {
   selected_unit: ConnectorDraftUnit.describe(
     "The exact approved unit being sourced.",
   ),
-  sources: z
-    .array(DataSource)
-    .min(1, "At least one rank-1 primary source is required.")
-    .superRefine((sources, ctx) => {
-      const error = sourceHierarchyRankError(sources);
-      if (error) ctx.addIssue({ code: "custom", message: error });
-      const independenceError = sourceIndependenceError(sources);
-      if (independenceError) {
-        ctx.addIssue({ code: "custom", message: independenceError });
-      }
-    })
-    .describe(
-      "Ranked source hierarchy; prefer an independent primary and fallback.",
-    ),
+  sources: sourceHierarchy.describe(
+    "Ranked hierarchy for the forecast outcome; prefer an independent primary and fallback.",
+  ),
+  condition_sources: sourceHierarchy
+    .optional()
+    .describe("Separate ranked hierarchy for the selected unit's condition."),
   coverage_gaps: z
     .array(z.string().min(3))
     .min(1)
@@ -183,7 +187,7 @@ export const resolutionCriteriaShape = {
     "The exact approved unit receiving criteria.",
   ),
   resolution_criteria: ResolutionCriteria.describe(
-    "One complete source-grounded Yes/No rule for the exact selected-unit question, applicable to every declared value and combination.",
+    "Source-grounded criteria for the selected outcome and its condition, when present, covering every declared value and combination.",
   ),
   followUp: z
     .string()
@@ -318,7 +322,7 @@ export const foresightTools = {
   submit_drafted_questions: {
     title: "Submit Drafted Questions",
     description:
-      "Validate, store, and render a new draft of forecast questions with optional variables for binary, scalar, or categorical specifications. This starts a record with an immutable specification language.",
+      "Validate, store, and render selectable forecast units, including optional prerequisite conditions. This starts a record with an immutable specification language.",
     inputSchema: draftedQuestionsShape,
     outputSchema: draftedQuestionsOutputSchema,
     annotations: {
@@ -329,7 +333,7 @@ export const foresightTools = {
   submit_resolution_source: {
     title: "Resolution Source Hierarchy",
     description:
-      "Validate, store, and render a pending ranked source hierarchy after definitions are approved, including gaps or a proposed alternative when applicable.",
+      "Validate and render pending source hierarchies after definitions are approved, including a separate condition hierarchy for conditional units.",
     inputSchema: resolutionSourceShape,
     outputSchema: resolutionSourceOutputSchema,
     annotations: {
@@ -340,7 +344,7 @@ export const foresightTools = {
   submit_resolution_criteria: {
     title: "Resolution Criteria",
     description:
-      "Validate and store one source-grounded Yes/No rule for the exact selected-unit question and all its allowed values after source approval.",
+      "Validate and store source-grounded outcome criteria and, for conditional units, prerequisite criteria after source approval.",
     inputSchema: resolutionCriteriaShape,
     outputSchema: resolutionCriteriaOutputSchema,
     annotations: {

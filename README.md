@@ -7,6 +7,7 @@ The first product under this umbrella is **Bleavit Foresight**:
 > ChatGPT plugin for creating forecast specifications.
 
 The current plugin drafts **forecast specifications**: selectable questions,
+including conditional questions with explicit prerequisites and unmet outcomes,
 precise definitions, independent resolution sources, resolution criteria,
 historical context/background information, optional recent news, and explicit
 approvals.

@@ -33,4 +33,52 @@ describe("parseConnectorDraftUnit", () => {
       }),
     ).toThrow("Variable names must be unique");
   });
+
+  test("keeps the condition and its unmet disposition in one selectable unit", () => {
+    const unit = {
+      question: "Will <candidate> win the election?",
+      variables: [{ name: "candidate", values: ["Alice", "Bob"] }],
+      condition: {
+        statement: "If <candidate> appears on the final ballot",
+        ifUnmet: "annulled" as const,
+      },
+    };
+    expect(parseConnectorDraftUnit(unit)).toEqual(unit);
+    expect(() =>
+      parseConnectorDraftUnit({
+        ...unit,
+        condition: {
+          ...unit.condition,
+          statement: "If <party> appears on the final ballot",
+        },
+      }),
+    ).toThrow("Every question placeholder must have a same-named variable");
+    expect(() =>
+      parseConnectorDraftUnit({
+        ...unit,
+        condition: { ...unit.condition, ifUnmet: "unknown" as "annulled" },
+      }),
+    ).toThrow();
+    expect(
+      parseConnectorDraftUnit({
+        ...unit,
+        condition: {
+          ...unit.condition,
+          statement: "Will the candidate appear on the ballot?",
+        },
+      }).condition?.statement,
+    ).toBe("Will the candidate appear on the ballot?");
+    expect(() =>
+      parseConnectorDraftUnit({
+        question: "Which party will win the election?",
+        variables: [
+          { name: "party", values: ["Alice's party", "Bob's party"] },
+        ],
+        condition: {
+          statement: "The election takes place",
+          ifUnmet: "resolve-no",
+        },
+      }),
+    ).toThrow("resolve-no requires a binary Yes/No outcome question");
+  });
 });

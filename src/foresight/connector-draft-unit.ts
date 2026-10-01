@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { DraftUnit, type DraftUnitT } from "./display-question";
+import {
+  ConditionStatement,
+  DraftUnit,
+  type DraftUnitT,
+} from "./display-question";
 
 /**
  * Connector-safe representation of a draft unit.
@@ -27,14 +31,14 @@ const ConnectorTemplateVariable = z.object({
     .array(z.string().min(1))
     .min(1)
     .describe(
-      "Explicit closed set of values. Values may fill a same-named question placeholder or define categorical outcomes without appearing in the question. Every value and meaningful combination must share the same qualifying predicate, interpretation, settlement source, formula, procedure, methodology, and legal/compliance analysis.",
+      "Explicit closed set of values. Values may fill a same-named placeholder or define categorical outcomes without appearing in the question. Every value and meaningful combination must share the same condition and unmet disposition, qualifying predicate, interpretation, sources, formula, procedure, methodology, and legal/compliance analysis.",
     ),
 });
 
 export const ConnectorDraftUnit = z
   .object({
     question: ConnectorDisplayQuestion.describe(
-      "The forecast question. Any question placeholder must have a same-named variable; categorical outcome variables need not appear as placeholders.",
+      "The forecast question. Any placeholder in this question or its condition must have a same-named variable; categorical outcome variables need not appear as placeholders.",
     ),
     variables: z
       .array(ConnectorTemplateVariable)
@@ -42,8 +46,20 @@ export const ConnectorDraftUnit = z
       .describe(
         "Use variables for question parameters or categorical outcome values. A categorical question has one unreferenced outcome variable; every question placeholder must have a same-named variable.",
       ),
+    condition: z
+      .object({
+        statement: ConditionStatement.describe(
+          "Observable prerequisite with its own explicit cutoff, distinct from and no later than the forecast resolution deadline; a question mark is not required.",
+        ),
+        ifUnmet: z
+          .enum(["annulled", "resolve-no"])
+          .describe("Disposition if the prerequisite is established as unmet."),
+      })
+      .optional(),
   })
-  .describe("A forecast question with optional finite variables.");
+  .describe(
+    "A forecast question with optional finite variables and prerequisite condition.",
+  );
 
 export type ConnectorDraftUnitT = z.infer<typeof ConnectorDraftUnit>;
 

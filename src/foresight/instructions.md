@@ -86,6 +86,9 @@ same numbers in the selection follow-up; do not add letter suffixes. Approval
 and completion reviews retain the same outer headings and include only the
 content appropriate to that stage. A blocked workflow response identifies
 `required_approval_stage`; approve that stage before retrying the blocked tool.
+For conditional units, render the condition and unmet disposition with the unit
+through every review and export; they are part of the selected unit, not an
+additional approval stage.
 
 Decision interviews within a stage use numbered questions and lettered options
 (`1.A`, `1.B`), never dotted numeric choices. Ask two or three substantive

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  ConditionStatement,
   DisplayQuestion,
   DraftUnit,
   type DraftUnitT,
@@ -18,11 +19,11 @@ const ResolutionText = z
     "Precise resolution text; may contain prose, formulas, source fields, dates, thresholds, classifications, or other question-appropriate logic.",
   );
 
-/** One complete Yes/No rule for the selected unit and all its allowed values. */
+/** One complete Yes/No rule for the forecast outcome question. */
 export const QuestionResolutionRule = z
   .object({
     question: DisplayQuestion.describe(
-      "The exact selected-unit question, including its placeholders; this single rule applies uniformly to every allowed value and combination.",
+      "The exact question being resolved, including its placeholders; this single rule applies uniformly to every allowed value and combination.",
     ),
     resolvesYesWhen: ResolutionText.describe(
       "Necessary and sufficient conditions under which this question resolves Yes for every allowed value and combination.",
@@ -39,21 +40,45 @@ export const QuestionResolutionRule = z
  * occurrences, rankings, calculations, classifications, combinations, or any
  * other source-grounded method that fits the question.
  */
-export const ResolutionCriteria = z
+const BaseResolutionCriteria = z.object({
+  questionRule: QuestionResolutionRule.describe(
+    "One complete Yes/No rule for the exact outcome question. Refer to declared placeholders or outcome values as needed; do not create a rule for each value.",
+  ),
+  evidenceAndSourceRules: ResolutionText.describe(
+    "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",
+  ),
+  exceptionAndUnresolvedRules: ResolutionText.describe(
+    "How applicable boundary cases, ties, multiple or absent matches, postponements, cancellations, and otherwise unresolved states are handled; include only relevant cases.",
+  ),
+});
+
+const ConditionResolutionCriteria = z
   .object({
-    questionRule: QuestionResolutionRule.describe(
-      "One complete Yes/No rule for the exact selected unit question. Refer to its declared placeholders or outcome values as needed; do not create a separate question or rule for each value.",
+    statement: ConditionStatement.describe(
+      "The exact declarative prerequisite from the selected unit.",
+    ),
+    resolvesMetWhen: ResolutionText.describe(
+      "Necessary and sufficient facts proving that the prerequisite is met.",
+    ),
+    resolvesUnmetWhen: ResolutionText.describe(
+      "Facts establishing that the prerequisite is unmet. Lack of evidence is not enough; unresolved evidence belongs in exceptionAndUnresolvedRules.",
     ),
     evidenceAndSourceRules: ResolutionText.describe(
-      "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",
+      "How the approved condition source hierarchy establishes the prerequisite state.",
     ),
     exceptionAndUnresolvedRules: ResolutionText.describe(
-      "How applicable boundary cases, ties, multiple or absent matches, postponements, cancellations, and otherwise unresolved outcomes are handled; include only cases relevant to this unit.",
+      "How ambiguous, unavailable, or conflicting condition evidence is handled.",
     ),
   })
-  .describe(
-    "Source-grounded Yes/No resolution criteria for the exact selected unit question, covering all of its declared values and combinations with one rule.",
-  );
+  .strict();
+
+export const ResolutionCriteria = BaseResolutionCriteria.extend({
+  conditionCriteria: ConditionResolutionCriteria.optional().describe(
+    "Separate rule for deciding whether the selected unit's declarative prerequisite is met or established as unmet; required only for a conditional unit.",
+  ),
+}).describe(
+  "Source-grounded criteria for the selected outcome and, when present, its prerequisite.",
+);
 
 /** The open domain shape is already safe for connector JSON schemas. */
 export const ConnectorResolutionCriteria = ResolutionCriteria;
@@ -75,11 +100,35 @@ const ResolutionCriteriaForUnit = z
           "questionRule.question must exactly match selectedUnit.question.",
       });
     }
+    if (selectedUnit.condition && !resolutionCriteria.conditionCriteria) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolutionCriteria", "conditionCriteria"],
+        message: "Conditional units require conditionCriteria.",
+      });
+    }
+    if (!selectedUnit.condition && resolutionCriteria.conditionCriteria) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolutionCriteria", "conditionCriteria"],
+        message: "Unconditional units cannot have conditionCriteria.",
+      });
+    }
+    if (
+      selectedUnit.condition &&
+      resolutionCriteria.conditionCriteria?.statement !==
+        selectedUnit.condition.statement
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolutionCriteria", "conditionCriteria", "statement"],
+        message:
+          "conditionCriteria.statement must exactly match selectedUnit.condition.statement.",
+      });
+    }
   });
 
-/**
- * Parse connector input and, when available, verify the exact selected question.
- */
+/** Parse connector input and verify it matches the selected outcome and condition. */
 export function parseConnectorResolutionCriteria(
   criteria: ConnectorResolutionCriteriaT,
   selectedUnit?: DraftUnitT,

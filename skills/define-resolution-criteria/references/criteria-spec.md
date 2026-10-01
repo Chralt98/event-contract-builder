@@ -3,6 +3,15 @@
 Convert one exact unit, its approved definitions, and its approved source
 hierarchy into deterministic Yes/No rules for its question.
 
+For a conditional unit, first determine whether the declarative condition
+statement holds using its approved condition sources. Submit `conditionCriteria`
+with the exact selected statement, criteria for when it is met and established
+as unmet, and evidence and exception rules for ambiguous or unavailable
+condition evidence. Apply the outcome rule only when the condition is met. When
+it is established as unmet, apply the selected unit's `ifUnmet` disposition; an
+unresolved condition must follow its stated unresolved treatment, not be
+assumed unmet. Keep both rules within this criteria stage and its single approval.
+
 ## Decision interview
 
 Before drafting criteria, map only material user-dependent decisions as a

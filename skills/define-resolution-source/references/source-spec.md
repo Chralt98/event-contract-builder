@@ -3,6 +3,13 @@
 Given one exact unit and its approved definitions, cover every fact needed to
 resolve it with a fixed ranked hierarchy.
 
+For a conditional unit, submit one hierarchy for the outcome and a separate
+`condition_sources` hierarchy for determining whether the prerequisite held.
+Each hierarchy must cover its own facts and have an independent primary and,
+when available, fallback. Report gaps for either hierarchy; source coverage
+for the outcome does not establish the condition. For a source-review
+alternative, ensure the proposed source agencies can cover both facts.
+
 ## Source standard
 
 Prefer a rank-1 origin of the fact and a rank-2 fallback independently produced
@@ -13,7 +20,7 @@ further sources only for a concrete failure mode or an approved multi-source
 definition. A second page, dataset, mirror, republication, or alias of one
 agency is not an independent fallback.
 
-When variables are present, one identical hierarchy must cover every allowed
+When variables are present, each required hierarchy must cover every allowed
 value and meaningful combination. Never create value-specific source mappings.
 If the shared hierarchy fails, record the gap and return to drafting to split
 the unit.

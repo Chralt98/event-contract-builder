@@ -65,7 +65,10 @@ export const approvedForecastSpecificationRecallSchema = z.object({
   selected_unit: ConnectorDraftUnit,
   definitions: Definitions.optional(),
   resolution_sources: z
-    .object({ sources: z.array(DataSource).min(1) })
+    .object({
+      sources: z.array(DataSource).min(1),
+      condition_sources: z.array(DataSource).min(1).optional(),
+    })
     .optional(),
   resolution_criteria: ResolutionCriteria.optional(),
   background_information: ForecastBackgroundInformation.optional(),
