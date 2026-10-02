@@ -11,8 +11,6 @@ for (const command of [
     "build",
     "./index.ts",
     "./src/index.ts",
-    "./src/cnl.ts",
-    "./src/schema/event-contract.ts",
     "./src/foresight/index.ts",
     "--outdir",
     "./dist",

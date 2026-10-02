@@ -14,7 +14,6 @@ import {
   parseConnectorDraftUnit,
   foresightServerInstructions,
 } from "../../src/foresight";
-import { DataSource as EventContractDataSource } from "../../src/schema/resolution";
 
 const source = {
   id: "agency-results",
@@ -50,9 +49,8 @@ const backgroundInformation =
   "The local observatory publishes daily weather measurements for the surrounding area.";
 
 describe("public forecast interface", () => {
-  test("simplified forecast sources do not weaken the full contract schema", () => {
+  test("forecast sources use the Foresight source schema", () => {
     expect(DataSource.parse(source)).toEqual(source);
-    expect(EventContractDataSource.safeParse(source).success).toBe(false);
     expect(Object.keys(DataSource.shape).sort()).toEqual(
       ["id", "rank", "name", "publisher", "url", "datasetId"].sort(),
     );

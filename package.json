@@ -1,7 +1,7 @@
 {
   "name": "event-contract-builder",
   "version": "0.2.0",
-  "description": "Open-source event-contract schema library and shared plugin interface for Bleavit Foresight.",
+  "description": "Open-source TypeScript package and plugin interface for Bleavit Foresight.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -9,18 +9,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./src": {
-      "types": "./dist/src/index.d.ts",
-      "default": "./dist/src/index.js"
-    },
-    "./cnl": {
-      "types": "./dist/src/cnl.d.ts",
-      "default": "./dist/src/cnl.js"
-    },
-    "./schema": {
-      "types": "./dist/src/schema/event-contract.d.ts",
-      "default": "./dist/src/schema/event-contract.js"
     },
     "./foresight": {
       "types": "./dist/src/foresight/index.d.ts",

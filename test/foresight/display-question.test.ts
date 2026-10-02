@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DraftUnit } from "../../src/schema/display-question";
+import { DraftUnit } from "../../src/foresight/display-question";
 
 const museumTemplate = {
   question: "Will the museum's dinosaur exhibition remain open through <date>?",
