@@ -19,15 +19,16 @@ After the user explicitly accepts the rendered stage, call
 6. optional `news_timeline`, only after explicit opt-in
 
 Carry the returned `forecast_specification_id` and immutable `language_code`
-between calls. They are internal metadata: never expose them in chat, errors,
-approval summaries, or exports. A new language or selected alternative is a
-new record: set `start_new_specification: true`, omit the old ID, and obtain new
-approvals. An omitted ID resolves only within a stateful MCP session, when one
-exists; stateless HTTP requests require the explicit ID to continue. An
-explicit ID may address the server's handoff store. The ID is a bearer handoff,
-not authentication. On the hosted Cloudflare Worker, records expire 30 days
-after their most recent update. Expired records are inaccessible and are
-removed on access or by an hourly cleanup. Call
+between calls, including from a final approval into any requested export call.
+Final approvals return this metadata in structured tool output; keep it out of
+`review_markdown` and all other user-facing content. A new language or selected
+alternative is a new record: set `start_new_specification: true`, omit the old
+ID, and obtain new approvals. An omitted ID resolves only within a stateful MCP
+session, when one exists; stateless HTTP requests require the explicit ID to
+continue. An explicit ID may address the server's handoff store. The ID is a
+bearer handoff, not authentication. On the hosted Cloudflare Worker, records
+expire 30 days after their most recent update. Expired records are inaccessible
+and are removed on access or by an hourly cleanup. Call
 `delete_forecast_specification` only after the user explicitly asks to delete a
 record and provides its ID; deletion is immediate and permanent.
 

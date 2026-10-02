@@ -34,49 +34,14 @@ export const ReviewMarkdown = z
 
 export const approvalOutputSchema = z
   .object({
-    forecast_specification_id: ForecastSpecificationId.optional(),
-    language_code: ForecastSpecificationLanguageCode.optional(),
-    unit_number: z.number().int().optional(),
-    selected_unit: ConnectorDraftUnit.optional(),
+    forecast_specification_id: ForecastSpecificationId,
+    language_code: ForecastSpecificationLanguageCode,
+    unit_number: z.number().int(),
+    selected_unit: ConnectorDraftUnit,
     approved_stage: approvalStageSchema,
     review_markdown: ReviewMarkdown,
   })
-  .strict()
-  .superRefine((value, ctx) => {
-    const isFinal =
-      value.approved_stage === "background_information" ||
-      value.approved_stage === "news_timeline";
-    const internalFields = [
-      "forecast_specification_id",
-      "language_code",
-      "unit_number",
-      "selected_unit",
-    ] as const;
-
-    if (isFinal) {
-      for (const field of internalFields) {
-        if (value[field] !== undefined) {
-          ctx.addIssue({
-            code: "custom",
-            path: [field],
-            message:
-              "Final approval must not expose internal workflow metadata.",
-          });
-        }
-      }
-      return;
-    }
-
-    for (const field of internalFields) {
-      if (value[field] === undefined) {
-        ctx.addIssue({
-          code: "custom",
-          path: [field],
-          message: "Intermediate approval must identify the approved unit.",
-        });
-      }
-    }
-  });
+  .strict();
 
 export const approvedForecastSpecificationLookupShape = {
   forecast_specification_id: optionalForecastSpecificationId,

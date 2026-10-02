@@ -244,9 +244,13 @@ describe("public forecast interface", () => {
     expect(Object.keys(foresightTools)).toHaveLength(10);
   });
 
-  test("approval outputs carry a canonical review and final approval omits internal metadata", () => {
+  test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
     const finalSummary = {
+      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+      language_code: "en",
+      unit_number: 1,
+      selected_unit: input.selected_unit,
       approved_stage: "background_information" as const,
       review_markdown: "# Forecast Specification\n\n## Stage: Complete",
     };
@@ -255,7 +259,7 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({
         ...finalSummary,
-        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+        forecast_specification_id: undefined,
       }).success,
     ).toBe(false);
     expect(
@@ -288,6 +292,9 @@ describe("public forecast interface", () => {
         "# Forecast Specification\n\n## Stage: Resolution Criteria Approved",
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
+    expect(foresightServerInstructions).toContain(
+      "Final approvals return this metadata in structured tool output",
+    );
   });
 
   test("language code is a BCP 47 tag and canonicalized before storage", () => {
