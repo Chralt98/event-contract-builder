@@ -7,16 +7,24 @@ file or from tool descriptions.
 
 ## Workflow state
 
-Submission tools validate and store a pending stage; they never approve it.
-After the user explicitly accepts the rendered stage, call
+Submission tools validate and store a pending stage. If `submit_selected_unit`
+receives the exact unit and number from the active record's stored draft, the
+user's choice explicitly confirms it and the tool stores and approves
+`selected_unit` together. Never call `approve_forecast_specification` for
+that exact draft selection. Immediately continue with `submit_defined_terms`
+using the exact selected unit and its unit number. A unit outside that draft
+remains pending. After the user accepts its
+review, call `approve_forecast_specification` for `selected_unit`, then
+continue with definitions.
+
+After the user explicitly accepts each other rendered stage, call
 `approve_forecast_specification` in this order:
 
-1. `selected_unit`
-2. `defined_terms`
-3. `resolution_sources`
-4. `resolution_criteria`
-5. `background_information`
-6. optional `news_timeline`, only after explicit opt-in
+1. `defined_terms`
+2. `resolution_sources`
+3. `resolution_criteria`
+4. `background_information`
+5. optional `news_timeline`, only after explicit opt-in
 
 Pass the returned `forecast_specification_id` to every approval call; it is
 required even when continuing in the same chat. Carry the ID and immutable
@@ -61,10 +69,17 @@ interpretation or resolution. Follow schema-required formats for structured
 fields.
 
 Every successful workflow submission and approval returns `review_markdown`.
-Return the `review_markdown` verbatim.
+Return the `review_markdown` verbatim. For draft reviews, copy the complete
+rendered Markdown exactly; do not recreate it from structured data, condense
+the variables, or combine their allowed values.
 For submissions, and for approvals that complete the workflow, it is the
 authoritative, complete user-facing result: reply with that exact string and
-nothing else. Intermediate approval reviews are never user-facing. Treat the
+nothing else, except for the exact draft-selection transition described here.
+When the user chooses a unit from the active record's stored draft, keep the
+`submit_selected_unit` review internal, immediately submit definitions, and
+present only the definitions review. If the selected unit is outside that
+draft, present its review and wait for approval.
+Intermediate approval reviews are never user-facing. Treat every other
 approval as a silent transition, immediately invoke the next stage, and present
 only that next stage's review. Do not summarize, reword, reorder, omit fields,
 or add a preface. Translate only generated labels and fixed UI text; preserve

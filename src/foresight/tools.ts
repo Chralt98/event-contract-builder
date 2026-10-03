@@ -22,7 +22,7 @@ export const approvalShape = {
     "ID returned by the prior workflow step; required to identify the record being approved.",
   ),
   stage: approvalStageSchema.describe(
-    "The pending workflow stage the user explicitly approved in chat.",
+    "The pending stage the user approved in chat; a drafted unit is approved automatically when selected.",
   ),
 };
 
@@ -279,7 +279,7 @@ export const foresightTools = {
   approve_forecast_specification: {
     title: "Approve Forecast Specification Stage",
     description:
-      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Submissions remain pending until this tool succeeds.",
+      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Selecting an exact unit from the active draft already approves it.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -422,7 +422,7 @@ export const foresightTools = {
   submit_selected_unit: {
     title: "Submit Selected Unit",
     description:
-      "Validate and store the exact selected display-question unit as pending. Start a new record only for a separate alternative or language branch.",
+      "Validate and store the selected unit; an exact match to the active draft also approves it and unlocks definitions. A different or new unit remains pending.",
     inputSchema: selectedUnitShape,
     outputSchema: selectedUnitOutputSchema,
     annotations: {

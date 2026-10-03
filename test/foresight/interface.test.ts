@@ -320,6 +320,15 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "present\nonly that next stage's review",
     );
+    expect(foresightServerInstructions).toContain(
+      "Never call `approve_forecast_specification` for\nthat exact draft selection",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Immediately continue with `submit_defined_terms`",
+    );
+    expect(foresightServerInstructions).toContain(
+      "copy the complete\nrendered Markdown exactly",
+    );
   });
 
   test("background information is plain text without subheadings or references", () => {
@@ -661,10 +670,10 @@ describe("public forecast interface", () => {
     );
 
     expect(foresightServerInstructions).toContain(
-      "Submission tools validate and store a pending stage; they never approve it.",
+      "Submission tools validate and store a pending stage.",
     );
     expect(foresightServerInstructions).toContain(
-      "Carry the returned `forecast_specification_id` and immutable `language_code`",
+      "Pass the returned `forecast_specification_id` to every approval call",
     );
     expect(foresightServerInstructions).toContain("Show YAML in chat");
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
@@ -734,19 +743,23 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Do not attach conversation history",
     );
-    expect(foresightServerInstructions).toContain(
+    expect(foresightServerInstructions.replace(/\s+/g, " ")).toContain(
       "a forecast specification ID",
     );
     expect(foresightServerInstructions).toContain(
       "prefilling the user's feedback",
     );
-    const initialInvite = foresightServerInstructions.indexOf(
+    const normalizedInstructions = foresightServerInstructions.replace(
+      /\s+/g,
+      " ",
+    );
+    const initialInvite = normalizedInstructions.indexOf(
       "5. Leave feedback about Bleavit Foresight",
     );
-    const exportInvite = foresightServerInstructions.indexOf(
+    const exportInvite = normalizedInstructions.indexOf(
       "After showing all requested YAML",
     );
-    const finalInvite = foresightServerInstructions.indexOf(
+    const finalInvite = normalizedInstructions.indexOf(
       "After the user explicitly confirms the displayed export is correct",
     );
     expect(initialInvite).toBeGreaterThanOrEqual(0);

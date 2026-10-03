@@ -16,10 +16,13 @@ template, alternative-question, and selection rules.
    number. Call `submit_selected_unit` with the active record's ID and language;
    use the returned ID and language for the next step. For a selected alternative
    or translated unit, start a new record as described below.
-4. Only after `submit_selected_unit` succeeds, approve `selected_unit`; never
-   call approval to create or persist the selection. The user's choice from the
-   draft is explicit confirmation of the submitted selection.
-5. Continue immediately with `define-terms` after selected-unit approval.
+4. When the exact unit and number match the active record's stored draft, the
+   user's choice is approval: `submit_selected_unit` saves and approves it
+   together. Do not call `approve_forecast_specification` for this selection;
+   keep its transition review internal and continue directly with
+   `define-terms`. A selection outside that draft remains pending; show its
+   review, call `approve_forecast_specification` after user acceptance, then
+   continue with definitions.
 
 Follow the server-wide rules for language, internal metadata, rendering,
 separate records, and approvals. A selected alternative or translated unit is

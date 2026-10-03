@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bleavit-foresight",
-  "version": "0.4.0+codex.20261003145308",
+  "version": "0.4.0+codex.20261003184032",
   "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
