@@ -69,12 +69,14 @@ interpretation or resolution. Follow schema-required formats for structured
 fields.
 
 Every successful workflow submission and approval returns `review_markdown`.
-Return the `review_markdown` verbatim. For draft reviews, copy the complete
-rendered Markdown exactly; do not recreate it from structured data, condense
-the variables, or combine their allowed values.
-For submissions, and for approvals that complete the workflow, it is the
-authoritative, complete user-facing result: reply with that exact string and
-nothing else, except for the exact draft-selection transition described here.
+For submissions and approvals that complete the workflow, it is the
+authoritative, complete user-facing result: copy the returned
+`review_markdown` value verbatim as the entire next reply and nothing else. Do
+not paraphrase, summarize, retype, or add a conversational lead-in, even when
+the review is a short completion menu. The only exception is the exact
+draft-selection transition described here. For draft reviews, copy the
+complete rendered Markdown exactly; do not recreate it from structured data,
+condense the variables, or combine their allowed values.
 When the user chooses a unit from the active record's stored draft, keep the
 `submit_selected_unit` review internal, immediately submit definitions, and
 present only the definitions review. If the selected unit is outside that
