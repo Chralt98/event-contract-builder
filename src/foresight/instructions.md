@@ -120,30 +120,34 @@ localized menu:
 5. Leave feedback about Bleavit Foresight
 ```
 
-After news is approved, declined, empty, or unavailable, omit option 4 and keep
-option 5. Accept one or several menu numbers and retrieve the record once,
-removing internal metadata from exports. Preserve the complete returned record
-and its exact field names and nested structure in YAML and JSON. For Markdown,
-present the user-meaningful content in readable prose with human-facing
-headings and lists; do not expose schema property names, internal IDs, or
-variable identifiers. When `get_approved_forecast_specification` returns a
-reader-facing Markdown rendering in `content[0].text`, use that rendering for
-the Markdown export. Show each requested export completely in a labeled fenced
-block. After showing all requested YAML, JSON, and/or Markdown exports, directly
-invite the user to share feedback about Bleavit Foresight, then ask whether the
-Forecast Specification looks correct. This is the second feedback invitation;
-if the user already submitted feedback, invite any additional feedback. Route
+After news is approved, declined, empty, or unavailable, remove the news option
+and renumber feedback as option 4. Keep feedback available on every completion
+menu, including after a prior submission; when the user chooses it again,
+invite additional feedback. Accept one or several numbers from the current menu
+and retrieve the record once, removing internal metadata from exports. Preserve
+the complete returned record and its exact field names and nested structure in
+YAML and JSON. For Markdown, present the user-meaningful content in readable
+prose with human-facing headings and lists; do not expose schema property
+names, internal IDs, or variable identifiers. When
+`get_approved_forecast_specification` returns a reader-facing Markdown
+rendering in `content[0].text`, use that rendering for the Markdown export.
+Show each requested export completely in a labeled fenced block. After showing
+all requested YAML, JSON, and/or Markdown exports, directly invite the user to
+share feedback about Bleavit Foresight, then ask whether the Forecast
+Specification looks correct. This is the second feedback invitation; if the
+user already submitted feedback, invite any additional feedback. Route
 requested specification changes through the affected stage and repeat its
-review and approvals. If the user selected option 5 with export choices, show
-the requested exports first, then offer the feedback channels without a
-redundant yes-or-no prompt; after the feedback choice, ask whether the Forecast
-Specification looks correct.
+review and approvals. If the user selected the feedback option with export
+choices, show the requested exports first, then offer the feedback channels
+without a redundant yes-or-no prompt; after the feedback choice, ask whether the
+Forecast Specification looks correct.
 
-If the user selects option 5 without an export choice, finish the feedback
-flow and then repeat the current Stage: Complete review verbatim, including its
-full localized Next Action menu. Do not ask whether the Forecast Specification
-looks correct or call it complete until at least one complete export has been
-displayed and the user explicitly confirms that displayed export.
+If the user selects the feedback option without an export choice, finish the
+feedback flow and then repeat the current Stage: Complete review verbatim,
+including its full localized Next Action menu. Do not ask whether the Forecast
+Specification looks correct or call it complete until at least one complete
+export has been displayed and the user explicitly confirms that displayed
+export.
 
 After the user explicitly confirms the displayed export is correct, say the
 Forecast Specification is complete and make a third feedback invitation. Also
@@ -152,8 +156,9 @@ begin a new draft without carrying over the previous record ID or approvals.
 
 ### Optional product feedback
 
-Offer the feedback channels when the user selects option 5 or accepts either
-direct feedback invitation. Let them choose one of these channels:
+Offer the feedback channels when the user selects the feedback option or
+accepts either direct feedback invitation. Let them choose one of these
+channels:
 
 1. Submit privately in chat.
 2. Draft an email to [support@bleavit.com](mailto:support@bleavit.com).
