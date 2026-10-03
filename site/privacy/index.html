@@ -44,6 +44,18 @@
           transcript. Your ChatGPT or Codex client may process conversation
           content under its own privacy terms.
         </p>
+        <p>
+          If you choose the private feedback option, the feedback tool accepts
+          only the text you submit. The service stores that text separately from
+          Forecast Specifications with a random feedback reference and
+          timestamps; it does not associate account details, a contact address,
+          conversation history, or a Forecast Specification with the feedback.
+          Cloudflare may process technical request metadata as described below.
+          Free-text can still contain personal data if you include it, so do not
+          include personal, sensitive, or secret information. ChatGPT or Codex
+          separately processes the conversation and tool call under its own
+          privacy terms.
+        </p>
         <h2>Purposes and legal bases</h2>
         <p>
           We use submitted content to provide the workflow you request,
@@ -55,8 +67,16 @@
           Where the GDPR applies, our legal basis for this security and
           reliability processing is our legitimate interest in maintaining a
           secure and available service (Article 6(1)(f) GDPR). We do not use
-          submitted content for advertising, analytics, profiling, or model
-          training.
+          Forecast Specification content for advertising, analytics, profiling,
+          or model training. Feedback follows the separate purpose below.
+        </p>
+        <p>
+          We use feedback that you deliberately submit to review and improve
+          Bleavit Foresight. Where the GDPR applies, our legal basis is our
+          legitimate interest in improving the service (Article 6(1)(f) GDPR),
+          subject to a documented balancing assessment. You can object to this
+          processing using the privacy contact below. Support emails about
+          feedback are used to respond and may inform service improvements.
         </p>
         <h2>How information is used and stored</h2>
         <p>
@@ -65,6 +85,12 @@
           Cloudflare Worker and D1 database. It does not require a user account;
           the record ID acts as a bearer reference, so anyone who obtains it can
           access or update that record until it expires or is deleted.
+        </p>
+        <p>
+          Private feedback is stored separately from Forecast Specifications in
+          Cloudflare D1. The plugin does not expose a way to read feedback
+          records. Keep the feedback reference returned after submission if you
+          may want to delete the record sooner.
         </p>
         <h2>Service providers</h2>
         <p>
@@ -90,6 +116,16 @@
           post forecast content, record IDs, credentials, or personal
           information there.
         </p>
+        <p>
+          If you choose the email option, the plugin cannot guarantee that its
+          mailto link will open an email application; it may open in a browser.
+          Any browser, email application, or provider that handles the draft
+          processes it. If you send it, the support mailbox provider processes
+          the message and sender address so we can respond and review your
+          feedback. If you choose GitHub, you submit the issue directly to
+          GitHub; it is public and governed by GitHub's terms and privacy
+          information.
+        </p>
         <h2>Retention and controls</h2>
         <p>
           A record expires 30 days after its most recent update. It becomes
@@ -105,16 +141,21 @@
           information. Its Workers Logs retention depends on the account plan
           and settings; Cloudflare currently documents a maximum of three days
           on its Free plan and seven days on its Paid plan. Support emails are
-          kept for as long as needed to respond and to meet applicable legal
-          requirements.
+          kept for as long as needed to respond, review relevant feedback, and
+          meet applicable legal requirements. Private feedback records expire
+          180 days after submission and are removed by an hourly cleanup. You
+          can delete a private feedback record sooner by asking the plugin to
+          delete it and providing its feedback reference.
         </p>
         <h2>Your rights</h2>
         <p>
           Where the GDPR applies, you may have the right to request access to,
           correction or deletion of your personal data, restriction of
           processing, and a copy of data you provided. You may object to
-          processing based on legitimate interests. To exercise a right or ask a
-          privacy question, email
+          processing based on legitimate interests. To exercise a right
+          concerning private plugin feedback, use the feedback reference with
+          the plugin's delete option or email support. To exercise another right
+          or ask a privacy question, email
           <a href="mailto:support@bleavit.com">support@bleavit.com</a>. We may
           ask for information needed to verify and handle your request. You may
           also lodge a complaint with a data protection supervisory authority,

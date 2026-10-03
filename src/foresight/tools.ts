@@ -18,7 +18,9 @@ import {
 } from "./workflow";
 
 export const approvalShape = {
-  forecast_specification_id: optionalForecastSpecificationId,
+  forecast_specification_id: ForecastSpecificationId.describe(
+    "ID returned by the prior workflow step; required to identify the record being approved.",
+  ),
   stage: approvalStageSchema.describe(
     "The pending workflow stage the user explicitly approved in chat.",
   ),
@@ -54,6 +56,33 @@ export const deleteForecastSpecificationShape = {
 
 export const deleteForecastSpecificationOutputSchema = z
   .object({ deleted: z.literal(true) })
+  .strict();
+
+export const submitPluginFeedbackShape = {
+  feedback: z
+    .string()
+    .trim()
+    .min(1, "Feedback cannot be empty.")
+    .max(4000, "Feedback must be 4,000 characters or fewer.")
+    .describe("Feedback text the user explicitly chose to send."),
+};
+
+export const submitPluginFeedbackOutputSchema = z
+  .object({
+    feedback_id: z.string().uuid(),
+    expires_at: z.string().datetime(),
+  })
+  .strict();
+
+export const deletePluginFeedbackShape = {
+  feedback_id: z
+    .string()
+    .uuid()
+    .describe("The feedback receipt returned by submit_plugin_feedback."),
+};
+
+export const deletePluginFeedbackOutputSchema = z
+  .object({ request_processed: z.literal(true) })
   .strict();
 
 export const definedTermsShape = {
@@ -279,6 +308,32 @@ export const foresightTools = {
       "Immediately and permanently delete one stored Forecast Specification. Call only when the user explicitly asks to delete it and supplies its forecast specification ID.",
     inputSchema: deleteForecastSpecificationShape,
     outputSchema: deleteForecastSpecificationOutputSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  submit_plugin_feedback: {
+    title: "Submit Plugin Feedback",
+    description:
+      "Store feedback the user explicitly chose to submit about Bleavit Foresight. Stores only the submitted text and a deletion receipt for 180 days.",
+    inputSchema: submitPluginFeedbackShape,
+    outputSchema: submitPluginFeedbackOutputSchema,
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
+  delete_plugin_feedback: {
+    title: "Delete Plugin Feedback",
+    description:
+      "Immediately delete one private feedback submission. Call only when the user explicitly asks and supplies its feedback receipt.",
+    inputSchema: deletePluginFeedbackShape,
+    outputSchema: deletePluginFeedbackOutputSchema,
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,

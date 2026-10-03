@@ -18,8 +18,9 @@ After the user explicitly accepts the rendered stage, call
 5. `background_information`
 6. optional `news_timeline`, only after explicit opt-in
 
-Carry the returned `forecast_specification_id` and immutable `language_code`
-between calls, including from a final approval into any requested export call.
+Pass the returned `forecast_specification_id` to every approval call; it is
+required even when continuing in the same chat. Carry the ID and immutable
+`language_code` into subsequent workflow calls and any requested export call.
 Final approvals return this metadata in structured tool output; keep it out of
 `review_markdown` and all other user-facing content. A new language or selected
 alternative is a new record: set `start_new_specification: true`, omit the old
@@ -110,19 +111,72 @@ localized menu:
 2. Show JSON in chat
 3. Show Markdown in chat
 4. Add the optional recent-news timeline
+5. Leave feedback about Bleavit Foresight
 ```
 
-After news is approved, declined, empty, or unavailable, omit option 4. Accept
-one or several menu numbers and retrieve the record once, removing internal
-metadata from exports. Preserve the complete returned record and its exact
-field names and nested structure in YAML and JSON. For Markdown, present the
-user-meaningful content in readable prose with human-facing headings and lists;
-do not expose schema property names, internal IDs, or variable identifiers.
-When `get_approved_forecast_specification` returns a reader-facing Markdown
-rendering in `content[0].text`, use that rendering for the Markdown export.
-Show each requested export completely in a labeled fenced block. Then ask
-whether the Forecast Specification looks correct; route requested changes
-through the affected stage and repeat its review and approvals.
+After news is approved, declined, empty, or unavailable, omit option 4 and keep
+option 5. Accept one or several menu numbers and retrieve the record once,
+removing internal metadata from exports. Preserve the complete returned record
+and its exact field names and nested structure in YAML and JSON. For Markdown,
+present the user-meaningful content in readable prose with human-facing
+headings and lists; do not expose schema property names, internal IDs, or
+variable identifiers. When `get_approved_forecast_specification` returns a
+reader-facing Markdown rendering in `content[0].text`, use that rendering for
+the Markdown export. Show each requested export completely in a labeled fenced
+block. After showing all requested YAML, JSON, and/or Markdown exports, directly
+invite the user to share feedback about Bleavit Foresight, then ask whether the
+Forecast Specification looks correct. This is the second feedback invitation;
+if the user already submitted feedback, invite any additional feedback. Route
+requested specification changes through the affected stage and repeat its
+review and approvals. If the user selected option 5 with export choices, show
+the requested exports first, then offer the feedback channels without a
+redundant yes-or-no prompt; after the feedback choice, ask whether the Forecast
+Specification looks correct.
+
+If the user selects option 5 without an export choice, finish the feedback
+flow and then repeat the current Stage: Complete review verbatim, including its
+full localized Next Action menu. Do not ask whether the Forecast Specification
+looks correct or call it complete until at least one complete export has been
+displayed and the user explicitly confirms that displayed export.
+
+After the user explicitly confirms the displayed export is correct, say the
+Forecast Specification is complete and make a third feedback invitation. Also
+ask whether they want to start another Forecast Specification. If they do,
+begin a new draft without carrying over the previous record ID or approvals.
+
+### Optional product feedback
+
+Offer the feedback channels when the user selects option 5 or accepts either
+direct feedback invitation. Let them choose one of these channels:
+
+1. Submit privately in chat.
+2. Draft an email to [support@bleavit.com](mailto:support@bleavit.com).
+3. Open the public [GitHub issue form](https://github.com/Chralt98/event-contract-builder/issues/new).
+
+For private submission, before asking for feedback text, show this notice:
+
+> Please do not include personal, sensitive, or confidential information. Your
+> feedback is used to review and improve Bleavit Foresight. The feedback tool
+> accepts only the text you choose to submit (up to 4,000 characters) and stores
+> it separately from Forecast Specifications with a random deletion receipt
+> and timestamps. It is deleted after 180 days and can be deleted sooner using
+> the receipt. ChatGPT or Codex processes this conversation and tool call under
+> its own terms. Cloudflare hosts the feedback service and may process
+> technical request metadata. See the [privacy notice](https://foresight.bleavit.com/privacy/).
+
+Do not attach conversation history, forecast content, a forecast specification
+ID, account details, or a contact address. Call `submit_plugin_feedback` only
+after the user chooses the private channel and provides the text. Show the
+returned receipt ID so the user can request deletion with
+`delete_plugin_feedback`; call deletion only on an explicit request.
+
+For email, draft the message from feedback the user provides, then present a
+`mailto:` link for the user to review and send. Explain that the plugin may
+open links in a browser and cannot guarantee handoff to an email client. Do not
+claim that an email was sent or add forecast content or identifiers. For
+GitHub, explain that an issue is public and may be copied or indexed; link to
+the issue form without prefilling the user's feedback. Do not submit an email
+or GitHub issue on the user's behalf.
 
 ## Validation errors
 

@@ -221,7 +221,7 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(10);
+    expect(Object.keys(foresightTools)).toHaveLength(12);
   });
 
   test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
@@ -688,5 +688,72 @@ describe("public forecast interface", () => {
       expect(tool.description).not.toContain("language_code");
       expect(tool.description).not.toContain("forecast_specification_id");
     }
+  });
+
+  test("plugin feedback is bounded and has a deletion receipt contract", () => {
+    const submitInput = z.object(
+      foresightTools.submit_plugin_feedback.inputSchema,
+    );
+    const deleteInput = z.object(
+      foresightTools.delete_plugin_feedback.inputSchema,
+    );
+
+    expect(
+      Object.keys(foresightTools.submit_plugin_feedback.inputSchema),
+    ).toEqual(["feedback"]);
+    expect(
+      Object.keys(foresightTools.delete_plugin_feedback.inputSchema),
+    ).toEqual(["feedback_id"]);
+    expect(submitInput.safeParse({ feedback: "Helpful plugin." }).success).toBe(
+      true,
+    );
+    expect(submitInput.safeParse({ feedback: "   " }).success).toBe(false);
+    expect(submitInput.safeParse({ feedback: "x".repeat(4001) }).success).toBe(
+      false,
+    );
+    expect(
+      foresightTools.submit_plugin_feedback.outputSchema.safeParse({
+        feedback_id: "00000000-0000-4000-8000-000000000001",
+        expires_at: "2027-04-01T00:00:00.000Z",
+      }).success,
+    ).toBe(true);
+    expect(
+      deleteInput.safeParse({
+        feedback_id: "00000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(true);
+    expect(
+      foresightTools.delete_plugin_feedback.outputSchema.safeParse({
+        request_processed: true,
+      }).success,
+    ).toBe(true);
+    expect(foresightServerInstructions).toContain(
+      "5. Leave feedback about Bleavit Foresight",
+    );
+    expect(foresightServerInstructions).toContain("Do not attach");
+    expect(foresightServerInstructions).toContain(
+      "Do not attach conversation history",
+    );
+    expect(foresightServerInstructions).toContain(
+      "a forecast specification ID",
+    );
+    expect(foresightServerInstructions).toContain(
+      "prefilling the user's feedback",
+    );
+    const initialInvite = foresightServerInstructions.indexOf(
+      "5. Leave feedback about Bleavit Foresight",
+    );
+    const exportInvite = foresightServerInstructions.indexOf(
+      "After showing all requested YAML",
+    );
+    const finalInvite = foresightServerInstructions.indexOf(
+      "After the user explicitly confirms the displayed export is correct",
+    );
+    expect(initialInvite).toBeGreaterThanOrEqual(0);
+    expect(exportInvite).toBeGreaterThan(initialInvite);
+    expect(finalInvite).toBeGreaterThan(exportInvite);
+    expect(foresightServerInstructions).toContain(
+      "start another Forecast Specification",
+    );
   });
 });

@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "bleavit-foresight": {
+    "bleavit-foresight-local": {
       "type": "http",
       "url": "http://localhost:8787/mcp"
     }
