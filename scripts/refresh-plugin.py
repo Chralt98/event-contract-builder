@@ -25,22 +25,35 @@ def read_marketplace_name(marketplace, helpers):
     return name.strip()
 
 
-def update_plugin_cachebuster(root, helpers, package, manifest):
+def update_plugin_cachebuster(root, helpers, package, manifest, portable_manifest):
+    previous_version = portable_manifest.get("version")
     helper = helpers / "update_plugin_cachebuster.py"
     if helper.is_file():
         subprocess.run([sys.executable, str(helper), str(root)], check=True)
-        return
+        versions = {
+            json.loads((root / path).read_text())["version"]
+            for path in ("plugin.json", ".codex-plugin/plugin.json")
+        }
+        changed_versions = versions - {previous_version}
+        if len(changed_versions) > 1:
+            raise ValueError("Plugin version helper assigned conflicting manifest versions")
+        version = next(iter(changed_versions), previous_version)
+    else:
+        version = previous_version
 
-    base_version = package.get("version")
-    if not isinstance(base_version, str) or not base_version.strip():
-        raise ValueError("package.json must define a version before refreshing the plugin")
-    version = manifest.get("version")
-    timestamp = datetime.now(timezone.utc).replace(microsecond=0)
-    while version == f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}":
-        timestamp += timedelta(seconds=1)
-    manifest["version"] = f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}"
-    manifest_path = root / ".codex-plugin/plugin.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+    if version == previous_version:
+        base_version = package.get("version")
+        if not isinstance(base_version, str) or not base_version.strip():
+            raise ValueError("package.json must define a version before refreshing the plugin")
+        timestamp = datetime.now(timezone.utc).replace(microsecond=0)
+        while version == f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}":
+            timestamp += timedelta(seconds=1)
+        version = f"{base_version}+codex.{timestamp:%Y%m%d%H%M%S}"
+
+    manifest["version"] = version
+    portable_manifest["version"] = version
+    (root / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (root / "plugin.json").write_text(json.dumps(portable_manifest, indent=2) + "\n")
 
 
 def main():
@@ -57,8 +70,14 @@ def main():
     if args.setup and not (helpers / "create_basic_plugin.py").is_file():
         raise ValueError("`--setup` requires plugin-creator; set CODEX_PLUGIN_CREATOR to its installed skill directory")
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
+    portable_manifest = json.loads((root / "plugin.json").read_text())
     package = json.loads((root / "package.json").read_text())
-    if manifest["name"] != "bleavit-foresight" or package.get("name") != "event-contract-builder":
+    if (
+        manifest["name"] != "bleavit-foresight"
+        or portable_manifest["name"] != manifest["name"]
+        or portable_manifest["version"] != manifest["version"]
+        or package.get("name") != "event-contract-builder"
+    ):
         raise ValueError(
             "This command must run from the event-contract-builder checkout with the "
             "bleavit-foresight plugin manifest"
@@ -151,8 +170,19 @@ def main():
     if args.check:
         print(f"Verified {name}@{marketplace_name}: {root}")
         return
-    update_plugin_cachebuster(root, helpers, package, manifest)
-    subprocess.run(["bun", "x", "--no-install", "prettier", str(root / ".codex-plugin/plugin.json"), "--write"], check=True)
+    update_plugin_cachebuster(root, helpers, package, manifest, portable_manifest)
+    subprocess.run(
+        [
+            "bun",
+            "x",
+            "--no-install",
+            "prettier",
+            str(root / ".codex-plugin/plugin.json"),
+            str(root / "plugin.json"),
+            "--write",
+        ],
+        check=True,
+    )
     installed = json.loads(subprocess.check_output(["codex", "plugin", "add", f"{name}@{marketplace_name}", "--json"], text=True))
     cache = Path(installed["installedPath"])
     version = json.loads((root / ".codex-plugin/plugin.json").read_text())["version"]
@@ -163,7 +193,10 @@ def main():
     # files. Only prune the freshly installed cache; never change source files.
     allowed = {
         ".codex-plugin",
+        "plugin.json",
+        "mcp.json",
         "skills",
+        "assets",
         ".mcp.json",
         ".app.json",
         ".app.example.json",
@@ -179,6 +212,10 @@ def main():
                 shutil.rmtree(path)
             else:
                 path.unlink()
+    icon_source = root / "site/assets/foresight-icon.png"
+    icon_destination = cache / "assets" / icon_source.name
+    icon_destination.parent.mkdir(exist_ok=True)
+    shutil.copyfile(icon_source, icon_destination)
     print(f"Installed {installed['pluginId']} at {cache}")
     print("Start a new Codex task to load the refreshed plugin. Refresh the ChatGPT connection separately after tool metadata changes.")
 

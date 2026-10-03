@@ -1,0 +1,49 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "bleavit-foresight",
+  "version": "0.4.0+codex.20261003131729",
+  "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
+  "author": {
+    "name": "Christopher Maximilian Altmann",
+    "url": "https://github.com/Chralt98"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "forecast specification",
+    "forecast question",
+    "conditional forecast",
+    "term definition",
+    "resolution criteria",
+    "resolution sources",
+    "semantic risk",
+    "event contract",
+    "prediction market"
+  ],
+  "homepage": "https://github.com/Chralt98/event-contract-builder#readme",
+  "repository": "https://github.com/Chralt98/event-contract-builder",
+  "extensions": {
+    "com.openai": {
+      "apps": "./.app.json",
+      "interface": {
+        "displayName": "Bleavit Foresight",
+        "shortDescription": "Create forecast specifications",
+        "longDescription": "Built for forecasters and researchers, Bleavit Foresight guides users through an interactive, approval-based workflow. It drafts concise questions from new events, forecasts, or outcomes; clarifies ambiguous terms; identifies independent, authoritative resolution sources; and develops source-grounded resolution criteria. Users can add neutral background information and, with explicit opt-in, a concise timeline of relevant recent news. A semantic-risk review can examine wording, exceptions, and resolution rules. The plugin supports research and specification drafting; it does not predict outcomes.",
+        "developerName": "Christopher Maximilian Altmann",
+        "category": "Productivity",
+        "capabilities": ["Interactive"],
+        "defaultPrompt": [
+          "Draft forecast questions for: ",
+          "What are the possibilities when drafting forecast specifications?",
+          "How to use the forecast specification workflow?"
+        ],
+        "brandColor": "#1F6FEB",
+        "composerIcon": "./assets/foresight-icon.png",
+        "logo": "./assets/foresight-icon.png",
+        "websiteURL": "https://foresight.bleavit.com/",
+        "supportURL": "https://foresight.bleavit.com/support/",
+        "privacyPolicyURL": "https://foresight.bleavit.com/privacy/",
+        "termsOfServiceURL": "https://foresight.bleavit.com/terms/"
+      }
+    }
+  }
+}

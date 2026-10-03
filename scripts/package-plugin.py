@@ -15,8 +15,12 @@ parser.add_argument(
     help="MCP endpoint to put in the distributable ZIP",
 )
 args = parser.parse_args()
-manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
-mcp_config = json.loads((root / ".mcp.json").read_text())
+legacy_manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
+manifest = json.loads((root / "plugin.json").read_text())
+legacy_mcp_config = json.loads((root / ".mcp.json").read_text())
+mcp_config = json.loads((root / "mcp.json").read_text())
+for server in legacy_mcp_config["mcpServers"].values():
+    server["url"] = args.mcp_url
 for server in mcp_config["mcpServers"].values():
     server["url"] = args.mcp_url
 plugin_name = manifest["name"]
@@ -32,8 +36,12 @@ if plugin_name != "event-contract-builder":
         legacy_archive.unlink()
 (output / ".codex-plugin").mkdir(parents=True)
 # A user's local ChatGPT connection is never part of the distributable.
-manifest.pop("apps", None)
-(output / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
+legacy_manifest.pop("apps", None)
+openai_extension = manifest.get("extensions", {}).get("com.openai", {})
+openai_extension.pop("apps", None)
+(output / ".codex-plugin/plugin.json").write_text(json.dumps(legacy_manifest, indent=2) + "\n")
+(output / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
+(output / "mcp.json").write_text(json.dumps(mcp_config, indent=2) + "\n")
 shutil.copytree(root / "skills", output / "skills")
 (output / "assets").mkdir()
 shutil.copyfile(
@@ -48,7 +56,7 @@ for name in (
     "DISCLAIMER.md",
 ):
     shutil.copyfile(root / name, output / name)
-(output / ".mcp.json").write_text(json.dumps(mcp_config, indent=2) + "\n")
+(output / ".mcp.json").write_text(json.dumps(legacy_mcp_config, indent=2) + "\n")
 archive = output.parent / f"{plugin_name}.zip"
 with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
     for path in sorted(output.rglob("*")):
