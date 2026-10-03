@@ -22,6 +22,5 @@ template, alternative-question, and selection rules.
 5. Continue immediately with `define-terms` after selected-unit approval.
 
 Follow the server-wide rules for language, internal metadata, rendering,
-separate records, and approvals. A source-review alternative remains only a
-proposal until selected; once selected, start it as a new record and do not
-reuse the original unit's definitions or sources.
+separate records, and approvals. A selected alternative or translated unit is
+a new record; do not reuse the original unit's definitions or sources.

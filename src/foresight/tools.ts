@@ -5,7 +5,6 @@ import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
-import { alternativeForecastSpecificationSchema } from "./source-alternative";
 import {
   sourceHierarchyRankError,
   sourceIndependenceError,
@@ -134,22 +133,9 @@ export const resolutionSourceShape = {
   condition_sources: sourceHierarchy
     .optional()
     .describe("Separate ranked hierarchy for the selected unit's condition."),
-  coverage_gaps: z
-    .array(z.string().min(3))
-    .min(1)
-    .max(12)
-    .optional()
-    .describe("Required facts lacking authoritative primary coverage."),
-  alternative_forecast_specification: alternativeForecastSpecificationSchema
-    .optional()
-    .describe(
-      "A sourceable nearby or proxy unit proposed when coverage is inadequate.",
-    ),
   followUp: z
     .string()
-    .describe(
-      "Ask whether to approve or revise the hierarchy and present required gap options.",
-    ),
+    .describe("Ask whether to approve or revise the source hierarchy."),
 };
 
 export const resolutionCriteriaShape = {

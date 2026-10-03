@@ -10,7 +10,8 @@ is the sole source for coverage, independence, variable-value, locator, and
 fallback rules.
 
 1. Require one exact selected unit with approved definitions.
-2. Research the complete hierarchy and any gaps or alternative internally.
+2. Research the complete hierarchy, preferring two independent sources when
+   available.
 3. Call `submit_resolution_source` once and present its complete rendered
    review; there is no separate source-proposal stage.
 4. Resubmit the full hierarchy after changes. Only after explicit approval,

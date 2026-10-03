@@ -1,7 +1,6 @@
 # Drafting specification
 
-Use this reference for a new event, a source-review alternative, or selection
-of an existing draft.
+Use this reference for a new event or selection of an existing draft.
 
 ## New-event draft
 
@@ -92,14 +91,6 @@ any value needs a different rule, source, settlement method, or interpretation,
 split the unit. Never use a broad wildcard or add values merely to create a
 variable. Selection preserves the complete unit and does not instantiate one
 variable value.
-
-## Source-review alternative
-
-When source review reports missing primary coverage or no independent fallback,
-propose one nearby, proxy, or better-specified unit that preserves the original
-intent but can use at least two independent source agencies. Return only the
-new display-question unit. Do not silently replace the original, define its
-terms, or treat it as selected.
 
 ## Output detail
 

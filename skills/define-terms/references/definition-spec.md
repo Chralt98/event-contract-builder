@@ -10,9 +10,9 @@ stages.
 Keep the entire selected unit unchanged. When variables are present, analyze
 the common wording and full value set without choosing or instantiating a
 value. For a conditional unit, analyze both the condition statement and outcome
-question; do not redefine the unmet disposition. A selected source-review alternative uses
-its supplied unit and number, starts with no inherited definitions, and returns
-to source review afterward.
+question; do not redefine the unmet disposition. For an alternative selected
+from a draft, use its exact unit and number and start with no inherited
+definitions.
 
 Each definition is neutral, dispute-resistant, and at most two sentences.
 Cite an authoritative methodology only when needed to fix meaning. Never guess

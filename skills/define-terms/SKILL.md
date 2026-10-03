@@ -16,6 +16,6 @@ analysis. It is the sole source for ambiguity and definition rules.
 4. After explicit approval, approve `defined_terms` and continue with
    `define-resolution-source`.
 
-For a selected alternative, use its exact new unit, start definitions from
-scratch, and keep its candidate sources provisional. Follow the server-wide
-language, metadata, rendering, record, and approval rules.
+For an alternative selected from a draft, use its exact unit and start
+definitions from scratch. Follow the server-wide language, metadata, rendering,
+record, and approval rules.

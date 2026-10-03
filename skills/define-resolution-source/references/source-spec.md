@@ -6,9 +6,8 @@ resolve it with a fixed ranked hierarchy.
 For a conditional unit, submit one hierarchy for the outcome and a separate
 `condition_sources` hierarchy for determining whether the prerequisite held.
 Each hierarchy must cover its own facts and have an independent primary and,
-when available, fallback. Report gaps for either hierarchy; source coverage
-for the outcome does not establish the condition. For a source-review
-alternative, ensure the proposed source agencies can cover both facts.
+when available, fallback. Source coverage for the outcome does not establish
+the condition.
 
 ## Source standard
 
@@ -51,12 +50,6 @@ page, a guessed future path, session URL, tracking URL, or inaccessible page.
 Recurring data needs a compatible cadence; event-driven outcomes need an
 identifiable official announcement channel.
 
-## Gaps and alternatives
-
-List any required fact without authoritative primary coverage in
-`coverage_gaps`; never imply full coverage. If no independent fallback exists,
-a single primary is allowed only after the user accepts the rendered warning.
-The follow-up must offer: proceed with one source, provide a fallback for
-evaluation, or choose a nearby/proxy alternative with at least two independent
-agencies. Include that alternative when appropriate without rewriting the
-selected unit.
+If no independent fallback exists, submit the best authoritative primary
+source available. The follow-up remains limited to approving or revising the
+source hierarchy.
