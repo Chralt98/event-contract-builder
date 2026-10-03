@@ -325,7 +325,7 @@ export const foresightTools = {
       readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
-      openWorldHint: false,
+      openWorldHint: true,
     },
   },
   delete_plugin_feedback: {
