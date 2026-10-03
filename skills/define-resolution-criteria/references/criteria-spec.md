@@ -65,9 +65,14 @@ pre-submission response.
 
 ## Criteria
 
-Start `resolvesYesWhen` with a complete future-tense sentence naming the Yes
-condition and broad source; keep specific source links in
-`evidenceAndSourceRules`.
+Write `resolvesYesWhen` as the bare, necessary-and-sufficient Yes condition.
+The renderer supplies the standard “This question will resolve as Yes if …”
+sentence and its No complement, so do not repeat that wrapper or another
+“resolve Yes if” phrase in this field. Keep specific source links in
+`evidenceAndSourceRules`. Before submission, check that the wrapper will appear
+only once in the rendered review and correct the payload before submitting if
+needed; submit only the finished criteria rather than announcing a later
+wording correction.
 
 Audit the complete criteria, including evidence and exception rules, for
 outcome-bearing terms introduced beyond the selected unit. Define any term

@@ -101,6 +101,12 @@ Decision interviews within a stage use numbered questions and lettered options
 options plus a separate free-form fallback and a recommendation. Stage-specific
 interview logic and formats live in the relevant skill reference.
 
+Present every interview round, workflow menu, confirmation, and channel choice
+as ordinary Markdown in the assistant's chat response. Do not use a host-native
+input dialog or `request_user_input` for these choices; the dialog can disappear
+when the response finishes. Keep the choices in the conversation transcript and
+wait for the user's plain-text selection.
+
 ## Completion and exports
 
 After background approval, the canonical completion review contains this
@@ -153,7 +159,15 @@ direct feedback invitation. Let them choose one of these channels:
 2. Draft an email to [support@bleavit.com](mailto:support@bleavit.com).
 3. Open the public [GitHub issue form](https://github.com/Chralt98/event-contract-builder/issues/new).
 
-For private submission, before asking for feedback text, show this notice:
+The first user-facing reply after the user chooses feedback must show all three
+channels above as visible chat text and wait for the user's choice. Do not emit
+an intermediate status message, silently inspect a feedback step, or omit the
+other channels. A direct request to draft the feedback email counts as choosing
+the email channel. Never use a host-native input dialog for the channel menu.
+
+For private submission, the response asking for feedback text must include the
+complete notice below verbatim, in Markdown, before the request. Do not hide,
+summarize, or abbreviate it. Show it only for the private channel:
 
 > Please do not include personal, sensitive, or confidential information. Your
 > feedback is used to review and improve Bleavit Foresight. The feedback tool
@@ -170,13 +184,29 @@ after the user chooses the private channel and provides the text. Show the
 returned receipt ID so the user can request deletion with
 `delete_plugin_feedback`; call deletion only on an explicit request.
 
-For email, draft the message from feedback the user provides, then present a
-`mailto:` link for the user to review and send. Explain that the plugin may
-open links in a browser and cannot guarantee handoff to an email client. Do not
-claim that an email was sent or add forecast content or identifiers. For
-GitHub, explain that an issue is public and may be copied or indexed; link to
-the issue form without prefilling the user's feedback. Do not submit an email
-or GitHub issue on the user's behalf.
+For email, use `support@bleavit.com` as the recipient without asking the user
+for an address. Draft a concise subject from the user's feedback and put both
+`recipient: support@bleavit.com` and `subject: <generated subject>` in the email
+writing block's header fields, before a blank line and the message body. Use
+this exact structure, with a fresh five-digit ID:
+
+```text
+:::writing{variant="email" id="<five-digit ID>"}
+recipient: support@bleavit.com
+subject: <generated subject>
+
+<draft body>
+:::
+```
+
+Never leave either field blank or put a `Subject:` label in the body. Then
+provide a `mailto:` link to the same recipient with the same subject and body
+URL-encoded so the user's email client can open a prefilled draft. Explain that
+the plugin may open links in a browser and cannot guarantee handoff to an email
+client. Do not claim that an email was sent or add forecast content or
+identifiers. For GitHub, explain that an issue is public and may be copied or
+indexed; link to the issue form without prefilling the user's feedback. Do not
+submit an email or GitHub issue on the user's behalf.
 
 ## Validation errors
 
