@@ -90,42 +90,81 @@ open-source repository remains usable for inspecting, adapting, and
 implementing the published interface; service access and operational
 components are provided separately.
 
-## Install or refresh the local plugin
+## Develop with local plugins
 
-For a local ChatGPT app mapping, copy the example and replace its placeholder:
+Keep **Bleavit Foresight Local** for local development and **Bleavit Foresight**
+for production. They are separate plugin copies with different update paths:
+
+| Plugin copy                                        | Source of its skills                           | How to update it                                                                            |
+| -------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Bleavit Foresight Local**                        | Private Plugin Creator release in your account | Update the existing plugin with Plugin Creator. Repository edits do not sync automatically. |
+| Repository-linked Codex copy (`bleavit-foresight`) | This checkout through the local marketplace    | Run `bun run refresh:plugin --marketplace-path .local-marketplace/marketplace.json`.        |
+
+The Codex CLI refresh command reinstalls a plugin from its marketplace source.
+It cannot update the separate Plugin Creator release, which is stored in your
+account rather than linked to this checkout. Update **Bleavit Foresight Local**
+through Plugin Creator after changing the repository skills; keep its existing
+plugin identity and local MCP connection. The current Codex plugin CLI has no
+command for publishing an account plugin release. See the [local plugin
+guide](https://developers.openai.com/plugins/build/plugins#install-a-local-plugin-manually)
+for how source-linked local plugins are loaded and refreshed.
+
+The private **Bleavit Foresight Local** plugin connects to
+`http://localhost:8787/mcp`. Start the MCP worker in its owning project; this
+repository does not include its runtime. The repo-linked Codex plugin uses the
+local app mapping from `.app.json`. To create that mapping for this checkout,
+copy the example and replace the placeholder with the app's ID:
 
 ```sh
 cp .app.example.json .app.json
 ```
 
-`.app.json` stays ignored; it identifies your own ChatGPT connection. Bun and
-the Codex CLI are required for refresh and check. The `--setup` command also
-requires the plugin-creator skill; set `CODEX_PLUGIN_CREATOR` if it is installed
+`.app.json` is ignored by Git and contains your environment-specific app ID. It
+only configures the repository-linked Codex plugin; it does not create or update
+the Plugin Creator release. The distributable plugin omits this mapping and
+defaults to the production MCP endpoint described below.
+
+### Create or repair the local Codex marketplace
+
+Bun and the Codex CLI are required. Initial setup also uses the plugin-creator
+skill's marketplace helper; set `CODEX_PLUGIN_CREATOR` if the skill is installed
 somewhere other than `$CODEX_HOME/skills/.system/plugin-creator` (default
-`~/.codex`).
+`~/.codex`). Run this once for a checkout, or again to repair its marketplace
+source link:
 
 ```sh
-# First setup, or repair a missing personal-marketplace source link:
-bun run refresh:plugin --setup
-
-# After changing skills or plugin metadata:
-bun run refresh:plugin
-
-# Read-only source verification:
-bun run refresh:plugin --check
+bun run refresh:plugin --setup --marketplace-path .local-marketplace/marketplace.json
 ```
 
-Setup uses the plugin-creator marketplace helper and creates a source link to
-this checkout. Refresh refuses to reinstall an entry that points elsewhere.
-After installation it removes development files from the newly created Codex
-cache, retaining only plugin assets and the intentional local app mapping.
-Start a **new Codex task** after refreshing to load the updated plugin.
+This creates the ignored `.local-marketplace/`, links its local source to this
+checkout, registers the marketplace with Codex, and installs the plugin. The
+installed Codex plugin includes the repository's skills. Setup refuses to
+replace a source link that points to another checkout.
 
-For local development, connect the plugin to an MCP server that implements the
-public interface. For the hosted Bleavit Foresight service, use the endpoint and
-authentication method provided with your service access. Refresh the ChatGPT
-connection after tool descriptions or schemas change; the Codex refresh command
-does not update ChatGPT's connection metadata.
+The bare `bun run refresh:plugin` command defaults to the personal marketplace
+at `~/.agents/plugins/marketplace.json`. This setup uses the checkout-local
+marketplace instead, so use the same `--marketplace-path` on refresh and check
+commands below. The bare command still works when the plugin is installed from
+the personal marketplace.
+
+### Refresh the repository-linked Codex plugin
+
+After changing skills or plugin metadata, refresh from the same marketplace:
+
+```sh
+bun run refresh:plugin --marketplace-path .local-marketplace/marketplace.json
+```
+
+To verify the marketplace link without reinstalling:
+
+```sh
+bun run refresh:plugin --check --marketplace-path .local-marketplace/marketplace.json
+```
+
+Refresh updates the installed Codex copy and prunes development files from its
+cache. Start a **new Codex task** to load the refreshed skills. The command does
+not update ChatGPT's MCP connection metadata; refresh the ChatGPT app connection
+after changing its tool descriptions or schemas.
 
 ## Package the plugin
 
