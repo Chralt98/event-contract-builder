@@ -58,6 +58,20 @@ export const deleteForecastSpecificationOutputSchema = z
   .object({ deleted: z.literal(true) })
   .strict();
 
+export const pluginFeedbackStepShape = {
+  step: z
+    .enum(["channels", "private_notice"])
+    .describe("The feedback prompt to render."),
+};
+export type PluginFeedbackStep = z.infer<typeof pluginFeedbackStepShape.step>;
+
+export const pluginFeedbackStepOutputSchema = z
+  .object({
+    step: pluginFeedbackStepShape.step,
+    review_markdown: ReviewMarkdown,
+  })
+  .strict();
+
 export const submitPluginFeedbackShape = {
   feedback: z
     .string()
@@ -311,6 +325,19 @@ export const foresightTools = {
     annotations: {
       readOnlyHint: false,
       destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  get_plugin_feedback_step: {
+    title: "Get Plugin Feedback Step",
+    description:
+      "Return canonical Markdown for the feedback channel menu or private-submission privacy notice. Call after the user chooses feedback or the private channel.",
+    inputSchema: pluginFeedbackStepShape,
+    outputSchema: pluginFeedbackStepOutputSchema,
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
     },

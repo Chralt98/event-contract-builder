@@ -171,32 +171,19 @@ begin a new draft without carrying over the previous record ID or approvals.
 
 ### Optional product feedback
 
-Offer the feedback channels when the user selects the feedback option or
-accepts either direct feedback invitation. Let them choose one of these
-channels:
+When the user selects feedback or accepts either direct invitation, call
+`get_plugin_feedback_step` with `step: channels`. Return its complete
+`review_markdown` verbatim as the next reply and wait for the channel choice;
+do not ask for feedback text yet. A direct request to draft the feedback email
+counts as choosing the email channel. Never use a host-native input dialog for
+the channel menu.
 
-1. Submit privately in chat.
-2. Draft an email to [support@bleavit.com](mailto:support@bleavit.com).
-3. Open the public [GitHub issue form](https://github.com/Chralt98/event-contract-builder/issues/new).
-
-The first user-facing reply after the user chooses feedback must show all three
-channels above as visible chat text and wait for the user's choice. Do not emit
-an intermediate status message, silently inspect a feedback step, or omit the
-other channels. A direct request to draft the feedback email counts as choosing
-the email channel. Never use a host-native input dialog for the channel menu.
-
-For private submission, the response asking for feedback text must include the
-complete notice below verbatim, in Markdown, before the request. Do not hide,
-summarize, or abbreviate it. Show it only for the private channel:
-
-> Please do not include personal, sensitive, or confidential information. Your
-> feedback is used to review and improve Bleavit Foresight. The feedback tool
-> accepts only the text you choose to submit (up to 4,000 characters) and stores
-> it separately from Forecast Specifications with a random deletion receipt
-> and timestamps. It is deleted after 180 days and can be deleted sooner using
-> the receipt. ChatGPT or Codex processes this conversation and tool call under
-> its own terms. Cloudflare hosts the feedback service and may process
-> technical request metadata. See the [privacy notice](https://foresight.bleavit.com/privacy/).
+If the user chooses private submission, call `get_plugin_feedback_step` with
+`step: private_notice`. Return its complete `review_markdown` verbatim and wait
+for the feedback text. If the user supplied text before seeing the notice, ask
+them to confirm that exact text after the notice before submitting it. The
+tool's rendered review is the sole owner of the privacy notice; show it only
+for private submission.
 
 Do not attach conversation history, forecast content, a forecast specification
 ID, account details, or a contact address. Call `submit_plugin_feedback` only

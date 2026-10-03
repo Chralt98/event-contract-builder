@@ -221,7 +221,7 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(12);
+    expect(Object.keys(foresightTools)).toHaveLength(13);
   });
 
   test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
@@ -700,6 +700,20 @@ describe("public forecast interface", () => {
   });
 
   test("plugin feedback is bounded and has a deletion receipt contract", () => {
+    const promptInput = z.object(
+      foresightTools.get_plugin_feedback_step.inputSchema,
+    );
+    expect(promptInput.safeParse({ step: "channels" }).success).toBe(true);
+    expect(promptInput.safeParse({ step: "private_notice" }).success).toBe(
+      true,
+    );
+    expect(promptInput.safeParse({ step: "other" }).success).toBe(false);
+    expect(
+      foresightTools.get_plugin_feedback_step.outputSchema.safeParse({
+        step: "private_notice",
+        review_markdown: "# Bleavit Foresight Feedback",
+      }).success,
+    ).toBe(true);
     const submitInput = z.object(
       foresightTools.submit_plugin_feedback.inputSchema,
     );
@@ -738,6 +752,12 @@ describe("public forecast interface", () => {
     ).toBe(true);
     expect(foresightServerInstructions).toContain(
       "5. Leave feedback about Bleavit Foresight",
+    );
+    expect(foresightServerInstructions).toContain(
+      "`get_plugin_feedback_step` with `step: channels`",
+    );
+    expect(foresightServerInstructions).toContain(
+      "`get_plugin_feedback_step` with\n`step: private_notice`",
     );
     expect(foresightServerInstructions).toContain("Do not attach");
     expect(foresightServerInstructions).toContain(
