@@ -60,6 +60,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--setup", action="store_true", help="Create/repair the local source link and register this checkout")
     parser.add_argument("--check", action="store_true", help="Validate the source without changing or reinstalling anything")
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="Install the plugin copy with MCP URLs from mcp.production.json",
+    )
     parser.add_argument("--marketplace-path", type=Path, default=Path.home() / ".agents/plugins/marketplace.json")
     args = parser.parse_args()
     if args.setup and args.check:
@@ -72,6 +77,16 @@ def main():
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
     portable_manifest = json.loads((root / "plugin.json").read_text())
     package = json.loads((root / "package.json").read_text())
+    production_config = json.loads((root / "mcp.production.json").read_text())
+    production_servers = production_config.get("mcpServers")
+    production_server = (
+        production_servers.get("bleavit-foresight")
+        if isinstance(production_servers, dict)
+        else None
+    )
+    if not isinstance(production_server, dict) or not isinstance(production_server.get("url"), str):
+        raise ValueError("mcp.production.json must define the bleavit-foresight MCP URL")
+    production_url = production_server["url"]
     if (
         manifest["name"] != "bleavit-foresight"
         or portable_manifest["name"] != manifest["name"]
@@ -195,6 +210,7 @@ def main():
         ".codex-plugin",
         "plugin.json",
         "mcp.json",
+        "mcp.production.json",
         "skills",
         "assets",
         ".mcp.json",
@@ -212,11 +228,19 @@ def main():
                 shutil.rmtree(path)
             else:
                 path.unlink()
+    if args.production:
+        for config_name in ("mcp.json", ".mcp.json"):
+            config_path = cache / config_name
+            config = json.loads(config_path.read_text())
+            for server in config["mcpServers"].values():
+                server["url"] = production_url
+            config_path.write_text(json.dumps(config, indent=2) + "\n")
     icon_source = root / "site/assets/foresight-icon.png"
     icon_destination = cache / "assets" / icon_source.name
     icon_destination.parent.mkdir(exist_ok=True)
     shutil.copyfile(icon_source, icon_destination)
-    print(f"Installed {installed['pluginId']} at {cache}")
+    config_mode = "production" if args.production else "local development"
+    print(f"Installed {installed['pluginId']} at {cache} ({config_mode} MCP config)")
     print("Start a new Codex task to load the refreshed plugin. Refresh the ChatGPT connection separately after tool metadata changes.")
 
 

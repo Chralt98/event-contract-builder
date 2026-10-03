@@ -106,8 +106,12 @@ cp .app.example.json .app.json
 ```
 
 `.app.json` is ignored by Git and contains your environment-specific app ID. The
-distributable plugin omits this mapping and defaults to the production MCP
-endpoint described below.
+tracked `.mcp.json` and `mcp.json` stay pointed at localhost for development;
+`mcp.production.json` stores the deployed endpoint. Run
+`bun run refresh:plugin -- --production` to install a copy using that endpoint,
+or omit `--production` to restore the local endpoint. The distributable plugin
+omits the local app mapping and uses the production configuration described
+below.
 
 ### Refresh the repository-linked plugin
 
@@ -142,10 +146,10 @@ an explicit asset allowlist. The archive includes the skills, manifest, MCP
 configuration and license notices, including `THIRD_PARTY_LICENSES.md`. It
 excludes the library build, development files and local app mapping. Its
 manifest omits the local `apps` reference. By default, its MCP configuration
-points to `https://api.foresight.bleavit.com/mcp`; override this for another
-environment with `bun run package:plugin -- --mcp-url
-https://your-endpoint.example/mcp`. The tracked `.mcp.json` remains pointed at
-localhost for local development. This command does not publish anything.
+uses the endpoint in `mcp.production.json` for both packaged MCP configs;
+override it for another environment with `bun run package:plugin -- --mcp-url
+https://your-endpoint.example/mcp`. The tracked development configs remain
+pointed at localhost. This command does not publish anything.
 
 ## Product website
 

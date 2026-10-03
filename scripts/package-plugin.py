@@ -11,18 +11,28 @@ root = Path(__file__).resolve().parent.parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     "--mcp-url",
-    default="https://api.foresight.bleavit.com/mcp",
-    help="MCP endpoint to put in the distributable ZIP",
+    default=None,
+    help="Override the endpoint in mcp.production.json for the distributable ZIP",
 )
 args = parser.parse_args()
+production_config = json.loads((root / "mcp.production.json").read_text())
+production_servers = production_config.get("mcpServers")
+production_server = (
+    production_servers.get("bleavit-foresight")
+    if isinstance(production_servers, dict)
+    else None
+)
+if not isinstance(production_server, dict) or not isinstance(production_server.get("url"), str):
+    raise ValueError("mcp.production.json must define the bleavit-foresight MCP URL")
+mcp_url = args.mcp_url or production_server["url"]
 legacy_manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
 manifest = json.loads((root / "plugin.json").read_text())
 legacy_mcp_config = json.loads((root / ".mcp.json").read_text())
 mcp_config = json.loads((root / "mcp.json").read_text())
 for server in legacy_mcp_config["mcpServers"].values():
-    server["url"] = args.mcp_url
+    server["url"] = mcp_url
 for server in mcp_config["mcpServers"].values():
-    server["url"] = args.mcp_url
+    server["url"] = mcp_url
 plugin_name = manifest["name"]
 output = root / "out" / plugin_name
 if output.exists():
