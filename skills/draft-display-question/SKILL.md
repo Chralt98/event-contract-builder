@@ -12,18 +12,13 @@ template, alternative-question, and selection rules.
    missing event, outcome, or future time information rather than guessing.
 2. For a new event, draft the units defined in the reference and call
    `submit_drafted_questions` once.
-3. For a selection, preserve the exact complete unit and its 1-based draft
-   number. Call `submit_selected_unit` with the active record's ID and language;
-   use the returned ID and language for the next step. For a selected alternative
-   or translated unit, start a new record as described below.
-4. When the exact unit and number match the active record's stored draft, the
-   user's choice is approval: `submit_selected_unit` saves and approves it
-   together. Do not call `approve_forecast_specification` for this selection;
-   keep its transition review internal and continue directly with
-   `define-terms`. A selection outside that draft remains pending; show its
-   review, call `approve_forecast_specification` after user acceptance, then
-   continue with definitions.
+3. Reopen an existing workspace before generation or selection. Use its revision
+   and available commands through `execute_workspace_command`, following the
+   server's shared workspace routing.
+4. Submit a saved selection with `submit_selected_unit`, or execute the available
+   `select_and_approve` command when the user explicitly approves that candidate.
+   Follow the server's approval and Continue routing before `define-terms`.
 
 Follow the server-wide rules for language, internal metadata, rendering,
 separate records, and approvals. A selected alternative or translated unit is
-a new record; do not reuse the original unit's definitions or sources.
+an explicit new record; do not reuse the original definitions or sources.
