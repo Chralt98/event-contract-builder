@@ -173,11 +173,33 @@ Completed the opt-in, read-only protocol spike in the private service. No foreca
 state, stage contracts, approvals, public package exports, or production deployment
 changed. Session 2 is next.
 
-**Versions and build choice:** pinned `@modelcontextprotocol/ext-apps` **1.7.5**
-against the existing installed MCP SDK **1.29.0**, Zod **4.4.3**, Bun **1.3.13**,
-and Wrangler **4.145.0**. The Apps protocol is **2026-01-26**; the MCP transport
-probe uses **2025-11-25**. Registry metadata for Apps 1.7.5 declares MCP SDK
-`^1.29.0`; Apps 2.0.3 requires SDK 2.x packages and was deliberately not selected.
+**Current versions and build choice (updated at the user's request):**
+`@modelcontextprotocol/server`, `client` and `core` are pinned to **2.3.0**;
+`@modelcontextprotocol/node` to **2.1.1**; and `@modelcontextprotocol/ext-apps`
+to **2.0.3**. Zod is **4.6.5**. Bun **1.3.13** and Wrangler **4.145.0** remain
+unchanged. The initial spike used SDK 1.29.0 / Apps 1.7.5; the user subsequently
+authorized upgrading before Session 2. SDK v2 is the stable line, and Apps 2.x
+retains the **2026-01-26** iframe protocol. See the official
+[SDK status](https://github.com/modelcontextprotocol/typescript-sdk),
+[SDK migration guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/upgrade-to-v2.md)
+and [Apps migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html).
+
+Worker HTTP and stdio now support both **2025-11-25** and **2026-07-28**, using
+SDK `createMcpHandler` and `serveStdio` for modern traffic. The existing Node HTTP
+session server retains its legacy transport; auto-negotiating clients fall back
+successfully there. Modern stateless requests carry UI capabilities individually,
+resolving the initial spike's limitation for that protocol. Legacy Worker requests
+still lack remembered initialization capabilities. See the official
+[protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
+
+Compatible transitive security pins in the private `package.json` select Hono
+**4.13.13** and its Node adapter **1.19.17**; the latter stays within the SDK
+adapter's 1.x range. A Zod **4.6.5** override keeps all schemas on one version.
+A clean frozen-lockfile install and `bun audit` pass with **no reported
+vulnerabilities**. This is a dependency audit result, not a service-security
+certification. Recheck the overrides when updating the SDK's dependency ranges.
+Bundled notices now retain the v2 SDK's Apache-2.0/MIT license text.
+
 The public artifact remains `event-contract-builder` **0.4.0**, with existing
 vendor digest `782a7492c8e75d92242741f9ee0298b4f16a1939361ddf3797c6b8f45644900c`.
 No package refresh or new contract version was needed.
@@ -196,14 +218,19 @@ Session 5.
   standard MIME, tool metadata, bounded echo and complete core output.
 - `server/app/spike.{ts,html}`: SDK App lifecycle and capability-aware controls;
   `server/app/harness.{ts,html}`: local SDK AppBridge reference host.
-- `scripts/build-app.ts`: HTML and embedded notices;
+- `scripts/build-app.ts`: HTML and notices derived from actual build inputs,
+  including transitive dependencies;
   `scripts/app-spike-host.ts`: local stateless Worker handler harness.
-- `server/src/server.ts`, `stdio.ts`, `worker.ts`: opt-in registration via
+- `server/src/server.ts`, `stdio.ts`, `worker.ts`: protocol entry points and opt-in registration via
   server option or `FORESIGHT_APP_SPIKE=1`; default discovery stays unchanged.
 - `package.json`, `bun.lock`, `tsconfig.json`, `server/app/tsconfig.json`,
   `wrangler.toml`: dependency, build-before-run/check/test and browser type checks.
 - `server/test/app-spike.test.ts`: transport, negotiation, bridge, denial,
   lifecycle, core compatibility and generated-module parsing checks.
+- `server/src/index.ts`, `server/src/tools/*`: v2 imports;
+  `server/test/interface-integration.test.ts`: both protocol workflows and
+  durable Worker recall; `server/test/d1-test-binding.ts`: shared test adapter;
+  other affected tests use the SDK v2 discovery behavior and JSON Schema 2020-12.
 
 **Runnable reference:** from the private repository, run `bun run dev:app-spike`
 and open `http://127.0.0.1:8790`. Use its Full, Partial, Denied message, Denied
@@ -213,29 +240,32 @@ be started with `bun x --no-install wrangler dev --local --port 8791 --var
 FORESIGHT_APP_SPIKE:1`. These are development probes; no model or forecast record
 is created.
 
-| Configuration                                              | Observed support                                                                               | Limits                                                                                                                           |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Official SDK Client, core-only, in memory and actual stdio | Discovery, resource reads, usable text/structured echo                                         | No app rendering promised                                                                                                        |
-| Official SDK Client with UI extension                      | Standard MIME negotiation and tool/resource linkage                                            | Negotiation is separate from iframe capabilities                                                                                 |
-| Stateless HTTP Worker handler and local Wrangler/workerd   | Initialize, discovery, resource reads and tool calls pass                                      | Fresh requests do not retain initialization capabilities; echo reports `not-advertised` while preserving core output and linkage |
-| Browser iframe + official App/AppBridge local harness      | Handshake, initial result notification, direct tool calls, context updates, messages, teardown | Context/messages are logged; acceptance does not run a model                                                                     |
-| Full harness display modes                                 | Inline, fullscreen and pip requests acknowledged                                               | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation                |
-| Partial harness                                            | Context/message controls disabled; only advertised inline mode offered                         | Tool and core routes remain usable                                                                                               |
-| Denied message/tool and missing resource                   | Visible failure and equivalent core instruction                                                | No automatic generation or provider-specific retry bridge                                                                        |
-| Resource security                                          | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP           | Local harness is a protocol test fixture, not a production sandbox/security certification                                        |
-| Independent production app hosts                           | Unverified                                                                                     | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support                  |
+| Configuration                                                   | Observed support                                                                                 | Limits                                                                                                                           |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Official SDK Client, core-only, in memory and actual stdio      | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                                        |
+| Official SDK Client with UI extension                           | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                                 |
+| Legacy stateless HTTP Worker handler and local Wrangler/workerd | Initialize, discovery, resource reads and tool calls pass                                        | Fresh requests do not retain initialization capabilities; echo reports `not-advertised` while preserving core output and linkage |
+| Modern Worker handler, local workerd and stdio                  | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                                       |
+| Browser iframe + official App/AppBridge local harness           | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                                     |
+| Full harness display modes                                      | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation                |
+| Partial harness                                                 | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                               |
+| Denied message/tool and missing resource                        | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                                        |
+| Resource security                                               | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                                        |
+| Independent production app hosts                                | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support                  |
 
-**Validation:** private `bun run test` passed **60 tests**, including the full
-existing HTTP and stdio forecast workflows; `bun run check` passed both server
+**Validation:** private `bun run test` passed **64 tests**, including the full
+existing Node HTTP workflow and both legacy/modern stdio and durable Worker
+forecast workflows; `bun run check` passed both server
 and browser checks. Wrangler deployment **dry-run** built the Worker successfully;
-a separate MCP client read the resource and called the echo tool in local
-workerd. Browser inspection exercised echo, context, messaging/denial, denied tool
+a separate MCP client negotiated the modern protocol, read the resource and
+called the app-capable echo tool in local workerd. Browser inspection exercised echo, context, messaging/denial, denied tool
 calls, partial capabilities, resource failure, reopening and graceful teardown.
 The widget was visually inspected in the narrow in-app browser. Scoped Prettier
 and `git diff --check` passed. Standards/spec review found no blocking changes.
 
-**Follow-ups:** carry the stateless capability limitation into registration design;
-do not gate essential domain actions or core output on remembered initialization.
+**Follow-ups:** carry the legacy stateless capability limitation into registration
+design; do not gate essential domain actions or core output on remembered
+initialization. Use per-request capabilities for modern clients.
 The later shell must handle real host placement and generation status independently.
 Actual independent host support stays unverified until tested in Session 11.
 Session 2 should define the shared contracts; do not turn this echo probe into a
