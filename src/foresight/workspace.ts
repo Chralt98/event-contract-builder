@@ -183,6 +183,7 @@ export const WorkspaceFieldDefinition = z.strictObject({
   label: z.string().min(1).max(200),
   control: WorkspaceControlKind,
   validation: z.string().min(1).max(200),
+  emphasis: z.literal("prerequisite").optional(),
   options: z
     .array(
       z.strictObject({
@@ -195,8 +196,31 @@ export const WorkspaceFieldDefinition = z.strictObject({
 });
 export const questionStageDefinition = {
   stage: "selected_unit",
-  label: "Forecast question",
+  label: "Question",
   fields: [
+    {
+      path: ["condition"],
+      label: "Prerequisite",
+      control: "group",
+      validation: "ForecastCondition",
+      emphasis: "prerequisite",
+    },
+    {
+      path: ["condition", "statement"],
+      label: "Statement",
+      control: "prose",
+      validation: "ConditionStatement",
+    },
+    {
+      path: ["condition", "ifUnmet"],
+      label: "If unmet",
+      control: "choice",
+      validation: "ForecastCondition.ifUnmet",
+      options: ForecastCondition.shape.ifUnmet.options.map((value) => ({
+        value,
+        label: value === "annulled" ? "Annulled" : "Resolve No",
+      })),
+    },
     {
       path: ["question"],
       label: "Question",
@@ -226,28 +250,6 @@ export const questionStageDefinition = {
       label: "Value",
       control: "prose",
       validation: "TemplateVariable.values[]",
-    },
-    {
-      path: ["condition"],
-      label: "Prerequisite",
-      control: "group",
-      validation: "ForecastCondition",
-    },
-    {
-      path: ["condition", "statement"],
-      label: "Statement",
-      control: "prose",
-      validation: "ConditionStatement",
-    },
-    {
-      path: ["condition", "ifUnmet"],
-      label: "If unmet",
-      control: "choice",
-      validation: "ForecastCondition.ifUnmet",
-      options: ForecastCondition.shape.ifUnmet.options.map((value) => ({
-        value,
-        label: value === "annulled" ? "Annulled" : "Resolve No",
-      })),
     },
   ],
 } as const;
@@ -334,6 +336,7 @@ export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
 const nodeBase = {
   path: WorkspaceFieldPath,
   label: z.string().min(1).max(200),
+  emphasis: z.literal("prerequisite").optional(),
 };
 const leaf = z.discriminatedUnion("control", [
   z.strictObject({ ...nodeBase, control: z.literal("prose"), value: text }),
@@ -406,6 +409,15 @@ export const WorkspaceAvailableAction = z
         message: "Disabled actions need a reason.",
       });
   });
+export const workspaceStageLabels = {
+  selected_unit: "Question",
+  defined_terms: "Terms",
+  resolution_sources: "Sources",
+  resolution_criteria: "Criteria",
+  background_information: "Background",
+  news_timeline: "News",
+} as const;
+
 export const QuestionWorkspaceSnapshot = boundedPayload(
   z.strictObject({
     forecast_specification_id: ForecastSpecificationId,
@@ -434,6 +446,17 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
       .max(5),
     presentation: z.strictObject({
       title: z.string().min(1).max(200),
+      stages: z
+        .array(
+          z.strictObject({
+            stage: approvalStageSchema,
+            label: z.string().min(1).max(200),
+            available: z.boolean(),
+            status: z.enum(["not_started", "pending", "approved", "outdated"]),
+          }),
+        )
+        .max(6)
+        .optional(),
       fields: z.array(WorkspacePresentationField).max(20),
       sections: z
         .array(
