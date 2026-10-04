@@ -194,16 +194,13 @@ returned receipt ID so the user can request deletion with
 `delete_plugin_feedback`; call deletion only on an explicit request.
 
 For email, use `support@bleavit.com` as the recipient without asking the user
-for an address. Draft a concise subject from the user's feedback and put both
-`recipient: support@bleavit.com` and `subject: <generated subject>` in the email
-writing block's header fields, before a blank line and the message body. Use
-this exact structure, with a fresh five-digit ID:
+for an address. Draft a concise subject from the user's feedback and put the
+recipient and subject in the email writing block's metadata attributes in the
+first email-draft response. Keep those values out of the message body. Use this
+exact structure, with a fresh five-digit ID:
 
 ```text
-:::writing{variant="email" id="<five-digit ID>"}
-recipient: support@bleavit.com
-subject: <generated subject>
-
+:::writing{variant="email" id="<five-digit ID>" recipient="support@bleavit.com" subject="<generated subject>"}
 <draft body>
 :::
 ```
