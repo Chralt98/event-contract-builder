@@ -19,6 +19,22 @@ and execution status rather than becoming another runtime instruction source.
 The user acceptance gate after Session 6 is mandatory. Pilot refinement is
 authorized; rollout to the remaining stages waits for explicit user acceptance.
 
+## Branch workflow
+
+Keep `integrate-mcp-app-ui` as the shared integration line in both repositories.
+Session 1 is split at the agreed commit boundary: in `event-contract-builder`,
+the integration branch starts at `92283382ccca1ffc13f6d2e3717c57904d05c14c`
+and `integrate-mcp-app-ui-session-1` contains `823c09c8b1faf8d8c44e847b3e712a159700f2f5` and later session commits; in
+`bleavit-foresight`, the integration branch starts at
+`46c5ffd1d2198c263279c2cab3dde7b52cc4c5f2` and
+`integrate-mcp-app-ui-session-1` contains
+`027b435f2d485849af66995157b36eb27315f80b` and later session commits.
+
+For each subsequent session, create `integrate-mcp-app-ui-session-X` from
+`integrate-mcp-app-ui`, where `X` is the session number. Keep that session's
+commits on its branch for inspection; integrate them into
+`integrate-mcp-app-ui` only after review. Do not push unless the user asks.
+
 | Session | Deliverable                                         | Requires                 | Status                       |
 | ------- | --------------------------------------------------- | ------------------------ | ---------------------------- |
 | 1       | Portable protocol and build spike                   | Confirmed design         | Complete — see handoff below |
@@ -86,7 +102,20 @@ review against the current prerequisites. Completion and exports exclude
 outdated content. Make the distinction between the approved version and an
 unapproved working draft visible.
 
-### Maintenance target and compatibility
+### Maintenance target and protocol policy
+
+The server targets MCP 2026-07-28 as its current protocol while remaining
+dual-era for compatibility with supported 2025-era MCP clients. Compatibility
+should be provided by the current MCP SDK wherever possible, rather than by
+maintaining our own legacy protocol implementation. Modern-only rejection may
+be introduced later once the important production hosts have migrated.
+
+Use SDK era dispatch with one business-logic path. Do not restore custom protocol
+negotiation, legacy routing branches, session maps or deprecated HTTP+SSE support
+without a demonstrated required feature that SDK compatibility cannot provide.
+MCP Apps rendering remains optional for core clients. Development payloads and
+records may still be replaced directly; protocol compatibility does not require
+old application-payload adapters or old-record migration machinery.
 
 The target is **zero feature-specific fallback implementation**, not zero adapter
 maintenance. Design features for the app first, encode their meaning once in a
@@ -107,7 +136,7 @@ App renderer   Generic core text/structured adapter
 The shared definitions own field identity, labels, ordering, control kinds,
 validation references, and action meaning. The server owns state-dependent
 availability and results. Both renderers consume the same semantic presentation
-document; actions from either client execute the same commands. Legacy tool
+document; actions from either client execute the same commands. Existing tool
 names become adapters where practical rather than a second workflow engine.
 Existing nuanced research and drafting guidance stays in skills/references.
 
@@ -134,7 +163,7 @@ Preserve [the repository boundary](repository-boundary.md) and follow
 | Public instructions                | `src/foresight/instructions.md`, affected `skills/*/SKILL.md` and linked references                  | Shared routing and stage-specific semantic guidance in their existing owners        |
 | Public appearance and distribution | `site/styles.css`, `site/assets/foresight-icon.png`, `scripts/build.ts`, `scripts/package-plugin.py` | Canonical site styling inputs, exported assets/contracts, packaging                 |
 | Private service                    | `../bleavit-foresight/server/src/server.ts`, `worker.ts`, `tools/*`                                  | MCP registration, capability handling, command adapters, model handoff              |
-| Private state                      | `../bleavit-foresight/server/src/approved-forecast-specification-store.ts`, `d1-record-store.ts`     | Drafts, approvals, dependency revisions, persistence and migration                  |
+| Private state                      | `../bleavit-foresight/server/src/approved-forecast-specification-store.ts`, `d1-record-store.ts`     | Drafts, approvals, dependency revisions, persistence                                |
 | Private presentation               | `../bleavit-foresight/server/src/render.ts`, new app/presentation modules                            | Shared projection, generic fallback, widget implementation and built HTML           |
 
 Public contracts are consumed through a versioned package artifact. Use the
@@ -151,7 +180,7 @@ its handoff rather than adding parallel copies of these responsibilities.
 
 - Pin an MCP Apps SDK release compatible with the current MCP SDK and Worker
   environment. Verify installed releases; examples and protocol versions are
-  not interchangeable. Avoid an unrelated SDK migration unless required.
+  not interchangeable. Use the latest stable SDK and its current protocol only.
 - Build a minimal local UI resource/tool round trip using the standard MIME,
   `ui://` resource, tool metadata, capability negotiation, and iframe handshake.
   Check stdio and the stateless HTTP path, including resource reads.
@@ -173,11 +202,50 @@ Completed the opt-in, read-only protocol spike in the private service. No foreca
 state, stage contracts, approvals, public package exports, or production deployment
 changed. Session 2 is next.
 
-**Versions and build choice:** pinned `@modelcontextprotocol/ext-apps` **1.7.5**
-against the existing installed MCP SDK **1.29.0**, Zod **4.4.3**, Bun **1.3.13**,
-and Wrangler **4.145.0**. The Apps protocol is **2026-01-26**; the MCP transport
-probe uses **2025-11-25**. Registry metadata for Apps 1.7.5 declares MCP SDK
-`^1.29.0`; Apps 2.0.3 requires SDK 2.x packages and was deliberately not selected.
+**Current versions and build choice (updated at the user's request):**
+`@modelcontextprotocol/server`, `client` and `core` are pinned to **2.3.0**;
+`@modelcontextprotocol/node` to **2.1.1**; and `@modelcontextprotocol/ext-apps`
+to **2.0.3**. Zod is **4.6.5**. Bun **1.3.13** and Wrangler **4.145.0** remain
+unchanged. The initial spike used SDK 1.29.0 / Apps 1.7.5; the user subsequently
+authorized upgrading before Session 2. SDK v2 is the stable line, and Apps 2.x
+retains the **2026-01-26** iframe protocol. See the official
+[SDK status](https://github.com/modelcontextprotocol/typescript-sdk),
+[SDK migration guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/upgrade-to-v2.md)
+and [Apps migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html).
+
+**Protocol implementation:** follows the [dual-era policy](#maintenance-target-and-protocol-policy).
+Node HTTP and Cloudflare Worker use `createMcpHandler` with `legacy: "stateless"`;
+Node wraps it with `toNodeHandler`. Stdio uses `serveStdio` with its default
+legacy serving mode. Modern requests use **2026-07-28**; traditional initialization
+accepts the SDK's supported legacy revisions, including **2025-11-25**,
+**2025-06-18** and **2025-03-26**. Automatic negotiation chooses modern.
+Unsupported modern revisions receive the SDK unsupported-protocol error with
+supported revisions. Legacy initialization follows the SDK's version negotiation,
+which may return a supported revision when the offered version is unknown.
+See [SDK protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
+
+**Stateless legacy HTTP is sufficient:** existing features are request/response
+tools and resource reads; there are no required subscriptions, unsolicited
+server-to-client messages, sampling or elicitation calls. Forecast state is
+recovered by explicit ID from the process-lifetime Node handoff store or durable
+Worker D1 store. No custom compatibility routing, session maps or deprecated
+transports remain. Stdio retains one server/store for the lifetime of a connection.
+
+Modern app capabilities come from `ctx.mcpReq.envelope`; legacy stdio capabilities
+come from initialization. Fresh legacy HTTP requests cannot retain those
+initialization capabilities, so the echo reports `not-advertised` there while
+preserving resource linkage and core output. Core features never depend on app
+support. Modern-only pins remain solely in dedicated modern-protocol tests;
+the browser reference host uses automatic negotiation.
+
+Compatible transitive security pins in the private `package.json` select Hono
+**4.13.13** and its Node adapter **1.19.17**; the latter stays within the SDK
+adapter's 1.x range. A Zod **4.6.5** override keeps all schemas on one version.
+A clean frozen-lockfile install and `bun audit` pass with **no reported
+vulnerabilities**. This is a dependency audit result, not a service-security
+certification. Recheck the overrides when updating the SDK's dependency ranges.
+Bundled notices now retain the v2 SDK's Apache-2.0/MIT license text.
+
 The public artifact remains `event-contract-builder` **0.4.0**, with existing
 vendor digest `782a7492c8e75d92242741f9ee0298b4f16a1939361ddf3797c6b8f45644900c`.
 No package refresh or new contract version was needed.
@@ -196,14 +264,21 @@ Session 5.
   standard MIME, tool metadata, bounded echo and complete core output.
 - `server/app/spike.{ts,html}`: SDK App lifecycle and capability-aware controls;
   `server/app/harness.{ts,html}`: local SDK AppBridge reference host.
-- `scripts/build-app.ts`: HTML and embedded notices;
+- `scripts/build-app.ts`: HTML and notices derived from actual build inputs,
+  including transitive dependencies;
   `scripts/app-spike-host.ts`: local stateless Worker handler harness.
-- `server/src/server.ts`, `stdio.ts`, `worker.ts`: opt-in registration via
+- `server/src/server.ts`, `stdio.ts`, `worker.ts`: protocol entry points and opt-in registration via
   server option or `FORESIGHT_APP_SPIKE=1`; default discovery stays unchanged.
 - `package.json`, `bun.lock`, `tsconfig.json`, `server/app/tsconfig.json`,
   `wrangler.toml`: dependency, build-before-run/check/test and browser type checks.
 - `server/test/app-spike.test.ts`: transport, negotiation, bridge, denial,
-  lifecycle, core compatibility and generated-module parsing checks.
+  lifecycle, dual-era core behavior and generated-module parsing checks.
+- `server/test/protocol-compatibility.test.ts`: modern, normal legacy and automatic
+  clients on all three entry points, plus SDK rejection of unknown modern revisions.
+- `server/src/index.ts`, `server/src/tools/*`: v2 imports;
+  `server/test/interface-integration.test.ts`: both-era protocol workflows and cross-era
+  durable Worker recall; `server/test/d1-test-binding.ts`: shared test adapter;
+  other affected tests use the SDK v2 discovery behavior and JSON Schema 2020-12.
 
 **Runnable reference:** from the private repository, run `bun run dev:app-spike`
 and open `http://127.0.0.1:8790`. Use its Full, Partial, Denied message, Denied
@@ -213,29 +288,32 @@ be started with `bun x --no-install wrangler dev --local --port 8791 --var
 FORESIGHT_APP_SPIKE:1`. These are development probes; no model or forecast record
 is created.
 
-| Configuration                                              | Observed support                                                                               | Limits                                                                                                                           |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Official SDK Client, core-only, in memory and actual stdio | Discovery, resource reads, usable text/structured echo                                         | No app rendering promised                                                                                                        |
-| Official SDK Client with UI extension                      | Standard MIME negotiation and tool/resource linkage                                            | Negotiation is separate from iframe capabilities                                                                                 |
-| Stateless HTTP Worker handler and local Wrangler/workerd   | Initialize, discovery, resource reads and tool calls pass                                      | Fresh requests do not retain initialization capabilities; echo reports `not-advertised` while preserving core output and linkage |
-| Browser iframe + official App/AppBridge local harness      | Handshake, initial result notification, direct tool calls, context updates, messages, teardown | Context/messages are logged; acceptance does not run a model                                                                     |
-| Full harness display modes                                 | Inline, fullscreen and pip requests acknowledged                                               | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation                |
-| Partial harness                                            | Context/message controls disabled; only advertised inline mode offered                         | Tool and core routes remain usable                                                                                               |
-| Denied message/tool and missing resource                   | Visible failure and equivalent core instruction                                                | No automatic generation or provider-specific retry bridge                                                                        |
-| Resource security                                          | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP           | Local harness is a protocol test fixture, not a production sandbox/security certification                                        |
-| Independent production app hosts                           | Unverified                                                                                     | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support                  |
+| Configuration                                                 | Observed support                                                                                 | Limits                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Official SDK Client, core-only, in memory and actual stdio    | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                         |
+| Official SDK Client with UI extension                         | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                  |
+| Modern Worker handler, local workerd and stdio                | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                        |
+| Legacy stateless Node/Worker HTTP and connection-pinned stdio | Core workflows, resource reads and explicit forecast-ID recall across eras                       | Stateless HTTP cannot remember initialize capabilities; stdio can retain them                                     |
+| Browser iframe + official App/AppBridge local harness         | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                      |
+| Full harness display modes                                    | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation |
+| Partial harness                                               | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                |
+| Denied message/tool and missing resource                      | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                         |
+| Resource security                                             | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                         |
+| Independent production app hosts                              | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support   |
 
-**Validation:** private `bun run test` passed **60 tests**, including the full
-existing HTTP and stdio forecast workflows; `bun run check` passed both server
+**Validation:** private `bun run test` passed **79 tests**, including the full
+both-era Node HTTP, stdio and durable Worker forecast workflows, cross-era
+record recall, automatic modern negotiation, and SDK rejection
+of unsupported modern revisions on all three entry points; `bun run check` passed both server
 and browser checks. Wrangler deployment **dry-run** built the Worker successfully;
-a separate MCP client read the resource and called the echo tool in local
-workerd. Browser inspection exercised echo, context, messaging/denial, denied tool
+an earlier Session 1 MCP client probe negotiated the modern protocol, read the
+resource and called the app-capable echo tool in local workerd. Earlier Session 1 browser inspection exercised echo, context, messaging/denial, denied tool
 calls, partial capabilities, resource failure, reopening and graceful teardown.
 The widget was visually inspected in the narrow in-app browser. Scoped Prettier
 and `git diff --check` passed. Standards/spec review found no blocking changes.
 
-**Follow-ups:** carry the stateless capability limitation into registration design;
-do not gate essential domain actions or core output on remembered initialization.
+**Follow-ups:** use per-request capabilities for modern clients; do not gate
+essential domain actions or core output on app support.
 The later shell must handle real host placement and generation status independently.
 Actual independent host support stays unverified until tested in Session 11.
 Session 2 should define the shared contracts; do not turn this echo probe into a
@@ -257,15 +335,13 @@ private registration and existing interface integration tests; Session 1 handoff
 - Define snapshot/reopen, draft edit, proposal submission/application/discard,
   select-and-approve, approval, and Continue intent interfaces. Include expected
   revision, prerequisite bindings, command identity, and recoverable conflicts.
-- Decide the versioned envelope for strict existing outputs. Document the
-  compatibility behavior for omitted revisions and old payloads; use canonical
+- Decide the versioned envelope for strict existing outputs. Reject missing required revisions and obsolete payloads; use canonical
   schemas rather than duplicating payload details in skills.
 - Keep internal IDs/revision tokens available to clients and the model where
   necessary but separate from user-facing forecast prose and exports.
 
 **Done when:** representative pilot data, incomplete edits, actions, and errors
-validate through public contracts; an existing core integration has a defined
-upgrade path; public and private interface tests agree on the package artifact.
+validate through public contracts; a modern core integration exercises the current contracts; public and private interface tests agree on the package artifact.
 
 ## Session 3 — Implement durable revision-safe state
 
@@ -286,15 +362,15 @@ Session 2 contracts. Load only the invariants affected by persistence changes.
 - Retain approved versions during editing and mark retained dependent content
   outdated on replacement approval. Derive valid progression and publication
   eligibility from dependencies, rather than old approval flags alone.
-- Migrate existing records with pending and approved snapshots. Preserve language
+- Replace disposable development records as needed. Preserve language
   locking, separate-record rules, deletion, retention, and explicit record IDs
-  across stateless requests. Do not infer consent from missing legacy state.
+  across stateless requests. Require explicit consent in current state.
 - Scope stored revisions/proposals and payload limits to avoid unbounded history.
   Preserve recoverable user work on failed saves and host teardown.
 
 **Done when:** tests cover incomplete autosave, reload, two stale views, late
 generation, duplicate requests, stale candidate selection, replacement approval,
-outdated downstream retention, and migration of existing records. App and core
+outdated downstream retention, and fresh-record persistence. App and core
 commands produce the same persisted transitions.
 
 ## Session 4 — Build one command and presentation path
@@ -305,14 +381,14 @@ tests; public stage/action contracts and affected runtime instructions.
 **Work:**
 
 - Extract domain commands and one stage-to-presentation projection from handlers.
-  Have legacy tools and app-facing calls delegate to this same engine.
+  Have core tools and app-facing calls delegate to this same engine.
 - Build generic text/structured rendering from shared presentation primitives.
   Source action labels, field order, errors, and availability from the contract
   and current state. Return meaningful core `content` even for app-linked tools.
 - Expose reopening/snapshot and equivalent edit, proposal, approval, and Continue
   operations to core clients. An app-only visibility restriction must not make
   a domain feature unreachable through the core workflow.
-- Return canonical revision-bearing reviews. Reject ambiguous legacy approvals
+- Return canonical revision-bearing reviews. Reject approvals missing required revisions
   with instructions to fetch/review and retry; avoid changing strict outputs
   accidentally. Remove approval bypasses from exact-match candidate submission.
 - Move shared routing to runtime instructions and update pilot skill routing
@@ -449,8 +525,8 @@ deployment configuration, changed instruction owners and public README.
   clients, partial/denied capabilities, resource/load failure, and teardown.
   Record tested versions and limitations; report unavailable hosts as unverified.
 - Exercise both transports, packaged HTML/assets, resource security metadata,
-  stateless record recovery, concurrent saves, migration and revision-safe core
-  payload upgrades. Test injection-safe rendering and relevant accessibility.
+  stateless record recovery, concurrent saves and revision-safe dual-era core
+  payloads. Test injection-safe rendering and relevant accessibility.
 - Verify the maintenance claim by adding/changing a supported field/action in a
   shared test fixture and observing both adapters update with no fallback edit.
   Keep reusable parity tests rather than a production demonstration field.
@@ -458,14 +534,13 @@ deployment configuration, changed instruction owners and public README.
   instructions. Remove contradictory automatic-continuation/approval wording
   at its owner; keep stage research rules in their references.
 - Build versioned public/private artifacts and check packaging boundaries,
-  notices and asset inclusion. Prepare staged deployment and rollback that can
-  still read newly saved records; code rollback alone is insufficient after a
-  storage change. Finish with a concrete release review, without automatically
+  notices and asset inclusion. Prepare a staged deployment and recovery plan for the new storage format;
+  no legacy-record compatibility is required. Finish with a concrete release review, without automatically
   publishing or deploying as part of this plan.
 
 **Done when:** the recorded matrix passes for supported configurations, both
 experiences use one state/command path, every supported feature has a core
-equivalent, and release artifacts plus migration/rollback evidence are reviewable.
+equivalent, and release artifacts plus recovery evidence are reviewable.
 
 ## Validation and handoff rules
 
