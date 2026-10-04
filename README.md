@@ -168,3 +168,8 @@ and regulatory status of forecast specifications produced with this tooling.
 
 Copyright © 2026 Christopher Maximilian Altmann. Licensed under the Apache
 License, Version 2.0.
+
+The package exports the site’s shared visual tokens and icon through
+`event-contract-builder/appearance/tokens.css` and
+`event-contract-builder/appearance/foresight-icon.png`. Their canonical sources
+remain in [`site/tokens.css`](site/tokens.css) and `site/assets/`.
