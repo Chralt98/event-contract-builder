@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  WorkspaceCommand,
+  WorkspaceCommandResult,
+  QuestionWorkspaceSnapshot,
+  WorkspaceRevision,
+  workspaceRevisionBindingShape,
+} from "./workspace";
 import { Definitions } from "./display-question";
 import { DataSource } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
@@ -18,11 +25,12 @@ import {
 } from "./workflow";
 
 export const approvalShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: ForecastSpecificationId.describe(
     "ID returned by the prior workflow step; required to identify the record being approved.",
   ),
   stage: approvalStageSchema.describe(
-    "The pending stage the user approved in chat; a drafted unit is approved automatically when selected.",
+    "The pending stage whose exact revision the user explicitly approved.",
   ),
 };
 
@@ -39,7 +47,9 @@ export const approvalOutputSchema = z
     language_code: ForecastSpecificationLanguageCode,
     unit_number: z.number().int(),
     selected_unit: ConnectorDraftUnit,
+    workspace: QuestionWorkspaceSnapshot.optional(),
     approved_stage: approvalStageSchema,
+    ...workspaceRevisionBindingShape,
     review_markdown: ReviewMarkdown,
   })
   .strict();
@@ -117,6 +127,9 @@ export const definedTermsShape = {
 };
 
 export const draftedQuestionsShape = {
+  expected_revision: WorkspaceRevision.optional().describe(
+    "Required when proposing changes to an existing workspace; reopen before generating.",
+  ),
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
     "Immutable canonical BCP 47 language for this new record.",
@@ -231,6 +244,9 @@ export const newsTimelineShape = {
 };
 
 export const selectedUnitShape = {
+  expected_revision: WorkspaceRevision.optional().describe(
+    "Required when selecting or editing an existing workspace; submission does not approve.",
+  ),
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
     "Existing record language, or target language for an explicit new record.",
@@ -257,11 +273,13 @@ const workflowOutput = <T extends z.ZodRawShape>(shape: T) =>
       forecast_specification_id: ForecastSpecificationId,
       language_code: ForecastSpecificationLanguageCode,
       review_markdown: ReviewMarkdown,
+      ...workspaceRevisionBindingShape,
     })
     .strict();
 
 export const draftedQuestionsOutputSchema = workflowOutput({
   ...draftedQuestionsShape,
+  workspace: QuestionWorkspaceSnapshot,
 });
 export const definedTermsOutputSchema = workflowOutput({
   ...definedTermsShape,
@@ -282,6 +300,8 @@ export const selectedUnitOutputSchema = z
   .object({
     forecast_specification_id: ForecastSpecificationId,
     language_code: ForecastSpecificationLanguageCode,
+    ...workspaceRevisionBindingShape,
+    workspace: QuestionWorkspaceSnapshot,
     unit_number: selectedUnitShape.unit_number,
     selected_unit: selectedUnitShape.selected_unit,
     review_markdown: ReviewMarkdown,
@@ -290,10 +310,63 @@ export const selectedUnitOutputSchema = z
 
 /** Client-visible MCP contract. Execution is provided by the private backend. */
 export const foresightTools = {
+  create_question_workspace: {
+    title: "Create Question Workspace",
+    description:
+      "Start an empty resumable question draft with an immutable language. Saving and approving are separate operations.",
+    inputSchema: { language_code: ForecastSpecificationLanguageCode },
+    outputSchema: z.strictObject({
+      workspace: QuestionWorkspaceSnapshot,
+      review_markdown: ReviewMarkdown,
+    }),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
+  execute_workspace_command: {
+    title: "Question Workspace Command",
+    description:
+      "Reopen or execute a revision-bound question command through the shared workspace engine. Returns canonical review, validation, recovery, or Continue intent for core and app clients.",
+    inputSchema: WorkspaceCommand,
+    outputSchema: z.strictObject({
+      result: WorkspaceCommandResult,
+      review_markdown: ReviewMarkdown,
+    }),
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  get_forecast_stage_review: {
+    title: "Get Forecast Stage Review",
+    description:
+      "Retrieve a saved pending stage and its current approval bindings for review or stale-approval recovery. Does not approve content.",
+    inputSchema: {
+      forecast_specification_id: ForecastSpecificationId,
+      stage: approvalStageSchema,
+    },
+    outputSchema: z.strictObject({
+      forecast_specification_id: ForecastSpecificationId,
+      stage: approvalStageSchema,
+      ...workspaceRevisionBindingShape,
+      review_markdown: ReviewMarkdown,
+    }),
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
   approve_forecast_specification: {
     title: "Approve Forecast Specification Stage",
     description:
-      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Selecting an exact unit from the active draft already approves it.",
+      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Requires the exact revision and prerequisite bindings from its canonical review.",
     inputSchema: approvalShape,
     outputSchema: approvalOutputSchema,
     annotations: {
@@ -449,7 +522,7 @@ export const foresightTools = {
   submit_selected_unit: {
     title: "Submit Selected Unit",
     description:
-      "Validate and store the selected unit; an exact match to the active draft also approves it and unlocks definitions. A different or new unit remains pending.",
+      "Save a selected unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
     inputSchema: selectedUnitShape,
     outputSchema: selectedUnitOutputSchema,
     annotations: {

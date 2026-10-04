@@ -7,15 +7,35 @@ file or from tool descriptions.
 
 ## Workflow state
 
-Submission tools validate and store a pending stage. If `submit_selected_unit`
-receives the exact unit and number from the active record's stored draft, the
-user's choice explicitly confirms it and the tool stores and approves
-`selected_unit` together. Never call `approve_forecast_specification` for
-that exact draft selection. Immediately continue with `submit_defined_terms`
-using the exact selected unit and its unit number. A unit outside that draft
-remains pending. After the user accepts its
-review, call `approve_forecast_specification` for `selected_unit`, then
-continue with definitions.
+Submission tools validate and store a pending stage.
+The question pilot uses one revision-bound workspace for app and core clients:
+`create_question_workspace` starts an incomplete draft; `execute_workspace_command`
+reopens it and performs edits, proposals, Apply/Discard, approval, or Continue.
+Use commands returned in `workspace.presentation.actions`; replace editable
+payloads as needed and use a fresh command ID for a new operation. Preserve the
+same command ID and payload when retrying a lost acknowledgement.
+
+`submit_drafted_questions` fills an empty draft. On an existing record, pass
+the revision fetched before generation; later output is stored as a proposal.
+Applying a proposal changes the draft without approving it. `submit_selected_unit`
+saves a pending selection with the current workspace revision. A user's explicit
+select-and-approve request may execute `select_and_approve` on the exact saved
+candidate instead. Selection or editing alone does not approve content.
+
+For every approval, pass the exact `expected_revision` and
+`prerequisite_revisions` from the reviewed result. Missing or stale bindings
+require a fresh review (`get_forecast_stage_review` for a saved stage, or a
+workspace `reopen`), reconciliation, and retry; never infer the bindings from
+conversation memory. Preserve local edits on conflict. An incomplete draft may
+be saved with validation issues, but approval requires valid selected content.
+Keep the approved snapshot distinct from pending edits; outdated dependent work
+requires renewed review before export.
+
+After question approval, show its canonical workspace review and wait for an
+explicit Continue request. Execute the available `continue` command, then use
+its returned chat instruction to invoke `define-terms`. A Continue intent or
+successful message delivery does not establish that generation has started or
+finished. If app messaging is unavailable, present the equivalent chat request.
 
 After the user explicitly accepts each other rendered stage, call
 `approve_forecast_specification` in this order:
@@ -73,16 +93,13 @@ For submissions and approvals that complete the workflow, it is the
 authoritative, complete user-facing result: copy the returned
 `review_markdown` value verbatim as the entire next reply and nothing else. Do
 not paraphrase, summarize, retype, or add a conversational lead-in, even when
-the review is a short completion menu. The only exception is the exact
-draft-selection transition described here. For draft reviews, copy the
+the review is a short completion menu. Question workspace reviews use their
+shared presentation fields, sections, and available actions; they replace the
+legacy draft-review layout below. For draft reviews, copy the
 complete rendered Markdown exactly; do not recreate it from structured data,
 condense the variables, or combine their allowed values.
-When the user chooses a unit from the active record's stored draft, keep the
-`submit_selected_unit` review internal, immediately submit definitions, and
-present only the definitions review. If the selected unit is outside that
-draft, present its review and wait for approval.
-Intermediate approval reviews are never user-facing. Treat every other
-approval as a silent transition, immediately invoke the next stage, and present
+Intermediate approval reviews after the question stage are never user-facing.
+Treat these approvals as a silent transition, immediately invoke the next stage, and present
 only that next stage's review. Do not summarize, reword, reorder, omit fields,
 or add a preface. Translate only generated labels and fixed UI text; preserve
 data-bearing content exactly, including questions, definitions, placeholders,
@@ -219,7 +236,8 @@ submit an email or GitHub issue on the user's behalf.
 
 ## Validation errors
 
-A validation error means nothing was persisted. Correct only the reported
-field, preserve the rest of the payload, and retry. When criteria validation
+A rejected submission or command leaves that operation unapplied. Workspace
+drafts can still be saved with field validation issues; those issues block
+approval, not autosave. Correct only the reported field, preserve the rest of the payload, and retry. When criteria validation
 fails, show only the corrected field and value and say that the existing
 Forecast Specification was unchanged; do not repeat unchanged criteria.

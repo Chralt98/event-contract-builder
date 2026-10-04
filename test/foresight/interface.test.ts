@@ -182,6 +182,23 @@ describe("public forecast interface", () => {
         ...payload,
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
         units: [first, second, third],
+        expected_revision: "r1",
+        prerequisite_revisions: {},
+        workspace: {
+          forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+          language_code: "de",
+          revision: "r1",
+          stage: "selected_unit",
+          draft: { candidates: [], selected_candidate_id: null },
+          approved: null,
+          proposals: [],
+          presentation: {
+            title: "Forecast question",
+            fields: [],
+            validation_issues: [],
+            actions: [],
+          },
+        },
         review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(true);
@@ -191,6 +208,23 @@ describe("public forecast interface", () => {
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
         language_code: undefined,
         units: [first, second, third],
+        expected_revision: "r1",
+        prerequisite_revisions: {},
+        workspace: {
+          forecast_specification_id: "00000000-0000-4000-8000-000000000001",
+          language_code: "de",
+          revision: "r1",
+          stage: "selected_unit",
+          draft: { candidates: [], selected_candidate_id: null },
+          approved: null,
+          proposals: [],
+          presentation: {
+            title: "Forecast question",
+            fields: [],
+            validation_issues: [],
+            actions: [],
+          },
+        },
         review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(false);
@@ -221,12 +255,14 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(13);
+    expect(Object.keys(foresightTools)).toHaveLength(16);
   });
 
   test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
     const finalSummary = {
+      expected_revision: "r1",
+      prerequisite_revisions: {},
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
       language_code: "en",
       unit_number: 1,
@@ -263,6 +299,8 @@ describe("public forecast interface", () => {
     ).toBe(true);
 
     const criteriaApproval = {
+      expected_revision: "r1",
+      prerequisite_revisions: {},
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
       language_code: "de",
       unit_number: 1,
@@ -312,7 +350,7 @@ describe("public forecast interface", () => {
       "the\nauthoritative, complete user-facing result:",
     );
     expect(foresightServerInstructions).toContain(
-      "Intermediate approval reviews are never user-facing",
+      "Intermediate approval reviews after the question stage are never user-facing",
     );
     expect(foresightServerInstructions).toContain(
       "immediately invoke the next stage",
@@ -321,11 +359,9 @@ describe("public forecast interface", () => {
       "present\nonly that next stage's review",
     );
     expect(foresightServerInstructions).toContain(
-      "Never call `approve_forecast_specification` for\nthat exact draft selection",
+      "Selection or editing alone does not approve content.",
     );
-    expect(foresightServerInstructions).toContain(
-      "Immediately continue with `submit_defined_terms`",
-    );
+    expect(foresightServerInstructions).toContain("explicit Continue request");
     expect(foresightServerInstructions).toMatch(
       /copy the\s+complete\s+rendered Markdown exactly/,
     );

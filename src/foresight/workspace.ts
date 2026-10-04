@@ -8,19 +8,26 @@ import {
 
 /** Version of the workspace wire contract, independent of the MCP protocol. */
 export const workspaceContractVersion = 1 as const;
-export const WorkspaceRevision = z.string().min(1).max(128);
+export const WorkspaceRevision = z
+  .string({
+    error:
+      "Missing revision. Reopen the workspace or fetch get_forecast_stage_review, review and retry.",
+  })
+  .min(1)
+  .max(128);
 export const WorkspaceRowId = z.uuid();
 const text = z.string().max(4000);
 export const workspacePayloadLimitBytes = 256 * 1024;
-function boundedPayload<T extends z.ZodType>(schema: T) {
+export const workspaceReviewLimitBytes = 2 * 1024 * 1024;
+function boundedPayload<T extends z.ZodType>(
+  schema: T,
+  limit = workspacePayloadLimitBytes,
+) {
   return schema.superRefine((value, ctx) => {
-    if (
-      new TextEncoder().encode(JSON.stringify(value)).byteLength >
-      workspacePayloadLimitBytes
-    )
+    if (new TextEncoder().encode(JSON.stringify(value)).byteLength > limit)
       ctx.addIssue({
         code: "custom",
-        message: "Workspace payload exceeds 256 KiB.",
+        message: `Workspace payload exceeds ${limit / 1024} KiB.`,
       });
   });
 }
@@ -176,6 +183,15 @@ export const WorkspaceFieldDefinition = z.strictObject({
   label: z.string().min(1).max(200),
   control: WorkspaceControlKind,
   validation: z.string().min(1).max(200),
+  options: z
+    .array(
+      z.strictObject({
+        value: z.string().max(200),
+        label: z.string().max(200),
+      }),
+    )
+    .max(50)
+    .optional(),
 });
 export const questionStageDefinition = {
   stage: "selected_unit",
@@ -228,6 +244,10 @@ export const questionStageDefinition = {
       label: "If unmet",
       control: "choice",
       validation: "ForecastCondition.ifUnmet",
+      options: ForecastCondition.shape.ifUnmet.options.map((value) => ({
+        value,
+        label: value === "annulled" ? "Annulled" : "Resolve No",
+      })),
     },
   ],
 } as const;
@@ -256,7 +276,7 @@ export const WorkspacePrerequisites = z.partialRecord(
   approvalStageSchema,
   WorkspaceRevision,
 );
-const binding = {
+export const workspaceRevisionBindingShape = {
   expected_revision: WorkspaceRevision,
   prerequisite_revisions: WorkspacePrerequisites,
 };
@@ -267,7 +287,7 @@ const commandIdentity = {
 };
 const mutation = {
   ...commandIdentity,
-  ...binding,
+  ...workspaceRevisionBindingShape,
   stage: z.literal("selected_unit"),
 };
 /** Reads need identity; writes require an exact base and prerequisite bindings. */
@@ -351,6 +371,12 @@ const rows = <T extends z.ZodType>(field: T) =>
       50,
     ),
   });
+const presentationGroup = z.strictObject({
+  ...nodeBase,
+  control: z.literal("group"),
+  present: z.boolean(),
+  fields: z.array(z.union([leaf, rows(z.union([leaf, rows(leaf)]))])).max(12),
+});
 export const WorkspacePresentationField = z.union([
   leaf,
   rows(z.union([leaf, rows(leaf)])),
@@ -358,7 +384,11 @@ export const WorkspacePresentationField = z.union([
     ...nodeBase,
     control: z.literal("group"),
     present: z.boolean(),
-    fields: z.array(z.union([leaf, rows(z.union([leaf, rows(leaf)]))])).max(12),
+    fields: z
+      .array(
+        z.union([leaf, rows(z.union([leaf, rows(leaf)])), presentationGroup]),
+      )
+      .max(12),
   }),
 ]);
 export const WorkspaceAvailableAction = z
@@ -405,10 +435,21 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
     presentation: z.strictObject({
       title: z.string().min(1).max(200),
       fields: z.array(WorkspacePresentationField).max(20),
+      sections: z
+        .array(
+          z.strictObject({
+            title: z.string().min(1).max(200),
+            status: z.string().min(1).max(1000),
+            fields: z.array(WorkspacePresentationField).max(20),
+          }),
+        )
+        .max(6)
+        .optional(),
       validation_issues: z.array(WorkspaceValidationIssue).max(200),
-      actions: z.array(WorkspaceAvailableAction).max(8),
+      actions: z.array(WorkspaceAvailableAction).max(40),
     }),
   }),
+  workspaceReviewLimitBytes,
 );
 export type QuestionWorkspaceSnapshot = z.infer<
   typeof QuestionWorkspaceSnapshot
@@ -454,6 +495,7 @@ export const WorkspaceCommandResult = boundedPayload(
       chat_instruction: z.string().min(1).max(4000),
     }),
   ]),
+  workspaceReviewLimitBytes,
 );
 export type WorkspaceCommandResult = z.infer<typeof WorkspaceCommandResult>;
 
@@ -465,5 +507,6 @@ export function workspaceReviewEnvelopeSchema<T extends z.ZodType>(domain: T) {
       domain,
       workspace: QuestionWorkspaceSnapshot,
     }),
+    workspaceReviewLimitBytes,
   );
 }
