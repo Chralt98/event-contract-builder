@@ -104,11 +104,18 @@ unapproved working draft visible.
 
 ### Maintenance target and protocol policy
 
-There are no production clients or valuable production records to preserve.
-Drop backward compatibility to keep the code lean: do not add 2025 protocol
-transports, old payload adapters, or old-record migration machinery. Future
-sessions may replace development payloads and records directly. Keep modern
-core-only clients fully supported; MCP Apps rendering remains optional.
+The server targets MCP 2026-07-28 as its current protocol while remaining
+dual-era for compatibility with supported 2025-era MCP clients. Compatibility
+should be provided by the current MCP SDK wherever possible, rather than by
+maintaining our own legacy protocol implementation. Modern-only rejection may
+be introduced later once the important production hosts have migrated.
+
+Use SDK era dispatch with one business-logic path. Do not restore custom protocol
+negotiation, legacy routing branches, session maps or deprecated HTTP+SSE support
+without a demonstrated required feature that SDK compatibility cannot provide.
+MCP Apps rendering remains optional for core clients. Development payloads and
+records may still be replaced directly; protocol compatibility does not require
+old application-payload adapters or old-record migration machinery.
 
 The target is **zero feature-specific fallback implementation**, not zero adapter
 maintenance. Design features for the app first, encode their meaning once in a
@@ -206,13 +213,30 @@ retains the **2026-01-26** iframe protocol. See the official
 [SDK migration guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/upgrade-to-v2.md)
 and [Apps migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html).
 
-**Protocol policy:** every MCP entry point (Node HTTP, Cloudflare Worker and
-stdio) serves only **2026-07-28**, the current protocol in stable SDK v2.
-HTTP uses `createMcpHandler` (Node through `toNodeHandler`); stdio uses
-`serveStdio`, all configured with `legacy: "reject"`. Legacy 2025 connections
-are rejected. The legacy transports, Node session map and Worker fallback branch
-have been removed. Modern requests carry capabilities individually.
-See the official [protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
+**Protocol implementation:** follows the [dual-era policy](#maintenance-target-and-protocol-policy).
+Node HTTP and Cloudflare Worker use `createMcpHandler` with `legacy: "stateless"`;
+Node wraps it with `toNodeHandler`. Stdio uses `serveStdio` with its default
+legacy serving mode. Modern requests use **2026-07-28**; traditional initialization
+accepts the SDK's supported legacy revisions, including **2025-11-25**,
+**2025-06-18** and **2025-03-26**. Automatic negotiation chooses modern.
+Unsupported modern revisions receive the SDK unsupported-protocol error with
+supported revisions. Legacy initialization follows the SDK's version negotiation,
+which may return a supported revision when the offered version is unknown.
+See [SDK protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
+
+**Stateless legacy HTTP is sufficient:** existing features are request/response
+tools and resource reads; there are no required subscriptions, unsolicited
+server-to-client messages, sampling or elicitation calls. Forecast state is
+recovered by explicit ID from the process-lifetime Node handoff store or durable
+Worker D1 store. No custom compatibility routing, session maps or deprecated
+transports remain. Stdio retains one server/store for the lifetime of a connection.
+
+Modern app capabilities come from `ctx.mcpReq.envelope`; legacy stdio capabilities
+come from initialization. Fresh legacy HTTP requests cannot retain those
+initialization capabilities, so the echo reports `not-advertised` there while
+preserving resource linkage and core output. Core features never depend on app
+support. Modern-only pins remain solely in dedicated modern-protocol tests;
+the browser reference host uses automatic negotiation.
 
 Compatible transitive security pins in the private `package.json` select Hono
 **4.13.13** and its Node adapter **1.19.17**; the latter stays within the SDK
@@ -248,11 +272,11 @@ Session 5.
 - `package.json`, `bun.lock`, `tsconfig.json`, `server/app/tsconfig.json`,
   `wrangler.toml`: dependency, build-before-run/check/test and browser type checks.
 - `server/test/app-spike.test.ts`: transport, negotiation, bridge, denial,
-  lifecycle, modern core behavior and generated-module parsing checks.
-- `server/test/protocol-rejection.test.ts`: unsupported-protocol rejection on
-  Node HTTP, Worker HTTP and actual stdio.
+  lifecycle, dual-era core behavior and generated-module parsing checks.
+- `server/test/protocol-compatibility.test.ts`: modern, normal legacy and automatic
+  clients on all three entry points, plus SDK rejection of unknown modern revisions.
 - `server/src/index.ts`, `server/src/tools/*`: v2 imports;
-  `server/test/interface-integration.test.ts`: modern-only protocol workflows and
+  `server/test/interface-integration.test.ts`: both-era protocol workflows and cross-era
   durable Worker recall; `server/test/d1-test-binding.ts`: shared test adapter;
   other affected tests use the SDK v2 discovery behavior and JSON Schema 2020-12.
 
@@ -264,24 +288,26 @@ be started with `bun x --no-install wrangler dev --local --port 8791 --var
 FORESIGHT_APP_SPIKE:1`. These are development probes; no model or forecast record
 is created.
 
-| Configuration                                              | Observed support                                                                                 | Limits                                                                                                            |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| Official SDK Client, core-only, in memory and actual stdio | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                         |
-| Official SDK Client with UI extension                      | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                  |
-| Modern Worker handler, local workerd and stdio             | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                        |
-| Browser iframe + official App/AppBridge local harness      | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                      |
-| Full harness display modes                                 | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation |
-| Partial harness                                            | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                |
-| Denied message/tool and missing resource                   | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                         |
-| Resource security                                          | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                         |
-| Independent production app hosts                           | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support   |
+| Configuration                                                 | Observed support                                                                                 | Limits                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Official SDK Client, core-only, in memory and actual stdio    | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                         |
+| Official SDK Client with UI extension                         | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                  |
+| Modern Worker handler, local workerd and stdio                | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                        |
+| Legacy stateless Node/Worker HTTP and connection-pinned stdio | Core workflows, resource reads and explicit forecast-ID recall across eras                       | Stateless HTTP cannot remember initialize capabilities; stdio can retain them                                     |
+| Browser iframe + official App/AppBridge local harness         | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                      |
+| Full harness display modes                                    | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation |
+| Partial harness                                               | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                |
+| Denied message/tool and missing resource                      | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                         |
+| Resource security                                             | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                         |
+| Independent production app hosts                              | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support   |
 
-**Validation:** private `bun run test` passed **64 tests**, including the full
-modern Node HTTP, stdio and durable Worker forecast workflows, plus rejection
-of 2025 connections on all three entry points; `bun run check` passed both server
+**Validation:** private `bun run test` passed **79 tests**, including the full
+both-era Node HTTP, stdio and durable Worker forecast workflows, cross-era
+record recall, automatic modern negotiation, and SDK rejection
+of unsupported modern revisions on all three entry points; `bun run check` passed both server
 and browser checks. Wrangler deployment **dry-run** built the Worker successfully;
-a separate MCP client negotiated the modern protocol, read the resource and
-called the app-capable echo tool in local workerd. Browser inspection exercised echo, context, messaging/denial, denied tool
+an earlier Session 1 MCP client probe negotiated the modern protocol, read the
+resource and called the app-capable echo tool in local workerd. Earlier Session 1 browser inspection exercised echo, context, messaging/denial, denied tool
 calls, partial capabilities, resource failure, reopening and graceful teardown.
 The widget was visually inspected in the narrow in-app browser. Scoped Prettier
 and `git diff --check` passed. Standards/spec review found no blocking changes.
@@ -499,7 +525,7 @@ deployment configuration, changed instruction owners and public README.
   clients, partial/denied capabilities, resource/load failure, and teardown.
   Record tested versions and limitations; report unavailable hosts as unverified.
 - Exercise both transports, packaged HTML/assets, resource security metadata,
-  stateless record recovery, concurrent saves and revision-safe modern core
+  stateless record recovery, concurrent saves and revision-safe dual-era core
   payloads. Test injection-safe rendering and relevant accessibility.
 - Verify the maintenance claim by adding/changing a supported field/action in a
   shared test fixture and observing both adapters update with no fallback edit.
