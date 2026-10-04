@@ -4,40 +4,31 @@ Use this reference for a new event or selection of an existing draft.
 
 ## New-event draft
 
-Write concise, conversational binary or categorical questions about a specific
-future event within a defined time frame. Each question must be clear, definite,
-and unambiguous: from the wording and its variables, a reader should identify
-the subject or event, the qualifying outcome, the observation period, and what
-fact makes each answer apply. Ask directly about the outcome; keep its rationale
-outside the question. Each question should make sense without neighboring text
-and remain clear if its position changes. Write display questions in active
-voice (e.g.,
-“Will Congress pass the bill?” rather than “Will the bill be passed?”); do not
-invent an actor the context does not identify. State material thresholds,
-units, jurisdictions, dates, and answer options explicitly. If supplied context
-leaves materially different readings of the target, outcome, or time frame, ask
-for clarification instead of guessing. Use `before [date]` for an exclusive
-deadline and `on or before [date]` when the stated date counts; avoid `by [date]`.
-If the target intent is clear but a term still has multiple defensible meanings,
-leave that for [define-terms](../../define-terms/references/definition-spec.md)
-after selection.
-Preserve supplied events, thresholds, options, and dates; never
-invent a missing one. Questions must be 10–200 characters and end with `?`.
+Write a short, conversational, attention-catching display question for the
+user's intended future event. It is a simplified public summary, not the full
+resolution rule. Preserve the intended subject, outcome and time frame without
+packing source methodology, evidence rules or exceptions into the question;
+those belong in the resolution criteria. Material supplied thresholds, units,
+options and dates must not be contradicted or invented. Ask when the intent
+itself is unclear; leave ambiguous terms for
+[define-terms](../../define-terms/references/definition-spec.md) after selection.
+Use active voice and a question that makes sense on its own. Questions must be
+10–200 characters and end with `?`.
 
-Before presenting candidates, internally check whether a resolver could
-determine each outcome from observable evidence. If not, replace abstract
-candidates with narrower, measurable propositions or proxies that preserve the
-user's intent. Do not show this check in the user-facing draft.
+Produce one main draft, first in `units`, faithful to the user's intent. Add
+one or two distinct nearby proxy ideas when they offer a clearer observable
+outcome or stronger prospective resolution sources. Keep these suggestions
+compact; do not replace the main intent with a proxy without the user's choice,
+and do not pad the list with superficial rewrites. If no useful proxy exists,
+submit only the main draft. Check source feasibility internally without treating
+a display question's lack of technical detail as a defect.
 
-Produce at least three distinct selectable units: one direct interpretation
-and at least two close reformulations, measurable proxies, or better-specified
-interpretations that preserve the user's intent. A binary unit is one Yes/No
-question. A categorical unit asks for an outcome and includes one finite
-outcome variable whose values are the allowed answers; the values may be listed
-without appearing as placeholders in the question. A binary question may also
-use variables for finite parameters, with matching angle-bracket placeholders.
-Values may be non-overlapping ranges on one numeric measure or mutually
-exclusive categorical outcomes.
+A binary unit is one Yes/No question. A categorical unit asks for an outcome
+and includes one finite outcome variable whose values are the allowed answers;
+the values may be listed without appearing as placeholders in the question.
+A binary question may also use variables for finite parameters, with matching
+angle-bracket placeholders. Values may be non-overlapping ranges on one numeric
+measure or mutually exclusive categorical outcomes.
 
 When the user's outcome depends on a separate event, draft that event as the
 unit's `condition` at this stage. State the prerequisite declaratively (for
@@ -94,8 +85,9 @@ variable value.
 
 ## Output detail
 
-Keep units in drafting order. The follow-up asks which unit number to use or
-revise and identifies term definition as the next stage. Use the same plain
-1-based unit numbers shown in the rendered draft (`1`, `2`, `3`); do not
-convert them to lettered choices. Never summarize or renumber the rendered
-draft.
+Keep the main draft first and show it in full. Present additional units as
+compact nearby ideas, with their full variables and conditions available on
+request or expansion. Invite the user to refine the main draft or explicitly
+choose an idea; do not require comparing several full drafts. Preserve the
+saved unit numbers for selection, and identify term definition as the next
+stage. Suggestions are not approved or selected automatically.

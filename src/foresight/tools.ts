@@ -136,9 +136,10 @@ export const draftedQuestionsShape = {
   ),
   units: z
     .array(ConnectorDraftUnit)
-    .min(
-      3,
-      "A new forecast draft must contain at least three distinct selectable forecast specification units.",
+    .min(1)
+    .max(
+      5,
+      "A draft may contain one main question and up to four nearby ideas.",
     )
     .superRefine((units, ctx) => {
       const signatures = units.map(({ question, variables, condition }) =>
@@ -153,7 +154,7 @@ export const draftedQuestionsShape = {
       }
     })
     .describe(
-      "At least three distinct selectable units, including a direct interpretation and intent-preserving alternatives.",
+      "One main draft first, followed by up to four distinct nearby proxy ideas.",
     ),
   followUp: z
     .string()
