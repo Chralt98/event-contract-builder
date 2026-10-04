@@ -1,7 +1,12 @@
 # Resolution-source specification
 
 Given one exact unit and its approved definitions, cover every fact needed to
-resolve it with a fixed ranked hierarchy.
+resolve it with a fixed ranked hierarchy. Find sources suited to the selected
+display question and intent rather than routinely rewriting the question to
+match a convenient dataset. Its short wording need not state the complete
+measurement rule; the criteria stage makes that rule precise against the
+approved sources. Report a genuine coverage gap when no suitable source exists,
+without silently substituting a different event or proxy.
 
 For a conditional unit, submit one hierarchy for the outcome and a separate
 `condition_sources` hierarchy for determining whether the prerequisite held.

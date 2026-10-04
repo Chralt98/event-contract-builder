@@ -16,8 +16,8 @@ is attributed in [THIRD_PARTY_LICENSES.md](../../THIRD_PARTY_LICENSES.md).
 3. Once all decisions are settled, construct the criteria and call
    `submit_resolution_criteria` once. Do not show a pre-submission draft.
 4. Present the rendered submission as the single criteria review. After
-   explicit approval, approve `resolution_criteria` and continue with
-   `define-background-information`.
+   explicit approval, approve `resolution_criteria`, apply the reference's post-approval question
+   alignment check, and continue with `define-background-information`.
 
 Do not modify the selected unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.

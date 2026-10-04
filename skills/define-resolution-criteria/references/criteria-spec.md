@@ -92,13 +92,12 @@ application. For source-derived values, specify settings that can materially
 change the result, such as query terms, geographic scope, date window, or
 aggregation.
 
-Cross-check the selected question against the resolution conditions: its event,
-subject, scope, thresholds, outcomes, and time frame must match, without implying
-a different trigger or resolution date. If they materially diverge, do not
-submit criteria; report that the unit needs revision. Once the user selects a
-revised unit, start it as a separate record and follow the shared approval
-order, including new approvals for definitions and sources before drafting
-criteria.
+Treat the display question as a short public summary. Make the criteria precise
+against the approved sources while preserving the intended event and outcome;
+source methodology, evidence cutoffs and exception handling need not all appear
+in the question. Do not demand a wording change merely because the criteria are
+more detailed. Resolve a material change to the user's intended outcome in the
+decision interview rather than silently introducing it.
 
 Before submission, test the rule against plausible edge cases and borderline
 scenarios where a condition or evidence path may not apply cleanly. Clarify the
@@ -160,8 +159,16 @@ displays its placeholders and allowed values; do not duplicate them as
 per-value criteria. Do not append the internal No complement or repeat the
 original unit question inside the criteria.
 
-After explicit approval, approve `resolution_criteria` and continue to
-background information; do not present the complete specification yet. If a
+After explicit approval, approve `resolution_criteria`, then compare the display
+question with the approved criteria. Ask whether to adapt the display question
+only if a reasonable reader would infer a materially different event, subject,
+threshold, outcome or time frame. If they substantially agree, continue without
+an extra confirmation; the user can review the complete specification at the
+end. Technical precision or omitted resolution details alone are not a mismatch.
+For a material mismatch, explain the difference and offer a concise revised
+display question. Do not alter approved content automatically; use the server's
+revision and approval routing if the user requests the change. Otherwise continue
+to background information; do not present the complete specification yet. If a
 validation error occurs, correct only the reported field and retry the full
 unchanged remainder. Show only the corrected field and value, explaining that
 the failed submission changed nothing.

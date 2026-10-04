@@ -157,7 +157,7 @@ describe("public forecast interface", () => {
     ).toThrow();
   });
 
-  test("first drafts require at least three distinct selectable units", () => {
+  test("first drafts accept one main unit and optional distinct ideas", () => {
     const schema = z.object(
       foresightTools.submit_drafted_questions.inputSchema,
     );
@@ -173,7 +173,16 @@ describe("public forecast interface", () => {
       followUp: "Which unit should we define next?",
     };
 
-    expect(schema.safeParse(payload).success).toBe(false);
+    expect(schema.safeParse(payload).success).toBe(true);
+    expect(schema.safeParse({ ...payload, units: [] }).success).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        units: Array.from({ length: 21 }, (_, index) =>
+          unit(`Will event ${index} happen before the deadline?`),
+        ),
+      }).success,
+    ).toBe(false);
     expect(
       schema.safeParse({ ...payload, units: [first, second, third] }).success,
     ).toBe(true);
