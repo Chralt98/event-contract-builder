@@ -8,3 +8,5 @@ export * from "./news-timeline";
 export * from "./workflow";
 export * from "./tools";
 export * from "./instructions";
+
+export * from "./workspace";

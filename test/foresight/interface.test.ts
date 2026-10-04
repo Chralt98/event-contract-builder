@@ -326,8 +326,8 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Immediately continue with `submit_defined_terms`",
     );
-    expect(foresightServerInstructions).toContain(
-      "copy the complete\nrendered Markdown exactly",
+    expect(foresightServerInstructions).toMatch(
+      /copy the\s+complete\s+rendered Markdown exactly/,
     );
   });
 
