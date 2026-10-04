@@ -86,7 +86,13 @@ review against the current prerequisites. Completion and exports exclude
 outdated content. Make the distinction between the approved version and an
 unapproved working draft visible.
 
-### Maintenance target and compatibility
+### Maintenance target and protocol policy
+
+There are no production clients or valuable production records to preserve.
+Drop backward compatibility to keep the code lean: do not add 2025 protocol
+transports, old payload adapters, or old-record migration machinery. Future
+sessions may replace development payloads and records directly. Keep modern
+core-only clients fully supported; MCP Apps rendering remains optional.
 
 The target is **zero feature-specific fallback implementation**, not zero adapter
 maintenance. Design features for the app first, encode their meaning once in a
@@ -107,7 +113,7 @@ App renderer   Generic core text/structured adapter
 The shared definitions own field identity, labels, ordering, control kinds,
 validation references, and action meaning. The server owns state-dependent
 availability and results. Both renderers consume the same semantic presentation
-document; actions from either client execute the same commands. Legacy tool
+document; actions from either client execute the same commands. Existing tool
 names become adapters where practical rather than a second workflow engine.
 Existing nuanced research and drafting guidance stays in skills/references.
 
@@ -134,7 +140,7 @@ Preserve [the repository boundary](repository-boundary.md) and follow
 | Public instructions                | `src/foresight/instructions.md`, affected `skills/*/SKILL.md` and linked references                  | Shared routing and stage-specific semantic guidance in their existing owners        |
 | Public appearance and distribution | `site/styles.css`, `site/assets/foresight-icon.png`, `scripts/build.ts`, `scripts/package-plugin.py` | Canonical site styling inputs, exported assets/contracts, packaging                 |
 | Private service                    | `../bleavit-foresight/server/src/server.ts`, `worker.ts`, `tools/*`                                  | MCP registration, capability handling, command adapters, model handoff              |
-| Private state                      | `../bleavit-foresight/server/src/approved-forecast-specification-store.ts`, `d1-record-store.ts`     | Drafts, approvals, dependency revisions, persistence and migration                  |
+| Private state                      | `../bleavit-foresight/server/src/approved-forecast-specification-store.ts`, `d1-record-store.ts`     | Drafts, approvals, dependency revisions, persistence                                |
 | Private presentation               | `../bleavit-foresight/server/src/render.ts`, new app/presentation modules                            | Shared projection, generic fallback, widget implementation and built HTML           |
 
 Public contracts are consumed through a versioned package artifact. Use the
@@ -151,7 +157,7 @@ its handoff rather than adding parallel copies of these responsibilities.
 
 - Pin an MCP Apps SDK release compatible with the current MCP SDK and Worker
   environment. Verify installed releases; examples and protocol versions are
-  not interchangeable. Avoid an unrelated SDK migration unless required.
+  not interchangeable. Use the latest stable SDK and its current protocol only.
 - Build a minimal local UI resource/tool round trip using the standard MIME,
   `ui://` resource, tool metadata, capability negotiation, and iframe handshake.
   Check stdio and the stateless HTTP path, including resource reads.
@@ -184,13 +190,13 @@ retains the **2026-01-26** iframe protocol. See the official
 [SDK migration guide](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/upgrade-to-v2.md)
 and [Apps migration guide](https://apps.extensions.modelcontextprotocol.io/api/documents/migrate-to-v2.html).
 
-Worker HTTP and stdio now support both **2025-11-25** and **2026-07-28**, using
-SDK `createMcpHandler` and `serveStdio` for modern traffic. The existing Node HTTP
-session server retains its legacy transport; auto-negotiating clients fall back
-successfully there. Modern stateless requests carry UI capabilities individually,
-resolving the initial spike's limitation for that protocol. Legacy Worker requests
-still lack remembered initialization capabilities. See the official
-[protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
+**Protocol policy:** every MCP entry point (Node HTTP, Cloudflare Worker and
+stdio) serves only **2026-07-28**, the current protocol in stable SDK v2.
+HTTP uses `createMcpHandler` (Node through `toNodeHandler`); stdio uses
+`serveStdio`, all configured with `legacy: "reject"`. Legacy 2025 connections
+are rejected. The legacy transports, Node session map and Worker fallback branch
+have been removed. Modern requests carry capabilities individually.
+See the official [protocol entry-point guidance](https://github.com/modelcontextprotocol/typescript-sdk/blob/main/docs/migration/support-2026-07-28.md).
 
 Compatible transitive security pins in the private `package.json` select Hono
 **4.13.13** and its Node adapter **1.19.17**; the latter stays within the SDK
@@ -226,9 +232,11 @@ Session 5.
 - `package.json`, `bun.lock`, `tsconfig.json`, `server/app/tsconfig.json`,
   `wrangler.toml`: dependency, build-before-run/check/test and browser type checks.
 - `server/test/app-spike.test.ts`: transport, negotiation, bridge, denial,
-  lifecycle, core compatibility and generated-module parsing checks.
+  lifecycle, modern core behavior and generated-module parsing checks.
+- `server/test/protocol-rejection.test.ts`: unsupported-protocol rejection on
+  Node HTTP, Worker HTTP and actual stdio.
 - `server/src/index.ts`, `server/src/tools/*`: v2 imports;
-  `server/test/interface-integration.test.ts`: both protocol workflows and
+  `server/test/interface-integration.test.ts`: modern-only protocol workflows and
   durable Worker recall; `server/test/d1-test-binding.ts`: shared test adapter;
   other affected tests use the SDK v2 discovery behavior and JSON Schema 2020-12.
 
@@ -240,22 +248,21 @@ be started with `bun x --no-install wrangler dev --local --port 8791 --var
 FORESIGHT_APP_SPIKE:1`. These are development probes; no model or forecast record
 is created.
 
-| Configuration                                                   | Observed support                                                                                 | Limits                                                                                                                           |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| Official SDK Client, core-only, in memory and actual stdio      | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                                        |
-| Official SDK Client with UI extension                           | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                                 |
-| Legacy stateless HTTP Worker handler and local Wrangler/workerd | Initialize, discovery, resource reads and tool calls pass                                        | Fresh requests do not retain initialization capabilities; echo reports `not-advertised` while preserving core output and linkage |
-| Modern Worker handler, local workerd and stdio                  | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                                       |
-| Browser iframe + official App/AppBridge local harness           | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                                     |
-| Full harness display modes                                      | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation                |
-| Partial harness                                                 | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                               |
-| Denied message/tool and missing resource                        | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                                        |
-| Resource security                                               | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                                        |
-| Independent production app hosts                                | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support                  |
+| Configuration                                              | Observed support                                                                                 | Limits                                                                                                            |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Official SDK Client, core-only, in memory and actual stdio | Discovery, resource reads, usable text/structured echo                                           | No app rendering promised                                                                                         |
+| Official SDK Client with UI extension                      | Standard MIME negotiation and tool/resource linkage                                              | Negotiation is separate from iframe capabilities                                                                  |
+| Modern Worker handler, local workerd and stdio             | Resource reads, app-capable echo, complete workflow and durable Worker recall pass on 2026-07-28 | Per-request capabilities preserve app support without initialization state                                        |
+| Browser iframe + official App/AppBridge local harness      | Handshake, initial result notification, direct tool calls, context updates, messages, teardown   | Context/messages are logged; acceptance does not run a model                                                      |
+| Full harness display modes                                 | Inline, fullscreen and pip requests acknowledged                                                 | Placement changes are simulated responses, not a demonstrated host layout or OS picture-in-picture implementation |
+| Partial harness                                            | Context/message controls disabled; only advertised inline mode offered                           | Tool and core routes remain usable                                                                                |
+| Denied message/tool and missing resource                   | Visible failure and equivalent core instruction                                                  | No automatic generation or provider-specific retry bridge                                                         |
+| Resource security                                          | Empty CSP allowlists returned; local iframe uses `allow-scripts` and restrictive CSP             | Local harness is a protocol test fixture, not a production sandbox/security certification                         |
+| Independent production app hosts                           | Unverified                                                                                       | Codex's browser displayed our harness; this does not establish native Codex, ChatGPT or Claude MCP Apps support   |
 
 **Validation:** private `bun run test` passed **64 tests**, including the full
-existing Node HTTP workflow and both legacy/modern stdio and durable Worker
-forecast workflows; `bun run check` passed both server
+modern Node HTTP, stdio and durable Worker forecast workflows, plus rejection
+of 2025 connections on all three entry points; `bun run check` passed both server
 and browser checks. Wrangler deployment **dry-run** built the Worker successfully;
 a separate MCP client negotiated the modern protocol, read the resource and
 called the app-capable echo tool in local workerd. Browser inspection exercised echo, context, messaging/denial, denied tool
@@ -263,9 +270,8 @@ calls, partial capabilities, resource failure, reopening and graceful teardown.
 The widget was visually inspected in the narrow in-app browser. Scoped Prettier
 and `git diff --check` passed. Standards/spec review found no blocking changes.
 
-**Follow-ups:** carry the legacy stateless capability limitation into registration
-design; do not gate essential domain actions or core output on remembered
-initialization. Use per-request capabilities for modern clients.
+**Follow-ups:** use per-request capabilities for modern clients; do not gate
+essential domain actions or core output on app support.
 The later shell must handle real host placement and generation status independently.
 Actual independent host support stays unverified until tested in Session 11.
 Session 2 should define the shared contracts; do not turn this echo probe into a
@@ -287,15 +293,13 @@ private registration and existing interface integration tests; Session 1 handoff
 - Define snapshot/reopen, draft edit, proposal submission/application/discard,
   select-and-approve, approval, and Continue intent interfaces. Include expected
   revision, prerequisite bindings, command identity, and recoverable conflicts.
-- Decide the versioned envelope for strict existing outputs. Document the
-  compatibility behavior for omitted revisions and old payloads; use canonical
+- Decide the versioned envelope for strict existing outputs. Reject missing required revisions and obsolete payloads; use canonical
   schemas rather than duplicating payload details in skills.
 - Keep internal IDs/revision tokens available to clients and the model where
   necessary but separate from user-facing forecast prose and exports.
 
 **Done when:** representative pilot data, incomplete edits, actions, and errors
-validate through public contracts; an existing core integration has a defined
-upgrade path; public and private interface tests agree on the package artifact.
+validate through public contracts; a modern core integration exercises the current contracts; public and private interface tests agree on the package artifact.
 
 ## Session 3 — Implement durable revision-safe state
 
@@ -316,15 +320,15 @@ Session 2 contracts. Load only the invariants affected by persistence changes.
 - Retain approved versions during editing and mark retained dependent content
   outdated on replacement approval. Derive valid progression and publication
   eligibility from dependencies, rather than old approval flags alone.
-- Migrate existing records with pending and approved snapshots. Preserve language
+- Replace disposable development records as needed. Preserve language
   locking, separate-record rules, deletion, retention, and explicit record IDs
-  across stateless requests. Do not infer consent from missing legacy state.
+  across stateless requests. Require explicit consent in current state.
 - Scope stored revisions/proposals and payload limits to avoid unbounded history.
   Preserve recoverable user work on failed saves and host teardown.
 
 **Done when:** tests cover incomplete autosave, reload, two stale views, late
 generation, duplicate requests, stale candidate selection, replacement approval,
-outdated downstream retention, and migration of existing records. App and core
+outdated downstream retention, and fresh-record persistence. App and core
 commands produce the same persisted transitions.
 
 ## Session 4 — Build one command and presentation path
@@ -335,14 +339,14 @@ tests; public stage/action contracts and affected runtime instructions.
 **Work:**
 
 - Extract domain commands and one stage-to-presentation projection from handlers.
-  Have legacy tools and app-facing calls delegate to this same engine.
+  Have core tools and app-facing calls delegate to this same engine.
 - Build generic text/structured rendering from shared presentation primitives.
   Source action labels, field order, errors, and availability from the contract
   and current state. Return meaningful core `content` even for app-linked tools.
 - Expose reopening/snapshot and equivalent edit, proposal, approval, and Continue
   operations to core clients. An app-only visibility restriction must not make
   a domain feature unreachable through the core workflow.
-- Return canonical revision-bearing reviews. Reject ambiguous legacy approvals
+- Return canonical revision-bearing reviews. Reject approvals missing required revisions
   with instructions to fetch/review and retry; avoid changing strict outputs
   accidentally. Remove approval bypasses from exact-match candidate submission.
 - Move shared routing to runtime instructions and update pilot skill routing
@@ -479,8 +483,8 @@ deployment configuration, changed instruction owners and public README.
   clients, partial/denied capabilities, resource/load failure, and teardown.
   Record tested versions and limitations; report unavailable hosts as unverified.
 - Exercise both transports, packaged HTML/assets, resource security metadata,
-  stateless record recovery, concurrent saves, migration and revision-safe core
-  payload upgrades. Test injection-safe rendering and relevant accessibility.
+  stateless record recovery, concurrent saves and revision-safe modern core
+  payloads. Test injection-safe rendering and relevant accessibility.
 - Verify the maintenance claim by adding/changing a supported field/action in a
   shared test fixture and observing both adapters update with no fallback edit.
   Keep reusable parity tests rather than a production demonstration field.
@@ -488,14 +492,13 @@ deployment configuration, changed instruction owners and public README.
   instructions. Remove contradictory automatic-continuation/approval wording
   at its owner; keep stage research rules in their references.
 - Build versioned public/private artifacts and check packaging boundaries,
-  notices and asset inclusion. Prepare staged deployment and rollback that can
-  still read newly saved records; code rollback alone is insufficient after a
-  storage change. Finish with a concrete release review, without automatically
+  notices and asset inclusion. Prepare a staged deployment and recovery plan for the new storage format;
+  no legacy-record compatibility is required. Finish with a concrete release review, without automatically
   publishing or deploying as part of this plan.
 
 **Done when:** the recorded matrix passes for supported configurations, both
 experiences use one state/command path, every supported feature has a core
-equivalent, and release artifacts plus migration/rollback evidence are reviewable.
+equivalent, and release artifacts plus recovery evidence are reviewable.
 
 ## Validation and handoff rules
 
