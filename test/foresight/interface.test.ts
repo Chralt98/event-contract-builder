@@ -157,7 +157,7 @@ describe("public forecast interface", () => {
     ).toThrow();
   });
 
-  test("first drafts accept one main unit and optional distinct ideas", () => {
+  test("first drafts accept one main unit and at most four distinct ideas", () => {
     const schema = z.object(
       foresightTools.submit_drafted_questions.inputSchema,
     );
@@ -178,13 +178,25 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({
         ...payload,
-        units: Array.from({ length: 21 }, (_, index) =>
+        units: Array.from({ length: 6 }, (_, index) =>
           unit(`Will event ${index} happen before the deadline?`),
         ),
       }).success,
     ).toBe(false);
     expect(
       schema.safeParse({ ...payload, units: [first, second, third] }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...payload,
+        units: [
+          first,
+          second,
+          third,
+          unit("Will data source A report an outcome?"),
+          unit("Will data source B report an outcome?"),
+        ],
+      }).success,
     ).toBe(true);
     expect(
       foresightTools.submit_drafted_questions.outputSchema.safeParse({

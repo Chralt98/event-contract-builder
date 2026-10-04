@@ -137,7 +137,10 @@ export const draftedQuestionsShape = {
   units: z
     .array(ConnectorDraftUnit)
     .min(1)
-    .max(20)
+    .max(
+      5,
+      "A draft may contain one main question and up to four nearby ideas.",
+    )
     .superRefine((units, ctx) => {
       const signatures = units.map(({ question, variables, condition }) =>
         JSON.stringify({ question, variables: variables ?? [], condition }),
@@ -151,7 +154,7 @@ export const draftedQuestionsShape = {
       }
     })
     .describe(
-      "One main draft first, followed by optional distinct nearby proxy ideas.",
+      "One main draft first, followed by up to four distinct nearby proxy ideas.",
     ),
   followUp: z
     .string()
