@@ -19,6 +19,22 @@ and execution status rather than becoming another runtime instruction source.
 The user acceptance gate after Session 6 is mandatory. Pilot refinement is
 authorized; rollout to the remaining stages waits for explicit user acceptance.
 
+## Branch workflow
+
+Keep `integrate-mcp-app-ui` as the shared integration line in both repositories.
+Session 1 is split at the agreed commit boundary: in `event-contract-builder`,
+the integration branch starts at `92283382ccca1ffc13f6d2e3717c57904d05c14c`
+and `integrate-mcp-app-ui-session-1` contains `823c09c8b1faf8d8c44e847b3e712a159700f2f5` and later session commits; in
+`bleavit-foresight`, the integration branch starts at
+`46c5ffd1d2198c263279c2cab3dde7b52cc4c5f2` and
+`integrate-mcp-app-ui-session-1` contains
+`027b435f2d485849af66995157b36eb27315f80b` and later session commits.
+
+For each subsequent session, create `integrate-mcp-app-ui-session-X` from
+`integrate-mcp-app-ui`, where `X` is the session number. Keep that session's
+commits on its branch for inspection; integrate them into
+`integrate-mcp-app-ui` only after review. Do not push unless the user asks.
+
 | Session | Deliverable                                         | Requires                 | Status                       |
 | ------- | --------------------------------------------------- | ------------------------ | ---------------------------- |
 | 1       | Portable protocol and build spike                   | Confirmed design         | Complete — see handoff below |
