@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  sourceHierarchyRankError,
+  sourceIndependenceError,
+} from "./source-validation";
 import { Slug } from "./common";
 
 /** A resolution data source with availability characteristics. */
@@ -30,3 +34,20 @@ export const DataSource = z.object({
 });
 
 export type DataSourceT = z.infer<typeof DataSource>;
+
+/** Shared approval validator for each outcome or condition hierarchy. */
+export const SourceHierarchy = z
+  .array(DataSource)
+  .min(1, "At least one rank-1 primary source is required.")
+  .superRefine((sources, ctx) => {
+    if (new Set(sources.map((source) => source.id)).size !== sources.length)
+      ctx.addIssue({
+        code: "custom",
+        message: "Source IDs must be unique within a hierarchy.",
+      });
+    for (const message of [
+      sourceHierarchyRankError(sources),
+      sourceIndependenceError(sources),
+    ])
+      if (message) ctx.addIssue({ code: "custom", message });
+  });

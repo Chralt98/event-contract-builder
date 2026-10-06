@@ -22,6 +22,8 @@ const source = {
   url: "https://one.example/results",
 };
 const input = {
+  expected_revision: "generation-base",
+  prerequisite_revisions: {},
   unit_number: 1,
   selected_unit: {
     question: "Will it rain tomorrow?",

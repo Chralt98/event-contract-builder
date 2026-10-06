@@ -8,9 +8,9 @@ file or from tool descriptions.
 ## Workflow state
 
 Submission tools validate and store a pending stage.
-The question pilot uses one revision-bound workspace for app and core clients:
+Question, Terms, and Sources use one revision-bound workspace for app and core clients:
 `create_question_workspace` starts an incomplete draft; `execute_workspace_command`
-reopens it and performs edits, proposals, Apply/Discard, approval, or Continue.
+reopens an editable stage and performs edits, proposals, Apply/Discard, approval, or Continue. Include `stage` when reopening Terms or Sources.
 Use commands returned in `workspace.presentation.actions`; replace editable
 payloads as needed and use a fresh command ID for a new operation. Preserve the
 same command ID and payload when retrying a lost acknowledgement.
@@ -21,6 +21,15 @@ Applying a proposal changes the draft without approving it. `submit_selected_uni
 saves a pending selection with the current workspace revision. A user's explicit
 select-and-approve request may execute `select_and_approve` on the exact saved
 candidate instead. Selection or editing alone does not approve content.
+
+For `submit_defined_terms` and `submit_resolution_source`, fetch the stage with
+`get_forecast_stage_review` before generation and pass its exact revision and
+prerequisite bindings. Generation fills an untouched stage; subsequent output
+is a revision-bound proposal. Submit the complete map or hierarchy. These tools
+and `approve_forecast_specification` adapt to the same workspace commands; use
+the returned actions for edits, proposal decisions, approval, and continuation.
+The question's post-approval AI review requirement applies only to Question;
+Terms and Sources continue after valid explicit approval and any proposal choice.
 
 For every approval, pass the exact `expected_revision` and
 `prerequisite_revisions` from the reviewed result. Missing or stale bindings
@@ -49,8 +58,8 @@ then an explicit Continue request. If there is no proposal, tell the user in
 chat that no actionable improvement was found. For the MCP App, continue
 automatically after the review without another click; for text-only core chat,
 wait for an explicit Continue request. Execute the available `continue`
-command when required, then use its returned chat instruction to invoke
-`define-terms`. A Continue intent or successful message delivery does not
+command when required, then invoke the skill named by its returned chat
+instruction. A Continue intent or successful message delivery does not
 establish that generation has started or finished. If app messaging is
 unavailable, present the equivalent chat request.
 
@@ -110,7 +119,7 @@ For submissions and approvals that complete the workflow, it is the
 authoritative, complete user-facing result: copy the returned
 `review_markdown` value verbatim as the entire next reply and nothing else. Do
 not paraphrase, summarize, retype, or add a conversational lead-in, even when
-the review is a short completion menu. Question workspace reviews use their
+the review is a short completion menu. Question, Terms, and Sources workspace reviews use their
 shared presentation fields, sections, and available actions; they replace the
 legacy draft-review layout below. For draft reviews, copy the
 complete rendered Markdown exactly; do not recreate it from structured data,

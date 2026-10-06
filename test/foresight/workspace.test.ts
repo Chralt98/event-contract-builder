@@ -490,3 +490,79 @@ test("working condition uses canonical dispositions while permitting incomplete 
     ],
   });
 });
+
+test("migrated stage drafts are bounded, preserve incomplete rows, and bind commands to their stage", async () => {
+  const { ContentWorkingDraft, validateContentWorkingDraft, SourceHierarchy } =
+    await import("../../src/foresight");
+  const terms = {
+    stage: "defined_terms" as const,
+    definitions: [{ id: id(), term: "rain", definition: "" }],
+  };
+  expect(ContentWorkingDraft.safeParse(terms).success).toBe(true);
+  expect(validateContentWorkingDraft(terms)).toHaveLength(1);
+  expect(
+    validateContentWorkingDraft({ stage: "defined_terms", definitions: [] }),
+  ).toEqual([]);
+  const duplicate = {
+    ...terms,
+    definitions: [
+      { ...terms.definitions[0]!, definition: "Daily report." },
+      { id: id(), term: "rain", definition: "Daily report." },
+    ],
+  };
+  expect(
+    validateContentWorkingDraft(duplicate).some((issue) =>
+      issue.message.includes("unique"),
+    ),
+  ).toBe(true);
+  expect(
+    ContentWorkingDraft.safeParse({
+      ...terms,
+      definitions: Array.from({ length: 51 }, () => ({
+        id: id(),
+        term: "",
+        definition: "",
+      })),
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      kind: "edit_draft",
+      draft: terms,
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "edit_draft",
+      draft: terms,
+    }).success,
+  ).toBe(true);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "continue",
+      approved_revision: "approved",
+      next_stage: "resolution_criteria",
+    }).success,
+  ).toBe(false);
+  const source = {
+    id: "primary",
+    rank: 1,
+    name: "Daily report",
+    publisher: "Weather Agency",
+  };
+  expect(SourceHierarchy.safeParse([source]).success).toBe(true);
+  expect(
+    SourceHierarchy.safeParse([
+      source,
+      { ...source, rank: 2, publisher: "Independent Agency" },
+    ]).success,
+  ).toBe(false);
+});
