@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Trader-facing forecast question with optional parameter or outcome values.
+ * Trader-facing Yes/No forecast question with optional substitution values.
  */
 export const DisplayQuestion = z
   .string()
@@ -14,7 +14,10 @@ export const DisplayQuestion = z
 
 export type DisplayQuestionT = z.infer<typeof DisplayQuestion>;
 
-/** One named finite parameter or categorical outcome set. */
+export const MAX_TEMPLATE_VARIABLES = 5;
+export const MAX_VARIABLE_VALUES = 50;
+
+/** One named finite set of values substituted into a question placeholder. */
 export const TemplateVariable = z.object({
   name: z
     .string()
@@ -24,7 +27,7 @@ export const TemplateVariable = z.object({
       "Must be a trimmed variable name without angle brackets",
     )
     .describe(
-      "Name of a narrow, finite parameter or outcome dimension such as a date, match, city, candidate, or party.",
+      "Name of a finite question parameter such as a date, match, city, candidate, or numeric range; use it as an angle-bracket placeholder.",
     ),
   values: z
     .array(
@@ -37,6 +40,7 @@ export const TemplateVariable = z.object({
         ),
     )
     .min(1)
+    .max(MAX_VARIABLE_VALUES)
     .superRefine((values, ctx) => {
       if (new Set(values).size !== values.length) {
         ctx.addIssue({
@@ -46,7 +50,7 @@ export const TemplateVariable = z.object({
       }
     })
     .describe(
-      "Explicit closed list of values. Values may fill a same-named question placeholder or define the categorical outcomes without appearing in its wording. Every value and meaningful combination must use the same condition and unmet disposition, source, formula, procedure, methodology, event interpretation, and legal/compliance analysis.",
+      "Explicit closed list of values substituted for this variable's same-named question or condition placeholder. Each substitution yields an individual Yes/No question. Every value and meaningful combination must use the same condition and unmet disposition, source, formula, procedure, methodology, event interpretation, and legal/compliance analysis.",
     ),
 });
 
@@ -62,22 +66,59 @@ export const ConditionStatement = z
     "Prerequisite text, preferably declarative and stating its own explicit cutoff, such as 'A law is enacted on or before June 30, 2027, 23:59 UTC'; a question mark is not required.",
   );
 
-export const ForecastCondition = z.object({
-  statement: ConditionStatement.describe(
-    "The observable prerequisite and its explicit condition cutoff, distinct from and no later than the forecast resolution deadline; it may be written as a clause or a question.",
-  ),
-  ifUnmet: z
-    .enum(["annulled", "resolve-no"])
-    .describe("Disposition when the prerequisite is established as unmet."),
-});
+export const ForecastCondition = z
+  .object({
+    statement: ConditionStatement.describe(
+      "The observable prerequisite and its explicit condition cutoff, distinct from and no later than the forecast resolution deadline; it may be written as a clause or a question.",
+    ),
+    ifUnmet: z
+      .enum([
+        "annulled",
+        "resolve-no",
+        "resolve-yes",
+        "resolve-50-50",
+        "custom",
+      ])
+      .describe("Disposition when the prerequisite is established as unmet."),
+    customIfUnmet: z
+      .string()
+      .trim()
+      .max(500)
+      .describe(
+        "Specific user-defined disposition when the prerequisite is unmet; include any required outcome, cutoff, and reference value or source.",
+      )
+      .optional(),
+  })
+  .superRefine((condition, ctx) => {
+    if (
+      condition.ifUnmet === "custom" &&
+      (condition.customIfUnmet?.length ?? 0) < 3
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["customIfUnmet"],
+        message: "Describe what happens when the condition is not met",
+      });
+    }
+    if (
+      condition.ifUnmet !== "custom" &&
+      condition.customIfUnmet !== undefined
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["customIfUnmet"],
+        message: "A custom disposition is only allowed when ifUnmet is custom",
+      });
+    }
+  });
 
 /** Every selectable forecast uses one question with optional values and condition. */
 export const DraftUnit = z
   .object({
     question: DisplayQuestion.describe(
-      "The forecast question. Any angle-bracket placeholder in this question or its condition must have a same-named variable; categorical outcome variables need not appear as placeholders.",
+      "A forecast question answerable Yes or No for each placeholder substitution, ending in '?'. Every angle-bracket placeholder in the question or condition must have a same-named variable, and every variable must be used as a placeholder.",
     ),
-    variables: z.array(TemplateVariable).optional(),
+    variables: z.array(TemplateVariable).max(MAX_TEMPLATE_VARIABLES).optional(),
     condition: ForecastCondition.optional(),
   })
   .superRefine((unit, ctx) => {
@@ -109,50 +150,18 @@ export const DraftUnit = z
         message: `Every question placeholder must have a same-named variable (missing variables: ${missing.join(", ")})`,
       });
     }
-    if (unreferenced.length > 1) {
+    if (unreferenced.length) {
       ctx.addIssue({
         code: "custom",
         path: ["variables"],
-        message:
-          "A categorical question may have only one outcome variable that is not represented by a placeholder",
+        message: `Every variable must be used as a same-named placeholder in the question or condition (unused variables: ${unreferenced.join(", ")})`,
       });
-    }
-    if (unit.condition?.ifUnmet === "resolve-no" && unreferenced.length > 0) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["condition", "ifUnmet"],
-        message: "resolve-no requires a binary Yes/No outcome question",
-      });
-    }
-    for (const name of unreferenced) {
-      const variable = unit.variables?.find(
-        (candidate) => candidate.name === name,
-      );
-      if (variable && variable.values.length < 2) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["variables"],
-          message: `Categorical outcome variable '${name}' must contain at least two values`,
-        });
-      }
     }
   });
 
 export type DraftUnitT = z.infer<typeof DraftUnit>;
 export type ConditionStatementT = z.infer<typeof ConditionStatement>;
 export type ForecastConditionT = z.infer<typeof ForecastCondition>;
-
-/** Return the optional categorical outcome variable, if the unit declares one. */
-export function categoricalOutcomeVariable(
-  unit: DraftUnitT,
-): TemplateVariableT | undefined {
-  const placeholders = new Set(
-    [unit.question, unit.condition?.statement ?? ""].flatMap((text) =>
-      [...text.matchAll(/<([^<>]+)>/g)].map((match) => match[1]!),
-    ),
-  );
-  return (unit.variables ?? []).find(({ name }) => !placeholders.has(name));
-}
 
 /**
  * Glossary mapping each key term to its precise, unambiguous definition.

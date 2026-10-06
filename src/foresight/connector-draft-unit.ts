@@ -2,6 +2,8 @@ import { z } from "zod";
 import {
   ConditionStatement,
   DraftUnit,
+  MAX_TEMPLATE_VARIABLES,
+  MAX_VARIABLE_VALUES,
   type DraftUnitT,
 } from "./display-question";
 
@@ -9,15 +11,15 @@ import {
  * Connector-safe representation of a draft unit.
  *
  * Keep the wire schema flat and restore the domain invariants in the tool
- * handler. Variables may substitute into question placeholders or describe
- * categorical outcomes that are listed beside the question.
+ * handler. Each variable supplies finite substitutions for a named question
+ * or condition placeholder; every expanded question remains Yes/No.
  */
 const ConnectorDisplayQuestion = z
   .string()
   .min(10)
   .max(200)
   .describe(
-    "User-facing forecast question, ending in '?'; categorical outcome values may be listed without appearing as placeholders.",
+    "A user-facing forecast question answerable Yes or No for each placeholder substitution, ending in '?'.",
   );
 
 const ConnectorTemplateVariable = z.object({
@@ -25,26 +27,28 @@ const ConnectorTemplateVariable = z.object({
     .string()
     .min(1)
     .describe(
-      "Name of one narrow, finite parameter or outcome dimension such as a date, match, city, candidate, or party.",
+      "Name of one finite question parameter such as a date, match, city, candidate, or numeric range; use it as an angle-bracket placeholder.",
     ),
   values: z
     .array(z.string().min(1))
     .min(1)
+    .max(MAX_VARIABLE_VALUES)
     .describe(
-      "Explicit closed set of values. Values may fill a same-named placeholder or define categorical outcomes without appearing in the question. Every value and meaningful combination must share the same condition and unmet disposition, qualifying predicate, interpretation, sources, formula, procedure, methodology, and legal/compliance analysis.",
+      "Explicit closed set of substitutions for the same-named question or condition placeholder. Each substitution yields an individual Yes/No question. Every value and meaningful combination must share the same condition and unmet disposition, qualifying predicate, interpretation, sources, formula, procedure, methodology, and legal/compliance analysis.",
     ),
 });
 
 export const ConnectorDraftUnit = z
   .object({
     question: ConnectorDisplayQuestion.describe(
-      "The forecast question. Any placeholder in this question or its condition must have a same-named variable; categorical outcome variables need not appear as placeholders.",
+      "A forecast question answerable Yes or No for each placeholder substitution. Every placeholder in the question or condition must have a same-named variable, and every variable must be used as a placeholder.",
     ),
     variables: z
       .array(ConnectorTemplateVariable)
+      .max(MAX_TEMPLATE_VARIABLES)
       .optional()
       .describe(
-        "Use variables for question parameters or categorical outcome values. A categorical question has one unreferenced outcome variable; every question placeholder must have a same-named variable.",
+        "Use each variable's finite values to substitute into a same-named angle-bracket placeholder in the question or condition. Each resulting question is an individual Yes/No forecast.",
       ),
     condition: z
       .object({
@@ -52,8 +56,22 @@ export const ConnectorDraftUnit = z
           "Observable prerequisite with its own explicit cutoff, distinct from and no later than the forecast resolution deadline; a question mark is not required.",
         ),
         ifUnmet: z
-          .enum(["annulled", "resolve-no"])
+          .enum([
+            "annulled",
+            "resolve-no",
+            "resolve-yes",
+            "resolve-50-50",
+            "custom",
+          ])
           .describe("Disposition if the prerequisite is established as unmet."),
+        customIfUnmet: z
+          .string()
+          .trim()
+          .max(500)
+          .describe(
+            "Specific user-defined disposition if the prerequisite is unmet; include any required outcome, cutoff, and reference value or source.",
+          )
+          .optional(),
       })
       .optional(),
   })

@@ -31,11 +31,28 @@ be saved with validation issues, but approval requires valid selected content.
 Keep the approved snapshot distinct from pending edits; outdated dependent work
 requires renewed review before export.
 
-After question approval, show its canonical workspace review and wait for an
-explicit Continue request. Execute the available `continue` command, then use
-its returned chat instruction to invoke `define-terms`. A Continue intent or
-successful message delivery does not establish that generation has started or
-finished. If app messaging is unavailable, present the equivalent chat request.
+After every question approval, review that exact approved revision with the
+`draft-display-question` skill. If there is a concrete improvement, submit it
+as a revision-bound proposal changing only the main draft, with a concise
+rationale explaining the issue and why the change helps; never apply it. Then
+call `execute_workspace_command` with `kind: complete_review`, binding it to the
+latest workspace revision and the exact approved revision and including concise
+user-facing feedback. Report the review result in a visible chat reply; do not
+present the saved `question_review.feedback` as a persistent workspace section.
+Do not run this review on autosave or ordinary draft edits.
+
+When a concrete proposal exists, keep the user in the decision flow. In the
+MCP App, let the user continue with either the existing draft or the proposed
+version, or edit the proposal; do not add a separate Continue request after
+either Continue choice. In text-only core chat, wait for the user's choice and
+then an explicit Continue request. If there is no proposal, tell the user in
+chat that no actionable improvement was found. For the MCP App, continue
+automatically after the review without another click; for text-only core chat,
+wait for an explicit Continue request. Execute the available `continue`
+command when required, then use its returned chat instruction to invoke
+`define-terms`. A Continue intent or successful message delivery does not
+establish that generation has started or finished. If app messaging is
+unavailable, present the equivalent chat request.
 
 After the user explicitly accepts each other rendered stage, call
 `approve_forecast_specification` in this order:

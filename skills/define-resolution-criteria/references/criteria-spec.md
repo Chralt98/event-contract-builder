@@ -8,9 +8,12 @@ statement holds using its approved condition sources. Submit `conditionCriteria`
 with the exact selected statement, criteria for when it is met and established
 as unmet, and evidence and exception rules for ambiguous or unavailable
 condition evidence. Apply the outcome rule only when the condition is met. When
-it is established as unmet, apply the selected unit's `ifUnmet` disposition; an
-unresolved condition must follow its stated unresolved treatment, not be
-assumed unmet. Keep both rules within this criteria stage and its single approval.
+it is established as unmet, apply the selected unit's `ifUnmet` disposition,
+including any `customIfUnmet` action; for `resolve-50-50`, state that each
+binary outcome receives an equal 50% share. Make a custom action operational by
+specifying any required cutoff, reference value, and source. An unresolved
+condition must follow its stated unresolved treatment, not be assumed unmet.
+Keep both rules within this criteria stage and its single approval.
 
 ## Decision interview
 
@@ -109,13 +112,13 @@ unresolved treatment.
 
 Create one `questionRule` object whose `question` exactly matches the selected
 unit question, including its placeholders. Give it one `resolvesYesWhen` and
-one `resolvesNoWhen`; do not create separate questions or rules for categorical
-outcomes, scalar ranges, or placeholder values. Use the selected unit's declared
-values as the complete set of possible substitutions or outcomes, and state
-one Yes/No rule that applies uniformly to every allowed value and meaningful
-combination. Refer to placeholders by their declared names where needed. If a
-single complete rule cannot cover the selected unit uniformly, report that the
-unit needs revision instead of expanding the criteria by value.
+one `resolvesNoWhen`; do not create separate question rules for each
+placeholder value or range. Use the selected unit's declared values as the
+complete set of possible substitutions, and state one Yes/No rule
+that applies uniformly to every allowed value and meaningful combination.
+Refer to placeholders by their declared names where needed. If a single
+complete rule cannot cover the selected unit uniformly, report that the unit
+needs revision instead of expanding the criteria by value.
 
 `resolvesYesWhen` states every necessary and sufficient condition, including
 the deadline, for all allowed values. `resolvesNoWhen` is only the concise
