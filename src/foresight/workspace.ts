@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { SourceHierarchy } from "./resolution";
 import {
-  Definitions,
   DraftUnit,
   ForecastCondition,
   MAX_TEMPLATE_VARIABLES,
@@ -257,17 +256,10 @@ export function validateContentWorkingDraft(
   if (draft.stage === "defined_terms") {
     const terms = new Set<string>();
     for (const row of draft.definitions) {
-      const parsed = Definitions.safeParse({ [row.term]: row.definition });
-      if (!parsed.success)
-        for (const issue of parsed.error.issues)
-          add(
-            [
-              "definitions",
-              row.id,
-              issue.code === "invalid_key" ? "term" : "definition",
-            ],
-            issue.message,
-          );
+      if (!row.term.trim())
+        add(["definitions", row.id, "term"], "Enter a term.");
+      if (!row.definition.trim())
+        add(["definitions", row.id, "definition"], "Enter a definition.");
       if (terms.has(row.term))
         add(["definitions", row.id, "term"], "Terms must be unique.");
       terms.add(row.term);
