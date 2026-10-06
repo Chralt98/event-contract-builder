@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { DraftUnit, ForecastCondition } from "./display-question";
+import {
+  DraftUnit,
+  ForecastCondition,
+  MAX_TEMPLATE_VARIABLES,
+  MAX_VARIABLE_VALUES,
+} from "./display-question";
 import {
   ForecastSpecificationId,
   ForecastSpecificationLanguageCode,
@@ -53,15 +58,16 @@ export const QuestionWorkingUnit = z.strictObject({
       name: text,
       values: uniqueRows(
         z.strictObject({ id: WorkspaceRowId, value: text }),
-        50,
+        MAX_VARIABLE_VALUES,
       ),
     }),
-    20,
+    MAX_TEMPLATE_VARIABLES,
   ),
   condition: z
     .strictObject({
       statement: text,
       ifUnmet: ForecastCondition.shape.ifUnmet.nullable(),
+      customIfUnmet: text.optional(),
     })
     .nullable(),
 });
@@ -200,7 +206,7 @@ export const questionStageDefinition = {
   fields: [
     {
       path: ["condition"],
-      label: "Prerequisite",
+      label: "Condition",
       control: "group",
       validation: "ForecastCondition",
       emphasis: "prerequisite",
@@ -213,13 +219,28 @@ export const questionStageDefinition = {
     },
     {
       path: ["condition", "ifUnmet"],
-      label: "If unmet",
+      label: "IF NOT",
       control: "choice",
       validation: "ForecastCondition.ifUnmet",
       options: ForecastCondition.shape.ifUnmet.options.map((value) => ({
         value,
-        label: value === "annulled" ? "Annulled" : "Resolve No",
+        label:
+          value === "annulled"
+            ? "Annulled"
+            : value === "resolve-no"
+              ? "Resolve No"
+              : value === "resolve-yes"
+                ? "Resolve Yes"
+                : value === "resolve-50-50"
+                  ? "Resolve 50-50"
+                  : "Custom",
       })),
+    },
+    {
+      path: ["condition", "customIfUnmet"],
+      label: "Custom action",
+      control: "prose",
+      validation: "ForecastCondition.customIfUnmet",
     },
     {
       path: ["question"],
@@ -260,8 +281,10 @@ export const WorkspaceActionKind = z.enum([
   "submit_proposal",
   "apply_proposal",
   "discard_proposal",
+  "accept_proposal",
   "select_and_approve",
   "approve",
+  "complete_review",
   "continue",
 ]);
 export const workspaceActionLabels = {
@@ -270,8 +293,10 @@ export const workspaceActionLabels = {
   submit_proposal: "Propose changes",
   apply_proposal: "Apply",
   discard_proposal: "Discard",
+  accept_proposal: "Accept suggestion",
   select_and_approve: "Select and approve",
   approve: "Approve",
+  complete_review: "Complete AI review",
   continue: "Continue",
 } satisfies Record<z.infer<typeof WorkspaceActionKind>, string>;
 export const WorkspacePrerequisites = z.partialRecord(
@@ -306,6 +331,7 @@ export const WorkspaceCommand = boundedPayload(
       kind: z.literal("submit_proposal"),
       proposal_id: z.uuid(),
       draft: QuestionWorkingDraft,
+      rationale: z.string().trim().min(1).max(1000).optional(),
     }),
     z.strictObject({
       ...mutation,
@@ -319,10 +345,21 @@ export const WorkspaceCommand = boundedPayload(
     }),
     z.strictObject({
       ...mutation,
+      kind: z.literal("accept_proposal"),
+      proposal_id: z.uuid(),
+    }),
+    z.strictObject({
+      ...mutation,
       kind: z.literal("select_and_approve"),
       candidate_id: WorkspaceRowId,
     }),
     z.strictObject({ ...mutation, kind: z.literal("approve") }),
+    z.strictObject({
+      ...mutation,
+      kind: z.literal("complete_review"),
+      approved_revision: WorkspaceRevision,
+      feedback: z.string().trim().min(1).max(4000),
+    }),
     z.strictObject({
       ...mutation,
       kind: z.literal("continue"),
@@ -434,6 +471,13 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
         outdated: z.boolean(),
       })
       .nullable(),
+    question_review: z
+      .strictObject({
+        approved_revision: WorkspaceRevision,
+        feedback: z.string().trim().min(1).max(4000),
+      })
+      .nullable()
+      .default(null),
     proposals: z
       .array(
         z.strictObject({
@@ -441,6 +485,7 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
           base_revision: WorkspaceRevision,
           prerequisite_revisions: WorkspacePrerequisites,
           draft: QuestionWorkingDraft,
+          rationale: z.string().trim().min(1).max(1000).optional(),
         }),
       )
       .max(5),
@@ -462,11 +507,11 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
         .array(
           z.strictObject({
             title: z.string().min(1).max(200),
-            status: z.string().min(1).max(1000),
+            status: z.string().min(1).max(1000).optional(),
             fields: z.array(WorkspacePresentationField).max(20),
           }),
         )
-        .max(6)
+        .max(7)
         .optional(),
       validation_issues: z.array(WorkspaceValidationIssue).max(200),
       actions: z.array(WorkspaceAvailableAction).max(40),

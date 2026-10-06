@@ -330,7 +330,7 @@ export const foresightTools = {
   execute_workspace_command: {
     title: "Question Workspace Command",
     description:
-      "Reopen or execute a revision-bound question command through the shared workspace engine. Returns canonical review, validation, recovery, or Continue intent for core and app clients.",
+      "Reopen or execute a revision-bound question command, including accepting a reviewed suggestion or recording AI review feedback before Continue is enabled.",
     inputSchema: WorkspaceCommand,
     outputSchema: z.strictObject({
       result: WorkspaceCommandResult,

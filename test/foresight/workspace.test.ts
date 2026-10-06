@@ -43,6 +43,7 @@ const snapshot = {
   stage: "selected_unit" as const,
   draft,
   approved: null,
+  question_review: null,
   proposals: [],
   presentation: {
     title: "Forecast question",
@@ -80,6 +81,28 @@ test("pilot snapshot keeps editing identities outside valid domain content", () 
   expect(validateQuestionWorkingDraft(draft)).toEqual([]);
   for (const field of questionStageDefinition.fields)
     WorkspaceFieldDefinition.parse(field);
+});
+
+test("workspace snapshots allow every approved review and proposal section", () => {
+  const sections = Array.from({ length: 7 }, (_, index) => ({
+    title: `Section ${index + 1}`,
+    fields: [],
+  }));
+  expect(
+    QuestionWorkspaceSnapshot.safeParse({
+      ...snapshot,
+      presentation: { ...snapshot.presentation, sections },
+    }).success,
+  ).toBe(true);
+  expect(
+    QuestionWorkspaceSnapshot.safeParse({
+      ...snapshot,
+      presentation: {
+        ...snapshot.presentation,
+        sections: [...sections, { title: "Section 8", fields: [] }],
+      },
+    }).success,
+  ).toBe(false);
 });
 
 test("incomplete saves do not weaken canonical domain validation", () => {
@@ -183,9 +206,15 @@ test("duplicate row identities and dangling selection are rejected", () => {
 test("every mutation requires its base revision and prerequisite bindings", () => {
   const commands = [
     { kind: "edit_draft", draft },
-    { kind: "submit_proposal", proposal_id: id(), draft },
+    {
+      kind: "submit_proposal",
+      proposal_id: id(),
+      draft,
+      rationale: "An explicit cutoff makes resolution unambiguous.",
+    },
     { kind: "apply_proposal", proposal_id: id() },
     { kind: "discard_proposal", proposal_id: id() },
+    { kind: "accept_proposal", proposal_id: id() },
     { kind: "select_and_approve", candidate_id: candidate.id },
     { kind: "approve" },
     {
@@ -208,6 +237,30 @@ test("every mutation requires its base revision and prerequisite bindings", () =
     ).toBe(false);
   }
   expect(WorkspaceCommand.parse({ ...identity, kind: "reopen" })).toBeDefined();
+});
+
+test("review feedback must contain non-whitespace text", () => {
+  const command = {
+    ...identity,
+    ...binding,
+    kind: "complete_review" as const,
+    approved_revision: "approved-1",
+    feedback: " \t  ",
+  };
+  expect(WorkspaceCommand.safeParse(command).success).toBe(false);
+  expect(
+    WorkspaceCommand.parse({ ...command, feedback: "  Looks good.  " }),
+  ).toMatchObject({ feedback: "Looks good." });
+
+  expect(
+    QuestionWorkspaceSnapshot.safeParse({
+      ...snapshot,
+      question_review: {
+        approved_revision: "approved-1",
+        feedback: " \t  ",
+      },
+    }).success,
+  ).toBe(false);
 });
 
 test("conflicts and Continue carry recoverable, revision-bound intent", () => {
@@ -277,7 +330,7 @@ test("whole payload and collection bounds prevent multiplied unbounded drafts", 
       unit: {
         question: "q".repeat(4000),
         condition: null,
-        variables: Array.from({ length: 20 }, () => ({
+        variables: Array.from({ length: 5 }, () => ({
           id: id(),
           name: "n".repeat(4000),
           values: [],
@@ -376,7 +429,7 @@ test("all shared primitives accept editable values and bounded diagnostics", () 
       unit: {
         question: `<${"x".repeat(1900)}>?`,
         condition: null,
-        variables: Array.from({ length: 10 }, () => ({
+        variables: Array.from({ length: 5 }, () => ({
           id: id(),
           name: "",
           values: Array.from({ length: 20 }, () => ({ id: id(), value: "" })),
@@ -412,4 +465,28 @@ test("working condition uses canonical dispositions while permitting incomplete 
       condition: { statement: "", ifUnmet: "invented" },
     }).success,
   ).toBe(false);
+  expect(
+    QuestionWorkingUnit.safeParse({
+      ...candidate.unit,
+      condition: {
+        statement: "",
+        ifUnmet: "custom",
+        customIfUnmet: "",
+      },
+    }).success,
+  ).toBe(true);
+  expect(
+    questionStageDefinition.fields.find(
+      (field) => field.path.join(".") === "condition.ifUnmet",
+    ),
+  ).toMatchObject({
+    label: "IF NOT",
+    options: [
+      { value: "annulled", label: "Annulled" },
+      { value: "resolve-no", label: "Resolve No" },
+      { value: "resolve-yes", label: "Resolve Yes" },
+      { value: "resolve-50-50", label: "Resolve 50-50" },
+      { value: "custom", label: "Custom" },
+    ],
+  });
 });

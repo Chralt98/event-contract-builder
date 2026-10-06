@@ -382,7 +382,22 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Selection or editing alone does not approve content.",
     );
-    expect(foresightServerInstructions).toContain("explicit Continue request");
+    expect(foresightServerInstructions).toContain(
+      "do not add a separate Continue request after\neither Continue choice",
+    );
+    expect(foresightServerInstructions).toContain(
+      "For the MCP App, continue\nautomatically after the review without another click",
+    );
+    expect(foresightServerInstructions).toContain(
+      "for text-only core chat,\nwait for an explicit Continue request",
+    );
+    expect(foresightServerInstructions).toContain(
+      "do not\npresent the saved `question_review.feedback` as a persistent workspace section",
+    );
+    expect(foresightServerInstructions).toContain("kind: complete_review");
+    expect(foresightServerInstructions).toContain(
+      "Do not run this review on autosave or ordinary",
+    );
     expect(foresightServerInstructions).toMatch(
       /copy the\s+complete\s+rendered Markdown exactly/,
     );
@@ -569,7 +584,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("one Yes/No rule covers scalar and categorical unit values", () => {
+  test("one Yes/No rule covers every placeholder substitution", () => {
     const scalarUnit = {
       question: "Will the value be <range>?",
       variables: [
@@ -579,9 +594,8 @@ describe("public forecast interface", () => {
         },
       ],
     };
-    const categoricalUnit = {
-      question:
-        "Which party will control the U.S. Senate after the 2026 election?",
+    const categoryUnit = {
+      question: "Will <party> control the U.S. Senate after the 2026 election?",
       variables: [
         {
           name: "party",
@@ -606,8 +620,8 @@ describe("public forecast interface", () => {
     for (const { unit, candidate } of [
       { unit: scalarUnit, candidate: makeCriteria(scalarUnit.question) },
       {
-        unit: categoricalUnit,
-        candidate: makeCriteria(categoricalUnit.question),
+        unit: categoryUnit,
+        candidate: makeCriteria(categoryUnit.question),
       },
     ]) {
       expect(
@@ -631,8 +645,8 @@ describe("public forecast interface", () => {
     );
     expect(() =>
       parseConnectorResolutionCriteria(
-        makeCriteria("Will Candidate C win the election?"),
-        categoricalUnit,
+        makeCriteria("Will Candidate C control the Senate?"),
+        categoryUnit,
       ),
     ).toThrow(
       "questionRule.question must exactly match selectedUnit.question.",

@@ -42,7 +42,7 @@ export const QuestionResolutionRule = z
  */
 const BaseResolutionCriteria = z.object({
   questionRule: QuestionResolutionRule.describe(
-    "One complete Yes/No rule for the exact outcome question. Refer to declared placeholders or outcome values as needed; do not create a rule for each value.",
+    "One complete Yes/No rule for the exact question. Apply it to every allowed placeholder substitution; do not turn variable values into answer choices within one multi-outcome question.",
   ),
   evidenceAndSourceRules: ResolutionText.describe(
     "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",

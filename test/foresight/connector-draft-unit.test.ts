@@ -44,6 +44,16 @@ describe("parseConnectorDraftUnit", () => {
       },
     };
     expect(parseConnectorDraftUnit(unit)).toEqual(unit);
+    const custom = {
+      ...unit,
+      condition: {
+        ...unit.condition,
+        ifUnmet: "custom" as const,
+        customIfUnmet:
+          "Resolve to the last traded price at 23:59 UTC on October 5, 2026",
+      },
+    };
+    expect(parseConnectorDraftUnit(custom)).toEqual(custom);
     expect(() =>
       parseConnectorDraftUnit({
         ...unit,
@@ -68,17 +78,25 @@ describe("parseConnectorDraftUnit", () => {
         },
       }).condition?.statement,
     ).toBe("Will the candidate appear on the ballot?");
+  });
+
+  test("requires categorical values to expand an individual Yes/No question", () => {
+    const unit = {
+      question: "Will <candidate> win the election?",
+      variables: [{ name: "candidate", values: ["Alice", "Bob", "Carol"] }],
+      condition: {
+        statement: "The election takes place",
+        ifUnmet: "resolve-no" as const,
+      },
+    };
+    expect(parseConnectorDraftUnit(unit)).toEqual(unit);
+
     expect(() =>
       parseConnectorDraftUnit({
-        question: "Which party will win the election?",
-        variables: [
-          { name: "party", values: ["Alice's party", "Bob's party"] },
-        ],
-        condition: {
-          statement: "The election takes place",
-          ifUnmet: "resolve-no",
-        },
+        ...unit,
+        question: "Which candidate will win the election?",
+        variables: [{ name: "candidate", values: ["Alice", "Bob", "Carol"] }],
       }),
-    ).toThrow("resolve-no requires a binary Yes/No outcome question");
+    ).toThrow("Every variable must be used as a same-named placeholder");
   });
 });

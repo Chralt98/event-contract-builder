@@ -23,12 +23,13 @@ and do not pad the list with superficial rewrites. If no useful proxy exists,
 submit only the main draft. Check source feasibility internally without treating
 a display question's lack of technical detail as a defect.
 
-A binary unit is one Yes/No question. A categorical unit asks for an outcome
-and includes one finite outcome variable whose values are the allowed answers;
-the values may be listed without appearing as placeholders in the question.
-A binary question may also use variables for finite parameters, with matching
-angle-bracket placeholders. Values may be non-overlapping ranges on one numeric
-measure or mutually exclusive categorical outcomes.
+Every unit is one Yes/No forecast question. A finite variable supplies values
+for a same-named angle-bracket placeholder in the question or condition; every
+substitution creates an individual Yes/No question. This also supports
+categorical choices and numeric ranges: “Will <candidate> win?” asks a separate
+Yes/No question for each candidate, and “Will the price be <range>?” asks one
+for each range. Do not draft a multi-outcome “Which X?” question or list values
+without using them in a placeholder.
 
 When the user's outcome depends on a separate event, draft that event as the
 unit's `condition` at this stage. State the prerequisite declaratively (for
@@ -43,19 +44,24 @@ condition date must be on or before the forecast's resolution deadline; ask if
 either date or their ordering is unclear. Avoid saying only "the deadline"
 without naming the condition cutoff. Each candidate must show the outcome
 question, the observable condition, and the disposition if the condition is
-established as unmet (`annulled` or `resolve-no`). The pair must express the
-user's intended forecast together; do not fold a prerequisite into ordinary
-outcome wording or silently choose its unmet disposition. Do not treat lack of
-evidence that the condition held as proof it was unmet. An unconditional
-candidate is acceptable only when it preserves the user's intent. Use
-`resolve-no` only for a binary Yes/No outcome.
+established as unmet (`annulled`, `resolve-no`, `resolve-yes`,
+`resolve-50-50`, or `custom`).
+The pair must express the user's intended forecast together; do not fold a
+prerequisite into ordinary outcome wording or silently choose its unmet
+disposition. A `custom` disposition must state the action and any needed cutoff
+or reference value. Do not treat lack of evidence that the condition held as
+proof it was unmet. An unconditional candidate is acceptable only when it
+preserves the user's intent. Use `resolve-no`, `resolve-yes`, and
+`resolve-50-50` for the individual Yes/No question, including when its
+placeholder values describe categories or ranges. A multi-value variable does
+not make an expanded question multi-outcome.
 
 For every numeric question, specify the unit used (e.g., “Will Berlin’s average
-temperature exceed 20 degrees Celsius in July 2027?”). For numeric or date-range
-outcomes, use non-overlapping ranges with explicit boundary inclusion and set
-bounds so the chance of falling outside all listed outcomes is roughly 5–10%. If
-plausible values can fall beyond finite bounds, use open-ended ranges or specify
-an outside-range outcome.
+temperature exceed 20 degrees Celsius in July 2027?”). When the user wants
+forecasts for numeric or date ranges, use non-overlapping range values with
+explicit boundary inclusion. Use open-ended bounds when plausible values could
+otherwise fall outside every range. Each range is substituted into its own
+Yes/No question.
 
 Every angle-bracket placeholder must have a same-named variable. When a value
 is used as a placeholder, place it in a grammatical slot that works with every
@@ -63,18 +69,17 @@ allowed value after substitution. Values must be complete phrases for that
 slot, not labels that only make sense when the placeholder name is read; for
 example, use “Will the price be <range>?” with values such as “below $80,000”
 and “$200,000 or more”, not “Which <range> applies?”. Check every substitution
-for grammar and faithful meaning. For categorical units, values are outcome
-labels and do not need to appear in the question text.
+for grammar and faithful meaning. Every variable value is substituted into its
+matching placeholder; it does not become an answer choice within one question.
 For conditional units, check substitutions in both the outcome question and
 condition statement.
 
 ## Variable invariance
 
-Use variables for finite values that belong to one unit. A variable may
-parameterize wording through a same-named placeholder, or it may list the
-categorical outcomes without a placeholder. A categorical unit uses one
-unreferenced outcome variable with at least two allowed values. Every value and
-meaningful combination must retain the same qualifying predicate, condition,
+Use variables for finite values that belong to one unit. Every variable must
+parameterize wording through a same-named placeholder in the question or
+condition. Every value and meaningful combination must retain the same
+qualifying predicate, condition,
 unmet disposition, interpretation, jurisdiction, legal/compliance treatment,
 authoritative source hierarchy, source identity, formula, settlement procedure,
 and methodology. If
