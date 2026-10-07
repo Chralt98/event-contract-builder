@@ -17,20 +17,17 @@ export const DataSource = z.object({
     .string()
     .min(3)
     .describe(
-      "Specific source identity, such as a results page, social media account, or data feed.",
+      "Name of the organization, account, or feed responsible for the source; identify social accounts with their platform, such as Donald Trump (@realDonaldTrump) on X.",
     ),
-  publisher: z
-    .string()
-    .min(2)
-    .describe("Organization or platform publishing or providing the source."),
   url: z
-    .url()
+    .httpUrl({
+      error:
+        "Enter a complete HTTP or HTTPS web address, such as https://example.com/results.",
+    })
     .optional()
     .describe(
       "Optional direct URL for a web-addressable source. Omit when the source is identified by an account, feed, or other specific name.",
     ),
-  /** Series/dataset identifier if the publisher uses one (e.g. CUSR0000SA0). */
-  datasetId: z.string().optional(),
 });
 
 export type DataSourceT = z.infer<typeof DataSource>;

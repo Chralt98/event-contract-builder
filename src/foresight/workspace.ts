@@ -191,9 +191,7 @@ export const SourceWorkingRow = z.strictObject({
   id: WorkspaceRowId,
   source_id: text,
   name: text,
-  publisher: text,
   url: text,
-  datasetId: text,
 });
 export const SourcesWorkingDraft = boundedPayload(
   z.strictObject({
@@ -229,9 +227,7 @@ export function contentDomainInput(draft: ContentWorkingDraft) {
       id: row.source_id,
       rank: index + 1,
       name: row.name,
-      publisher: row.publisher,
       ...(row.url ? { url: row.url } : {}),
-      ...(row.datasetId ? { datasetId: row.datasetId } : {}),
     }));
   return {
     sources: hierarchy(draft.sources),
@@ -342,9 +338,7 @@ export const contentStageDefinitions = {
       ...[
         ["source_id", "Source ID"],
         ["name", "Name"],
-        ["publisher", "Publisher"],
         ["url", "URL (optional)"],
-        ["datasetId", "Dataset ID (optional)"],
       ].map(([name, label]) => ({
         path: [key, "*", name!],
         label: label!,
@@ -622,7 +616,7 @@ const leaf = z.discriminatedUnion("control", [
   z.strictObject({
     ...nodeBase,
     control: z.literal("source"),
-    value: z.strictObject({ name: text, url: text, publisher: text }),
+    value: z.strictObject({ name: text, url: text }),
   }),
 ]);
 /** Two row levels cover candidate variables and their values without arbitrary recursion. */

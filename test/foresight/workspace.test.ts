@@ -416,7 +416,7 @@ test("all shared primitives accept editable values and bounded diagnostics", () 
       control: "source",
       path: ["source"],
       label,
-      value: { name: "", url: "", publisher: "" },
+      value: { name: "", url: "" },
     },
     {
       control: "group",
@@ -575,20 +575,27 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
   const source = {
     id: "primary",
     rank: 1,
-    name: "Daily report",
-    publisher: "Weather Agency",
+    name: "Weather Agency",
   };
   expect(
     contentStageDefinitions.resolution_sources.fields
       .filter((field) => field.control === "rows")
       .map((field) => ("maxRows" in field ? field.maxRows : undefined)),
   ).toEqual([4, 4]);
+  const sourceFieldLabels = contentStageDefinitions.resolution_sources.fields
+    .filter((field) => field.control !== "rows")
+    .map((field) => field.label);
+  expect(sourceFieldLabels).toEqual(
+    expect.arrayContaining(["Name", "URL (optional)"]),
+  );
+  expect(sourceFieldLabels).not.toEqual(
+    expect.arrayContaining(["Publisher", "Dataset ID"]),
+  );
   expect(SourceHierarchy.safeParse([source]).success).toBe(true);
   const fourSources = Array.from({ length: 4 }, (_, index) => ({
     id: `agency-${index}`,
     rank: index + 1,
-    name: `Agency ${index} results`,
-    publisher: `Agency ${index}`,
+    name: `Agency ${index}`,
     url: `https://agency-${index}.example/results`,
   }));
   expect(SourceHierarchy.safeParse(fourSources).success).toBe(true);
@@ -597,8 +604,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
     {
       id: "agency-4",
       rank: 5,
-      name: "Agency 4 results",
-      publisher: "Agency 4",
+      name: "Agency 4",
       url: "https://agency-4.example/results",
     },
   ];
@@ -606,7 +612,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
   expect(
     SourceHierarchy.safeParse([
       source,
-      { ...source, rank: 2, publisher: "Independent Agency" },
+      { ...source, rank: 2, name: "Independent Agency" },
     ]).success,
   ).toBe(false);
 });

@@ -31,15 +31,17 @@ the unit.
 
 ## Source identity and locator policy
 
-Identify each source specifically by its `name` and `publisher`. This can be a
-web page, a social media account, a named feed, or another traceable source.
-Include `url` when the source has a direct public web address; omit it when the
-source is identified by an account handle or another non-URL identity. Do not
-invent a URL for sources that do not have one.
+Use one `name` for the organization, account, or feed responsible for the
+source. Include enough context to distinguish social accounts, such as
+`Donald Trump (@realDonaldTrump) on X`. Use a distinct source name for an
+independent fallback. A different page, dataset, mirror, or republication from the same
+organization or account is not independent. Use `url` to locate the specific
+public results page, feed, or data series; omit it when the source is identified
+by a non-URL identity. Do not invent a URL for sources that do not have one.
 
-For web-addressable sources, use the public place where that publisher is
-reasonably expected to publish the future fact, not proof that the fact already
-exists. Choose in this order:
+For web-addressable sources, use the public place where that organization or
+account is reasonably expected to publish the future fact, not proof that the
+fact already exists. Choose in this order:
 
 1. A durable event-specific or recurring results page explicitly intended for
    the relevant result.
@@ -49,7 +51,7 @@ exists. Choose in this order:
    or topic article is supporting evidence only unless it is itself the
    durable publication channel.
 
-Ask for every locator: would this publisher publish the exact future fact here?
+Ask for every locator: would this source publish the exact future fact here?
 If not, find the canonical hub or report a gap. Do not use another event's
 page, a guessed future path, session URL, tracking URL, or inaccessible page.
 Recurring data needs a compatible cadence; event-driven outcomes need an

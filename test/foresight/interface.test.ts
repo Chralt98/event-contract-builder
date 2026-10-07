@@ -17,8 +17,7 @@ import {
 const source = {
   id: "agency-results",
   rank: 1,
-  name: "Agency results",
-  publisher: "Agency One",
+  name: "Agency One",
   url: "https://one.example/results",
 };
 const input = {
@@ -53,8 +52,21 @@ describe("public forecast interface", () => {
   test("forecast sources use the Foresight source schema", () => {
     expect(DataSource.parse(source)).toEqual(source);
     expect(Object.keys(DataSource.shape).sort()).toEqual(
-      ["id", "rank", "name", "publisher", "url", "datasetId"].sort(),
+      ["id", "rank", "name", "url"].sort(),
     );
+  });
+
+  test("source URL errors explain how to fix an invalid web address", () => {
+    const invalid = DataSource.safeParse({ ...source, url: "not a link" });
+    expect(invalid.success).toBe(false);
+    if (!invalid.success)
+      expect(invalid.error.issues[0]!.message).toBe(
+        "Enter a complete HTTP or HTTPS web address, such as https://example.com/results.",
+      );
+    expect(
+      DataSource.safeParse({ ...source, url: "ftp://one.example/results" })
+        .success,
+    ).toBe(false);
   });
 
   test("source schemas retain rank and duplicate validation", () => {
@@ -70,7 +82,7 @@ describe("public forecast interface", () => {
       ...source,
       id: "agency-two",
       rank: 2,
-      publisher: "Agency Two",
+      name: "Agency Two",
       url: "https://two.example/results",
     };
     expect(
@@ -79,8 +91,7 @@ describe("public forecast interface", () => {
     const fourSources = Array.from({ length: 4 }, (_, index) => ({
       id: `agency-${index}`,
       rank: index + 1,
-      name: `Agency ${index} results`,
-      publisher: `Agency ${index}`,
+      name: `Agency ${index}`,
       url: `https://agency-${index}.example/results`,
     }));
     expect(schema.safeParse({ ...input, sources: fourSources }).success).toBe(
@@ -91,8 +102,7 @@ describe("public forecast interface", () => {
       {
         id: "agency-4",
         rank: 5,
-        name: "Agency 4 results",
-        publisher: "Agency 4",
+        name: "Agency 4",
         url: "https://agency-4.example/results",
       },
     ];
@@ -116,7 +126,7 @@ describe("public forecast interface", () => {
       [],
       [{ ...source, rank: 2 }],
       [source, { ...fallback, rank: 3 }],
-      [source, { ...fallback, publisher: "Agency One, Inc." }],
+      [source, { ...fallback, name: "Agency One, Inc." }],
       [source, { ...fallback, url: source.url + "/" }],
     ]) {
       expect(schema.safeParse({ ...input, sources: invalid }).success).toBe(
@@ -152,12 +162,11 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("resolution sources may identify social accounts without a URL", () => {
+  test("one source name can identify a social account and its platform", () => {
     const accountSource = {
       id: "truth-social-account",
       rank: 1,
-      name: "Verified account @realDonaldTrump",
-      publisher: "Truth Social",
+      name: "Donald Trump (@realDonaldTrump) on Truth Social",
     };
     const schema = z.object(
       foresightTools.submit_resolution_source.inputSchema,
@@ -420,8 +429,11 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Selection or editing alone does not approve content.",
     );
-    expect(foresightServerInstructions).toContain(
-      "do not add a separate Continue request after\neither Continue choice",
+    expect(foresightServerInstructions).toMatch(
+      /copying never changes the draft/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /Continue confirms the editable\s+draft, discards the pending proposal/,
     );
     expect(foresightServerInstructions).toContain(
       "For the MCP App, continue\nautomatically after the review without another click",

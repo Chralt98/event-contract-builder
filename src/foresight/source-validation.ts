@@ -14,25 +14,25 @@ export function sourceHierarchyRankError(
 
 /**
  * Return a validation message when a hierarchy repeats the same source
- * agency or exact source URL. A different page, dataset, or mirror from the
- * same agency is not an independent fallback source.
+ * identity or exact source URL. A different page, dataset, or mirror from the
+ * same identity is not an independent fallback source.
  */
 export function sourceIndependenceError(
-  sources: readonly { publisher: string; url?: string }[],
+  sources: readonly { name: string; url?: string }[],
 ): string | undefined {
-  const publishers = new Map<string, string>();
+  const identities = new Map<string, string>();
   for (const source of sources) {
-    const key = normalizePublisher(source.publisher);
-    const previous = publishers.get(key);
+    const key = normalizeSourceName(source.name);
+    const previous = identities.get(key);
     if (previous) {
       return (
-        `Resolution sources must use independent source agencies; publisher ` +
+        `Resolution sources must use independent source organizations or accounts; ` +
         `"${previous}" appears more than once. A second page, dataset, ` +
-        `mirror, or re-publication from the same agency is not an independent ` +
-        `fallback.`
+        `mirror, or re-publication from the same organization or account is ` +
+        `not an independent fallback.`
       );
     }
-    publishers.set(key, source.publisher.trim());
+    identities.set(key, source.name.trim());
   }
 
   const urls = new Set<string>();
@@ -51,8 +51,8 @@ export function sourceIndependenceError(
   return undefined;
 }
 
-function normalizePublisher(publisher: string): string {
-  return publisher
+function normalizeSourceName(name: string): string {
+  return name
     .trim()
     .normalize("NFKD")
     .replace(/\p{Diacritic}/gu, "")

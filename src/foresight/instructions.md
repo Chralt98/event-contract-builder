@@ -57,10 +57,12 @@ or saved `terms_review.feedback` as a persistent Terms section. Do not run
 these reviews on autosave or ordinary draft edits.
 
 When a concrete proposal exists, keep the user in the decision flow. In the
-MCP App, let the user continue with either the existing draft or the proposed
-version, or edit the proposal; do not add a separate Continue request after
-either Continue choice. In text-only core chat, wait for the user's choice and
-then an explicit Continue request. If there is no proposal, tell the user in
+MCP App, keep the normal draft editor above the read-only suggestion. The user
+may copy individual suggested text values to the clipboard and paste them into
+the editor; copying never changes the draft. Continue confirms the editable
+draft, discards the pending proposal, and follows the stage workflow without
+an additional Continue request. In text-only core chat, wait for the user's
+choice and then an explicit Continue request. If there is no proposal, tell the user in
 chat that no actionable improvement was found. For the MCP App, continue
 automatically after the review without another click; for text-only core chat,
 wait for an explicit Continue request. Execute the available `continue`
