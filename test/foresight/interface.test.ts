@@ -76,6 +76,42 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({ ...input, sources: [fallback, source] }).success,
     ).toBe(true);
+    const fourSources = Array.from({ length: 4 }, (_, index) => ({
+      id: `agency-${index}`,
+      rank: index + 1,
+      name: `Agency ${index} results`,
+      publisher: `Agency ${index}`,
+      url: `https://agency-${index}.example/results`,
+    }));
+    expect(schema.safeParse({ ...input, sources: fourSources }).success).toBe(
+      true,
+    );
+    const fiveSources = [
+      ...fourSources,
+      {
+        id: "agency-4",
+        rank: 5,
+        name: "Agency 4 results",
+        publisher: "Agency 4",
+        url: "https://agency-4.example/results",
+      },
+    ];
+    expect(schema.safeParse({ ...input, sources: fiveSources }).success).toBe(
+      false,
+    );
+    expect(
+      schema.safeParse({
+        ...input,
+        selected_unit: {
+          question: "Will Alice win the election?",
+          condition: {
+            statement: "Alice appears on the final ballot",
+            ifUnmet: "annulled",
+          },
+        },
+        condition_sources: fiveSources,
+      }).success,
+    ).toBe(false);
     for (const invalid of [
       [],
       [{ ...source, rank: 2 }],
@@ -398,7 +434,13 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("kind: complete_review");
     expect(foresightServerInstructions).toContain(
-      "Do not run this review on autosave or ordinary",
+      "After every Terms approval, review that exact",
+    );
+    expect(foresightServerInstructions).toMatch(
+      /Sources\s+continue after valid explicit approval/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /Do not run\s+these reviews on autosave or ordinary\s+draft edits/,
     );
     expect(foresightServerInstructions).toMatch(
       /copy the\s+complete\s+rendered Markdown exactly/,

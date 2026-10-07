@@ -35,10 +35,16 @@ export const DataSource = z.object({
 
 export type DataSourceT = z.infer<typeof DataSource>;
 
+export const MAX_SOURCE_HIERARCHY_ENTRIES = 4;
+
 /** Shared approval validator for each outcome or condition hierarchy. */
 export const SourceHierarchy = z
   .array(DataSource)
   .min(1, "At least one rank-1 primary source is required.")
+  .max(
+    MAX_SOURCE_HIERARCHY_ENTRIES,
+    "A source hierarchy supports one primary source and up to three fallback sources.",
+  )
   .superRefine((sources, ctx) => {
     if (new Set(sources.map((source) => source.id)).size !== sources.length)
       ctx.addIssue({

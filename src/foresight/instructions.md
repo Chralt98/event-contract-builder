@@ -28,8 +28,12 @@ prerequisite bindings. Generation fills an untouched stage; subsequent output
 is a revision-bound proposal. Submit the complete map or hierarchy. These tools
 and `approve_forecast_specification` adapt to the same workspace commands; use
 the returned actions for edits, proposal decisions, approval, and continuation.
-The question's post-approval AI review requirement applies only to Question;
-Terms and Sources continue after valid explicit approval and any proposal choice.
+After each Question or Terms approval, run its stage-specific post-approval AI
+review against that exact approved revision. If a concrete change is useful,
+submit it as a revision-bound proposal without applying it, complete the review,
+and keep the user's approved draft unchanged until the user chooses. Sources
+continue after valid explicit approval and any proposal choice without an
+additional post-approval AI review.
 
 For every approval, pass the exact `expected_revision` and
 `prerequisite_revisions` from the reviewed result. Missing or stale bindings
@@ -41,14 +45,16 @@ Keep the approved snapshot distinct from pending edits; outdated dependent work
 requires renewed review before export.
 
 After every question approval, review that exact approved revision with the
-`draft-display-question` skill. If there is a concrete improvement, submit it
-as a revision-bound proposal changing only the main draft, with a concise
-rationale explaining the issue and why the change helps; never apply it. Then
-call `execute_workspace_command` with `kind: complete_review`, binding it to the
-latest workspace revision and the exact approved revision and including concise
+`draft-display-question` skill. After every Terms approval, review that exact
+approved revision with the `define-terms` skill's definition rules. If there is
+a concrete improvement, submit it through the stage's submission tool as a
+revision-bound proposal with a concise rationale; never apply it. Then call
+`execute_workspace_command` with `kind: complete_review`, binding it to the
+stage, latest workspace revision, and exact approved revision, with concise
 user-facing feedback. Report the review result in a visible chat reply; do not
-present the saved `question_review.feedback` as a persistent workspace section.
-Do not run this review on autosave or ordinary draft edits.
+present the saved `question_review.feedback` as a persistent workspace section
+or saved `terms_review.feedback` as a persistent Terms section. Do not run
+these reviews on autosave or ordinary draft edits.
 
 When a concrete proposal exists, keep the user in the decision flow. In the
 MCP App, let the user continue with either the existing draft or the proposed

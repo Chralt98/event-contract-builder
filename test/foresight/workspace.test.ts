@@ -12,6 +12,7 @@ import {
   questionStageDefinition,
   workspaceReviewEnvelopeSchema,
   approvedForecastSpecificationRecallSchema,
+  contentStageDefinitions,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -213,6 +214,15 @@ test("every mutation requires its base revision and prerequisite bindings", () =
       rationale: "An explicit cutoff makes resolution unambiguous.",
     },
     { kind: "apply_proposal", proposal_id: id() },
+    {
+      kind: "apply_proposal",
+      proposal_id: id(),
+      stage: "defined_terms",
+      draft: {
+        stage: "defined_terms",
+        definitions: [{ id: id(), term: "Rain", definition: "Precipitation." }],
+      },
+    },
     { kind: "discard_proposal", proposal_id: id() },
     { kind: "accept_proposal", proposal_id: id() },
     { kind: "select_and_approve", candidate_id: candidate.id },
@@ -261,6 +271,16 @@ test("review feedback must contain non-whitespace text", () => {
       },
     }).success,
   ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "complete_review",
+      approved_revision: "approved-terms-1",
+      feedback: "Definitions are clear and scoped.",
+    }).success,
+  ).toBe(true);
 });
 
 test("conflicts and Continue carry recoverable, revision-bound intent", () => {
@@ -558,7 +578,31 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
     name: "Daily report",
     publisher: "Weather Agency",
   };
+  expect(
+    contentStageDefinitions.resolution_sources.fields
+      .filter((field) => field.control === "rows")
+      .map((field) => ("maxRows" in field ? field.maxRows : undefined)),
+  ).toEqual([4, 4]);
   expect(SourceHierarchy.safeParse([source]).success).toBe(true);
+  const fourSources = Array.from({ length: 4 }, (_, index) => ({
+    id: `agency-${index}`,
+    rank: index + 1,
+    name: `Agency ${index} results`,
+    publisher: `Agency ${index}`,
+    url: `https://agency-${index}.example/results`,
+  }));
+  expect(SourceHierarchy.safeParse(fourSources).success).toBe(true);
+  const fiveSources = [
+    ...fourSources,
+    {
+      id: "agency-4",
+      rank: 5,
+      name: "Agency 4 results",
+      publisher: "Agency 4",
+      url: "https://agency-4.example/results",
+    },
+  ];
+  expect(SourceHierarchy.safeParse(fiveSources).success).toBe(false);
   expect(
     SourceHierarchy.safeParse([
       source,

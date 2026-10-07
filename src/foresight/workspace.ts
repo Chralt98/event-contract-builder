@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SourceHierarchy } from "./resolution";
+import { MAX_SOURCE_HIERARCHY_ENTRIES, SourceHierarchy } from "./resolution";
 import {
   DraftUnit,
   ForecastCondition,
@@ -336,6 +336,7 @@ export const contentStageDefinitions = {
         path: [key],
         label: key === "sources" ? "Outcome Sources" : "Condition Sources",
         control: "rows",
+        maxRows: MAX_SOURCE_HIERARCHY_ENTRIES,
         validation: "SourceHierarchy",
       },
       ...[
@@ -523,6 +524,9 @@ export const WorkspaceCommand = boundedPayload(
         ...mutation,
         kind: z.literal("apply_proposal"),
         proposal_id: z.uuid(),
+        draft: WorkspaceDraft.optional().describe(
+          "Optional user-selected version when applying only part of a proposal. It must match the command stage.",
+        ),
       }),
       z.strictObject({
         ...mutation,
@@ -543,7 +547,7 @@ export const WorkspaceCommand = boundedPayload(
       z.strictObject({ ...mutation, kind: z.literal("approve") }),
       z.strictObject({
         ...mutation,
-        stage: z.literal("selected_unit"),
+        stage: z.enum(["selected_unit", "defined_terms"]),
         kind: z.literal("complete_review"),
         approved_revision: WorkspaceRevision,
         feedback: z.string().trim().min(1).max(4000),
@@ -562,6 +566,7 @@ export const WorkspaceCommand = boundedPayload(
     .superRefine((command, ctx) => {
       if (
         "draft" in command &&
+        command.draft &&
         ("stage" in command.draft ? command.draft.stage : "selected_unit") !==
           command.stage
       )
@@ -765,6 +770,13 @@ export const ContentWorkspaceSnapshot = boundedPayload(
           outdated: z.boolean(),
         })
         .nullable(),
+      terms_review: z
+        .strictObject({
+          approved_revision: WorkspaceRevision,
+          feedback: z.string().trim().min(1).max(4000),
+        })
+        .nullable()
+        .default(null),
       proposals: z
         .array(
           z.strictObject({
