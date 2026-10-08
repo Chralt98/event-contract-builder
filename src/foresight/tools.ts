@@ -3,19 +3,17 @@ import {
   WorkspaceCommand,
   WorkspaceCommandResult,
   QuestionWorkspaceSnapshot,
+  WorkspaceSnapshot,
+  ContentWorkspaceSnapshot,
   WorkspaceRevision,
   workspaceRevisionBindingShape,
 } from "./workspace";
 import { Definitions } from "./display-question";
-import { DataSource } from "./resolution";
+import { SourceHierarchy } from "./resolution";
 import { ConnectorDraftUnit } from "./connector-draft-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
-import {
-  sourceHierarchyRankError,
-  sourceIndependenceError,
-} from "./source-validation";
 import {
   optionalForecastSpecificationId,
   ForecastSpecificationId,
@@ -47,7 +45,7 @@ export const approvalOutputSchema = z
     language_code: ForecastSpecificationLanguageCode,
     unit_number: z.number().int(),
     selected_unit: ConnectorDraftUnit,
-    workspace: QuestionWorkspaceSnapshot.optional(),
+    workspace: WorkspaceSnapshot.optional(),
     approved_stage: approvalStageSchema,
     ...workspaceRevisionBindingShape,
     review_markdown: ReviewMarkdown,
@@ -110,6 +108,7 @@ export const deletePluginFeedbackOutputSchema = z
   .strict();
 
 export const definedTermsShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
     .number()
@@ -163,19 +162,8 @@ export const draftedQuestionsShape = {
     ),
 };
 
-const sourceHierarchy = z
-  .array(DataSource)
-  .min(1, "At least one rank-1 primary source is required.")
-  .superRefine((sources, ctx) => {
-    const rankError = sourceHierarchyRankError(sources);
-    if (rankError) ctx.addIssue({ code: "custom", message: rankError });
-    const independenceError = sourceIndependenceError(sources);
-    if (independenceError) {
-      ctx.addIssue({ code: "custom", message: independenceError });
-    }
-  });
-
 export const resolutionSourceShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
     .number()
@@ -184,12 +172,12 @@ export const resolutionSourceShape = {
   selected_unit: ConnectorDraftUnit.describe(
     "The exact approved unit being sourced.",
   ),
-  sources: sourceHierarchy.describe(
+  sources: SourceHierarchy.describe(
     "Ranked hierarchy for the forecast outcome; prefer an independent primary and fallback.",
   ),
-  condition_sources: sourceHierarchy
-    .optional()
-    .describe("Separate ranked hierarchy for the selected unit's condition."),
+  condition_sources: SourceHierarchy.optional().describe(
+    "Separate ranked hierarchy for the selected unit's condition.",
+  ),
   followUp: z
     .string()
     .describe("Ask whether to approve or revise the source hierarchy."),
@@ -284,9 +272,11 @@ export const draftedQuestionsOutputSchema = workflowOutput({
 });
 export const definedTermsOutputSchema = workflowOutput({
   ...definedTermsShape,
+  workspace: ContentWorkspaceSnapshot,
 });
 export const resolutionSourceOutputSchema = workflowOutput({
   ...resolutionSourceShape,
+  workspace: ContentWorkspaceSnapshot,
 });
 export const resolutionCriteriaOutputSchema = workflowOutput({
   ...resolutionCriteriaShape,
@@ -328,9 +318,9 @@ export const foresightTools = {
     },
   },
   execute_workspace_command: {
-    title: "Question Workspace Command",
+    title: "Workspace Command",
     description:
-      "Reopen or execute a revision-bound question command, including accepting a reviewed suggestion or recording AI review feedback before Continue is enabled.",
+      "Reopen or execute a revision-bound Question, Terms, or Sources command. Edits and proposal application do not approve content.",
     inputSchema: WorkspaceCommand,
     outputSchema: z.strictObject({
       result: WorkspaceCommandResult,
@@ -346,7 +336,7 @@ export const foresightTools = {
   get_forecast_stage_review: {
     title: "Get Forecast Stage Review",
     description:
-      "Retrieve a saved pending stage and its current approval bindings for review or stale-approval recovery. Does not approve content.",
+      "Open an editable stage or retrieve a saved later-stage review with its current approval bindings. Opening an untouched editable stage saves an incomplete draft without approval.",
     inputSchema: {
       forecast_specification_id: ForecastSpecificationId,
       stage: approvalStageSchema,
@@ -354,11 +344,12 @@ export const foresightTools = {
     outputSchema: z.strictObject({
       forecast_specification_id: ForecastSpecificationId,
       stage: approvalStageSchema,
+      workspace: WorkspaceSnapshot.optional(),
       ...workspaceRevisionBindingShape,
       review_markdown: ReviewMarkdown,
     }),
     annotations: {
-      readOnlyHint: true,
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: true,
       openWorldHint: false,
@@ -445,7 +436,7 @@ export const foresightTools = {
   submit_defined_terms: {
     title: "Submit Defined Terms",
     description:
-      "Validate, store, and render pending definitions for an approved selected unit, using the exact unit and a term-to-definition map.",
+      "Validate and submit a complete definition map for an approved selected unit. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
     inputSchema: definedTermsShape,
     outputSchema: definedTermsOutputSchema,
     annotations: {
@@ -471,7 +462,7 @@ export const foresightTools = {
   submit_resolution_source: {
     title: "Resolution Source Hierarchy",
     description:
-      "Validate and render pending source hierarchies after definitions are approved, including a separate condition hierarchy for conditional units.",
+      "Validate and submit complete source hierarchies after definitions are approved. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
     inputSchema: resolutionSourceShape,
     outputSchema: resolutionSourceOutputSchema,
     annotations: {

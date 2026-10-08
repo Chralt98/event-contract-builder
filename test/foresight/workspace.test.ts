@@ -12,6 +12,7 @@ import {
   questionStageDefinition,
   workspaceReviewEnvelopeSchema,
   approvedForecastSpecificationRecallSchema,
+  contentStageDefinitions,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -213,6 +214,15 @@ test("every mutation requires its base revision and prerequisite bindings", () =
       rationale: "An explicit cutoff makes resolution unambiguous.",
     },
     { kind: "apply_proposal", proposal_id: id() },
+    {
+      kind: "apply_proposal",
+      proposal_id: id(),
+      stage: "defined_terms",
+      draft: {
+        stage: "defined_terms",
+        definitions: [{ id: id(), term: "Rain", definition: "Precipitation." }],
+      },
+    },
     { kind: "discard_proposal", proposal_id: id() },
     { kind: "accept_proposal", proposal_id: id() },
     { kind: "select_and_approve", candidate_id: candidate.id },
@@ -261,6 +271,16 @@ test("review feedback must contain non-whitespace text", () => {
       },
     }).success,
   ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "complete_review",
+      approved_revision: "approved-terms-1",
+      feedback: "Definitions are clear and scoped.",
+    }).success,
+  ).toBe(true);
 });
 
 test("conflicts and Continue carry recoverable, revision-bound intent", () => {
@@ -396,7 +416,7 @@ test("all shared primitives accept editable values and bounded diagnostics", () 
       control: "source",
       path: ["source"],
       label,
-      value: { name: "", url: "", publisher: "" },
+      value: { name: "", url: "" },
     },
     {
       control: "group",
@@ -489,4 +509,110 @@ test("working condition uses canonical dispositions while permitting incomplete 
       { value: "custom", label: "Custom" },
     ],
   });
+});
+
+test("migrated stage drafts are bounded, preserve incomplete rows, and bind commands to their stage", async () => {
+  const { ContentWorkingDraft, validateContentWorkingDraft, SourceHierarchy } =
+    await import("../../src/foresight");
+  const terms = {
+    stage: "defined_terms" as const,
+    definitions: [{ id: id(), term: "rain", definition: "" }],
+  };
+  expect(ContentWorkingDraft.safeParse(terms).success).toBe(true);
+  expect(validateContentWorkingDraft(terms)).toHaveLength(1);
+  expect(
+    validateContentWorkingDraft({ stage: "defined_terms", definitions: [] }),
+  ).toEqual([]);
+  const duplicate = {
+    ...terms,
+    definitions: [
+      { ...terms.definitions[0]!, definition: "Daily report." },
+      { id: id(), term: "rain", definition: "Daily report." },
+    ],
+  };
+  expect(
+    validateContentWorkingDraft(duplicate).some((issue) =>
+      issue.message.includes("unique"),
+    ),
+  ).toBe(true);
+  expect(
+    ContentWorkingDraft.safeParse({
+      ...terms,
+      definitions: Array.from({ length: 51 }, () => ({
+        id: id(),
+        term: "",
+        definition: "",
+      })),
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      kind: "edit_draft",
+      draft: terms,
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "edit_draft",
+      draft: terms,
+    }).success,
+  ).toBe(true);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "defined_terms",
+      kind: "continue",
+      approved_revision: "approved",
+      next_stage: "resolution_criteria",
+    }).success,
+  ).toBe(false);
+  const source = {
+    id: "primary",
+    rank: 1,
+    name: "Weather Agency",
+  };
+  expect(
+    contentStageDefinitions.resolution_sources.fields
+      .filter((field) => field.control === "rows")
+      .map((field) => ("maxRows" in field ? field.maxRows : undefined)),
+  ).toEqual([4, 4]);
+  const sourceFieldLabels = contentStageDefinitions.resolution_sources.fields
+    .filter((field) => field.control !== "rows")
+    .map((field) => field.label);
+  expect(sourceFieldLabels).toEqual(
+    expect.arrayContaining(["Name", "URL (optional)"]),
+  );
+  expect(sourceFieldLabels).not.toEqual(
+    expect.arrayContaining(["Publisher", "Dataset ID"]),
+  );
+  expect(SourceHierarchy.safeParse([source]).success).toBe(true);
+  const fourSources = Array.from({ length: 4 }, (_, index) => ({
+    id: `agency-${index}`,
+    rank: index + 1,
+    name: `Agency ${index}`,
+    url: `https://agency-${index}.example/results`,
+  }));
+  expect(SourceHierarchy.safeParse(fourSources).success).toBe(true);
+  const fiveSources = [
+    ...fourSources,
+    {
+      id: "agency-4",
+      rank: 5,
+      name: "Agency 4",
+      url: "https://agency-4.example/results",
+    },
+  ];
+  expect(SourceHierarchy.safeParse(fiveSources).success).toBe(false);
+  expect(
+    SourceHierarchy.safeParse([
+      source,
+      { ...source, rank: 2, name: "Independent Agency" },
+    ]).success,
+  ).toBe(false);
 });

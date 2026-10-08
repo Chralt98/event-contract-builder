@@ -13,7 +13,8 @@ analysis. It is the sole source for ambiguity and definition rules.
    materially different defensible definitions require their choice.
 3. Call `submit_defined_terms` once, including an empty map when nothing needs
    definition, and present the complete rendered review.
-4. After explicit approval, approve `defined_terms` and continue with
+4. After explicit approval, approve `defined_terms`. Then run the server-wide
+   post-approval review for that exact revision before continuing with
    `define-resolution-source`.
 
 For an alternative selected from a draft, use its exact unit and start

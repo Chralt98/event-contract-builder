@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_SOURCE_HIERARCHY_ENTRIES, SourceHierarchy } from "./resolution";
 import {
   DraftUnit,
   ForecastCondition,
@@ -175,6 +176,179 @@ export function validateQuestionWorkingDraft(
   return visible;
 }
 
+export const ContentStage = z.enum(["defined_terms", "resolution_sources"]);
+export type ContentStage = z.infer<typeof ContentStage>;
+export const TermsWorkingDraft = boundedPayload(
+  z.strictObject({
+    stage: z.literal("defined_terms"),
+    definitions: uniqueRows(
+      z.strictObject({ id: WorkspaceRowId, term: text, definition: text }),
+      50,
+    ),
+  }),
+);
+export const SourceWorkingRow = z.strictObject({
+  id: WorkspaceRowId,
+  source_id: text,
+  name: text,
+  url: text,
+});
+export const SourcesWorkingDraft = boundedPayload(
+  z.strictObject({
+    stage: z.literal("resolution_sources"),
+    sources: uniqueRows(SourceWorkingRow, 50),
+    condition_sources: uniqueRows(SourceWorkingRow, 50).nullable(),
+  }),
+);
+export const ContentWorkingDraft = z.union([
+  TermsWorkingDraft,
+  SourcesWorkingDraft,
+]);
+export type ContentWorkingDraft = z.infer<typeof ContentWorkingDraft>;
+export const WorkspaceDraft = z.union([
+  QuestionWorkingDraft,
+  ContentWorkingDraft,
+]);
+export type WorkspaceDraft = z.infer<typeof WorkspaceDraft>;
+export const editableWorkspaceStages = z.enum([
+  "selected_unit",
+  "defined_terms",
+  "resolution_sources",
+]);
+export function contentDomainInput(draft: ContentWorkingDraft) {
+  if (draft.stage === "defined_terms")
+    return {
+      definitions: Object.fromEntries(
+        draft.definitions.map((row) => [row.term, row.definition]),
+      ),
+    };
+  const hierarchy = (rows: z.infer<typeof SourceWorkingRow>[]) =>
+    rows.map((row, index) => ({
+      id: row.source_id,
+      rank: index + 1,
+      name: row.name,
+      ...(row.url ? { url: row.url } : {}),
+    }));
+  return {
+    sources: hierarchy(draft.sources),
+    ...(draft.condition_sources !== null
+      ? { condition_sources: hierarchy(draft.condition_sources) }
+      : {}),
+  };
+}
+/** Stable row diagnostics route to the same validators as submission tools. */
+export function validateContentWorkingDraft(
+  draft: ContentWorkingDraft,
+  conditional = false,
+): WorkspaceValidationIssue[] {
+  const issues: WorkspaceValidationIssue[] = [];
+  const add = (path: string[], message: string) =>
+    issues.push({
+      path,
+      code: "domain_validation",
+      message: message.slice(0, 1000),
+    });
+  const domain = contentDomainInput(draft);
+  if (draft.stage === "defined_terms") {
+    const terms = new Set<string>();
+    for (const row of draft.definitions) {
+      if (!row.term.trim())
+        add(["definitions", row.id, "term"], "Enter a term.");
+      if (!row.definition.trim())
+        add(["definitions", row.id, "definition"], "Enter a definition.");
+      if (terms.has(row.term))
+        add(["definitions", row.id, "term"], "Terms must be unique.");
+      terms.add(row.term);
+    }
+  } else {
+    for (const key of ["sources", "condition_sources"] as const) {
+      const rows = draft[key];
+      if (rows === null) continue;
+      const result = SourceHierarchy.safeParse(
+        (domain as Record<string, unknown>)[key],
+      );
+      if (!result.success)
+        for (const issue of result.error.issues) {
+          const [index, ...rest] = issue.path;
+          add(
+            typeof index === "number"
+              ? [
+                  key,
+                  rows[index]!.id,
+                  ...rest.map((part) =>
+                    part === "id" ? "source_id" : String(part),
+                  ),
+                ]
+              : [key],
+            issue.message,
+          );
+        }
+    }
+    if (conditional !== (draft.condition_sources !== null))
+      add(
+        ["condition_sources"],
+        conditional
+          ? "A conditional unit requires condition sources."
+          : "Condition sources require a conditional selected unit.",
+      );
+  }
+  return issues.slice(0, 200);
+}
+export const contentStageDefinitions = {
+  defined_terms: {
+    stage: "defined_terms",
+    label: "Terms",
+    next_stage: "resolution_sources",
+    skill: "define-resolution-source",
+    fields: [
+      {
+        path: ["definitions"],
+        label: "Definitions",
+        control: "rows",
+        validation: "Definitions",
+      },
+      {
+        path: ["definitions", "*", "term"],
+        label: "Term",
+        control: "prose",
+        validation: "Definitions.key",
+      },
+      {
+        path: ["definitions", "*", "definition"],
+        label: "Definition",
+        control: "prose",
+        validation: "Definitions.value",
+        multiline: true,
+      },
+    ],
+  },
+  resolution_sources: {
+    stage: "resolution_sources",
+    label: "Sources",
+    next_stage: "resolution_criteria",
+    skill: "define-resolution-criteria",
+    fields: ["sources", "condition_sources"].flatMap((key) => [
+      {
+        path: [key],
+        label: key === "sources" ? "Outcome Sources" : "Condition Sources",
+        control: "rows",
+        maxRows: MAX_SOURCE_HIERARCHY_ENTRIES,
+        validation: "SourceHierarchy",
+      },
+      ...[
+        ["source_id", "Source ID"],
+        ["name", "Name"],
+        ["url", "URL (optional)"],
+      ].map(([name, label]) => ({
+        path: [key, "*", name!],
+        label: label!,
+        control: "prose",
+        validation: `DataSource.${name === "source_id" ? "id" : name}`,
+        ...(name === "source_id" ? { internal: true } : {}),
+      })),
+    ]),
+  },
+} as const;
 export const WorkspaceControlKind = z.enum([
   "prose",
   "date",
@@ -189,6 +363,8 @@ export const WorkspaceFieldDefinition = z.strictObject({
   label: z.string().min(1).max(200),
   control: WorkspaceControlKind,
   validation: z.string().min(1).max(200),
+  multiline: z.boolean().optional(),
+  internal: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),
   options: z
     .array(
@@ -315,64 +491,106 @@ const commandIdentity = {
 const mutation = {
   ...commandIdentity,
   ...workspaceRevisionBindingShape,
-  stage: z.literal("selected_unit"),
+  stage: editableWorkspaceStages,
 };
 /** Reads need identity; writes require an exact base and prerequisite bindings. */
 export const WorkspaceCommand = boundedPayload(
-  z.discriminatedUnion("kind", [
-    z.strictObject({ ...commandIdentity, kind: z.literal("reopen") }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("edit_draft"),
-      draft: QuestionWorkingDraft,
+  z
+    .discriminatedUnion("kind", [
+      z.strictObject({
+        ...commandIdentity,
+        kind: z.literal("reopen"),
+        stage: editableWorkspaceStages.optional(),
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("edit_draft"),
+        draft: WorkspaceDraft,
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("submit_proposal"),
+        proposal_id: z.uuid(),
+        draft: WorkspaceDraft,
+        rationale: z.string().trim().min(1).max(1000).optional(),
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("apply_proposal"),
+        proposal_id: z.uuid(),
+        draft: WorkspaceDraft.optional().describe(
+          "Optional user-selected version when applying only part of a proposal. It must match the command stage.",
+        ),
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("discard_proposal"),
+        proposal_id: z.uuid(),
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("accept_proposal"),
+        proposal_id: z.uuid(),
+      }),
+      z.strictObject({
+        ...mutation,
+        stage: z.literal("selected_unit"),
+        kind: z.literal("select_and_approve"),
+        candidate_id: WorkspaceRowId,
+      }),
+      z.strictObject({ ...mutation, kind: z.literal("approve") }),
+      z.strictObject({
+        ...mutation,
+        stage: z.enum(["selected_unit", "defined_terms"]),
+        kind: z.literal("complete_review"),
+        approved_revision: WorkspaceRevision,
+        feedback: z.string().trim().min(1).max(4000),
+      }),
+      z.strictObject({
+        ...mutation,
+        kind: z.literal("continue"),
+        approved_revision: WorkspaceRevision,
+        next_stage: z.enum([
+          "defined_terms",
+          "resolution_sources",
+          "resolution_criteria",
+        ]),
+      }),
+    ])
+    .superRefine((command, ctx) => {
+      if (
+        "draft" in command &&
+        command.draft &&
+        ("stage" in command.draft ? command.draft.stage : "selected_unit") !==
+          command.stage
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["draft"],
+          message: "Draft must match the command stage.",
+        });
+      if (
+        command.kind === "continue" &&
+        command.next_stage !==
+          (command.stage === "selected_unit"
+            ? "defined_terms"
+            : contentStageDefinitions[command.stage].next_stage)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["next_stage"],
+          message: "Continue must request the next workflow stage.",
+        });
     }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("submit_proposal"),
-      proposal_id: z.uuid(),
-      draft: QuestionWorkingDraft,
-      rationale: z.string().trim().min(1).max(1000).optional(),
-    }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("apply_proposal"),
-      proposal_id: z.uuid(),
-    }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("discard_proposal"),
-      proposal_id: z.uuid(),
-    }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("accept_proposal"),
-      proposal_id: z.uuid(),
-    }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("select_and_approve"),
-      candidate_id: WorkspaceRowId,
-    }),
-    z.strictObject({ ...mutation, kind: z.literal("approve") }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("complete_review"),
-      approved_revision: WorkspaceRevision,
-      feedback: z.string().trim().min(1).max(4000),
-    }),
-    z.strictObject({
-      ...mutation,
-      kind: z.literal("continue"),
-      approved_revision: WorkspaceRevision,
-      next_stage: z.literal("defined_terms"),
-    }),
-  ]),
 );
 export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
 
 const nodeBase = {
   path: WorkspaceFieldPath,
   label: z.string().min(1).max(200),
+  maxLength: z.number().int().min(1).max(4000).optional(),
+  multiline: z.boolean().optional(),
+  internal: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),
 };
 const leaf = z.discriminatedUnion("control", [
@@ -398,7 +616,7 @@ const leaf = z.discriminatedUnion("control", [
   z.strictObject({
     ...nodeBase,
     control: z.literal("source"),
-    value: z.strictObject({ name: text, url: text, publisher: text }),
+    value: z.strictObject({ name: text, url: text }),
   }),
 ]);
 /** Two row levels cover candidate variables and their values without arbitrary recursion. */
@@ -406,6 +624,12 @@ const rows = <T extends z.ZodType>(field: T) =>
   z.strictObject({
     ...nodeBase,
     control: z.literal("rows"),
+    maxRows: z.number().int().min(1).max(50).optional(),
+    template: z.array(leaf).max(12).optional(),
+    ordered: z.boolean().optional(),
+    identityField: z.string().min(1).max(128).optional(),
+    allowAbsent: z.boolean().optional(),
+    present: z.boolean().optional(),
     rows: uniqueRows(
       z.strictObject({ id: WorkspaceRowId, fields: z.array(field).max(12) }),
       50,
@@ -523,12 +747,70 @@ export type QuestionWorkspaceSnapshot = z.infer<
   typeof QuestionWorkspaceSnapshot
 >;
 
+export const ContentWorkspaceSnapshot = boundedPayload(
+  z
+    .strictObject({
+      forecast_specification_id: ForecastSpecificationId,
+      language_code: ForecastSpecificationLanguageCode,
+      stage: ContentStage,
+      revision: WorkspaceRevision,
+      prerequisite_revisions: WorkspacePrerequisites,
+      draft: ContentWorkingDraft,
+      approved: z
+        .strictObject({
+          revision: WorkspaceRevision,
+          prerequisite_revisions: WorkspacePrerequisites,
+          draft: ContentWorkingDraft,
+          outdated: z.boolean(),
+        })
+        .nullable(),
+      terms_review: z
+        .strictObject({
+          approved_revision: WorkspaceRevision,
+          feedback: z.string().trim().min(1).max(4000),
+        })
+        .nullable()
+        .default(null),
+      proposals: z
+        .array(
+          z.strictObject({
+            id: z.uuid(),
+            base_revision: WorkspaceRevision,
+            prerequisite_revisions: WorkspacePrerequisites,
+            draft: ContentWorkingDraft,
+            rationale: z.string().trim().min(1).max(1000).optional(),
+          }),
+        )
+        .max(5),
+      presentation: QuestionWorkspaceSnapshot.shape.presentation,
+    })
+    .superRefine((snapshot, ctx) => {
+      if (
+        [
+          snapshot.draft,
+          ...snapshot.proposals.map((p) => p.draft),
+          ...(snapshot.approved ? [snapshot.approved.draft] : []),
+        ].some((draft) => draft.stage !== snapshot.stage)
+      )
+        ctx.addIssue({
+          code: "custom",
+          message: "Snapshot drafts must match its stage.",
+        });
+    }),
+  workspaceReviewLimitBytes,
+);
+export type ContentWorkspaceSnapshot = z.infer<typeof ContentWorkspaceSnapshot>;
+export const WorkspaceSnapshot = z.union([
+  QuestionWorkspaceSnapshot,
+  ContentWorkspaceSnapshot,
+]);
+export type WorkspaceSnapshot = z.infer<typeof WorkspaceSnapshot>;
 export const WorkspaceCommandResult = boundedPayload(
   z.discriminatedUnion("status", [
     z.strictObject({
       ...commandIdentity,
       status: z.enum(["snapshot", "saved"]),
-      snapshot: QuestionWorkspaceSnapshot,
+      snapshot: WorkspaceSnapshot,
     }),
     z.strictObject({
       ...commandIdentity,
@@ -559,7 +841,11 @@ export const WorkspaceCommandResult = boundedPayload(
       status: z.literal("continue_intent"),
       language_code: ForecastSpecificationLanguageCode,
       approved_revision: WorkspaceRevision,
-      next_stage: z.literal("defined_terms"),
+      next_stage: z.enum([
+        "defined_terms",
+        "resolution_sources",
+        "resolution_criteria",
+      ]),
       chat_instruction: z.string().min(1).max(4000),
     }),
   ]),
@@ -573,7 +859,7 @@ export function workspaceReviewEnvelopeSchema<T extends z.ZodType>(domain: T) {
     z.strictObject({
       contract_version: z.literal(workspaceContractVersion),
       domain,
-      workspace: QuestionWorkspaceSnapshot,
+      workspace: WorkspaceSnapshot,
     }),
     workspaceReviewLimitBytes,
   );
