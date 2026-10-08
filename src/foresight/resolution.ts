@@ -1,8 +1,5 @@
 import { z } from "zod";
-import {
-  sourceHierarchyRankError,
-  sourceIndependenceError,
-} from "./source-validation";
+import { sourceHierarchyRankError } from "./source-validation";
 import { Slug } from "./common";
 
 /** A resolution data source with availability characteristics. */
@@ -17,7 +14,7 @@ export const DataSource = z.object({
     .string()
     .min(3)
     .describe(
-      "Name of the organization, account, or feed responsible for the source; identify social accounts with their platform, such as Donald Trump (@realDonaldTrump) on X.",
+      "Name of the organization, account, or feed responsible for the source. For social accounts, include the platform to distinguish the account.",
     ),
   url: z
     .httpUrl({
@@ -48,9 +45,6 @@ export const SourceHierarchy = z
         code: "custom",
         message: "Source IDs must be unique within a hierarchy.",
       });
-    for (const message of [
-      sourceHierarchyRankError(sources),
-      sourceIndependenceError(sources),
-    ])
-      if (message) ctx.addIssue({ code: "custom", message });
+    const rankError = sourceHierarchyRankError(sources);
+    if (rankError) ctx.addIssue({ code: "custom", message: rankError });
   });

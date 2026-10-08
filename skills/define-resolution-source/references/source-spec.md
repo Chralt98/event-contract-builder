@@ -32,12 +32,12 @@ the unit.
 ## Source identity and locator policy
 
 Use one `name` for the organization, account, or feed responsible for the
-source. Include enough context to distinguish social accounts, such as
-`Donald Trump (@realDonaldTrump) on X`. Use a distinct source name for an
-independent fallback. A different page, dataset, mirror, or republication from the same
-organization or account is not independent. Use `url` to locate the specific
-public results page, feed, or data series; omit it when the source is identified
-by a non-URL identity. Do not invent a URL for sources that do not have one.
+source. For social accounts, include the platform so the account is
+distinguishable. Use a distinct source name for an independent fallback. A
+different page, dataset, mirror, or republication from the same organization or
+account is not independent. Use `url` to locate the specific public results
+page, feed, or data series; omit it when the source is identified by a non-URL
+identity. Do not invent a URL for sources that do not have one.
 
 For web-addressable sources, use the public place where that organization or
 account is reasonably expected to publish the future fact, not proof that the

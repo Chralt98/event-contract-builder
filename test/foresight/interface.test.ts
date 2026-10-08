@@ -69,7 +69,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("source schemas retain rank and duplicate validation", () => {
+  test("source schemas validate ranks and allow repeated source details", () => {
     const schema = z.object(
       foresightTools.submit_resolution_source.inputSchema,
     );
@@ -87,6 +87,19 @@ describe("public forecast interface", () => {
     };
     expect(
       schema.safeParse({ ...input, sources: [fallback, source] }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...input,
+        sources: [
+          source,
+          {
+            ...fallback,
+            name: source.name,
+            url: source.url,
+          },
+        ],
+      }).success,
     ).toBe(true);
     const fourSources = Array.from({ length: 4 }, (_, index) => ({
       id: `agency-${index}`,
@@ -126,8 +139,6 @@ describe("public forecast interface", () => {
       [],
       [{ ...source, rank: 2 }],
       [source, { ...fallback, rank: 3 }],
-      [source, { ...fallback, name: "Agency One, Inc." }],
-      [source, { ...fallback, url: source.url + "/" }],
     ]) {
       expect(schema.safeParse({ ...input, sources: invalid }).success).toBe(
         false,
@@ -166,7 +177,7 @@ describe("public forecast interface", () => {
     const accountSource = {
       id: "truth-social-account",
       rank: 1,
-      name: "Donald Trump (@realDonaldTrump) on Truth Social",
+      name: "Official account on a social platform",
     };
     const schema = z.object(
       foresightTools.submit_resolution_source.inputSchema,
