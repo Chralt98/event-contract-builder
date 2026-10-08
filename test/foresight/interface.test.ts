@@ -39,7 +39,9 @@ const criteria = {
     resolvesNoWhen:
       "The approved source reports no measurable rainfall by the deadline, or the Yes condition is otherwise not met.",
   },
-  evidenceAndSourceRules:
+  resolutionSources:
+    "Use the approved national weather service and the independent daily report in that priority order.",
+  resolutionMethod:
     "Use the highest-ranked approved source that publishes a result by the deadline. Apply an official correction published before resolution.",
   exceptionAndUnresolvedRules:
     "If no approved source can establish the result by the resolution deadline, apply the platform's documented unresolved-outcome policy.",
@@ -446,24 +448,11 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toMatch(
       /Continue confirms the editable\s+draft, discards the pending proposal/,
     );
-    expect(foresightServerInstructions).toContain(
-      "For the MCP App, continue\nautomatically after the review without another click",
-    );
-    expect(foresightServerInstructions).toContain(
-      "for text-only core chat,\nwait for an explicit Continue request",
-    );
-    expect(foresightServerInstructions).toContain(
-      "do not\npresent the saved `question_review.feedback` as a persistent workspace section",
-    );
-    expect(foresightServerInstructions).toContain("kind: complete_review");
-    expect(foresightServerInstructions).toContain(
-      "After every Terms approval, review that exact",
+    expect(foresightServerInstructions).toMatch(
+      /Request AI suggestions only when/,
     );
     expect(foresightServerInstructions).toMatch(
-      /Sources\s+continue after valid explicit approval/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Do not run\s+these reviews on autosave or ordinary\s+draft edits/,
+      /Save `opted_in` before researching/,
     );
     expect(foresightServerInstructions).toMatch(
       /copy the\s+complete\s+rendered Markdown exactly/,
@@ -477,6 +466,8 @@ describe("public forecast interface", () => {
     const payload = {
       unit_number: 1,
       selected_unit: input.selected_unit,
+      expected_revision: "reviewed-revision",
+      prerequisite_revisions: {},
       background_information: backgroundInformation,
       followUp: "Do you approve this context and background information?",
     };
@@ -535,6 +526,8 @@ describe("public forecast interface", () => {
     const payload = {
       unit_number: 1,
       selected_unit: input.selected_unit,
+      expected_revision: "reviewed-revision",
+      prerequisite_revisions: {},
       news_timeline: timeline,
       followUp: "Which news item units are relevant?",
     };
@@ -602,6 +595,8 @@ describe("public forecast interface", () => {
     const payload = {
       unit_number: 1,
       selected_unit: input.selected_unit,
+      expected_revision: "reviewed-revision",
+      prerequisite_revisions: {},
       resolution_criteria: criteria,
       followUp: "Do these resolution criteria look right?",
     };
@@ -611,6 +606,23 @@ describe("public forecast interface", () => {
       parseConnectorResolutionCriteria(criteria, input.selected_unit)
         .questionRule.question,
     ).toBe(input.selected_unit.question);
+
+    const openTextCriteria = {
+      ...criteria,
+      questionRule: {
+        question: input.selected_unit.question,
+        outcomeCriteria:
+          "This market resolves Yes if the published value meets the deadline. Otherwise, it resolves No.",
+      },
+    };
+    expect(
+      schema.safeParse({ ...payload, resolution_criteria: openTextCriteria })
+        .success,
+    ).toBe(true);
+    expect(
+      parseConnectorResolutionCriteria(openTextCriteria, input.selected_unit)
+        .questionRule,
+    ).toEqual(openTextCriteria.questionRule);
 
     const rankingCriteria = {
       ...criteria,
@@ -678,7 +690,9 @@ describe("public forecast interface", () => {
         resolvesNoWhen:
           "The approved public evidence establishes the complementary outcome or the Yes condition is not met by the deadline.",
       },
-      evidenceAndSourceRules:
+      resolutionSources:
+        "Use the highest-ranked approved source that publishes the relevant facts.",
+      resolutionMethod:
         "Use the highest-ranked approved source that publishes the facts needed by the applicable question rule.",
       exceptionAndUnresolvedRules:
         "Apply the stated range boundaries, source tie-breaking procedure, or template substitution as applicable; otherwise use the documented unresolved-outcome policy.",
@@ -720,7 +734,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("conditional criteria match the selected condition statement exactly", () => {
+  test("conditional outcomes can be resolved in the single open-text rule", () => {
     const selectedUnit = {
       question: "Will Alice win the election?",
       condition: {
@@ -728,47 +742,21 @@ describe("public forecast interface", () => {
         ifUnmet: "annulled" as const,
       },
     };
-    const conditionCriteria = {
-      statement: selectedUnit.condition.statement,
-      resolvesMetWhen: "The official ballot lists Alice.",
-      resolvesUnmetWhen: "The final ballot does not list Alice.",
-      evidenceAndSourceRules: "Use the election authority's final ballot.",
-      exceptionAndUnresolvedRules:
-        "If no final ballot is available, treat the condition as unresolved.",
-    };
     const conditionalCriteria = {
       ...criteria,
       questionRule: {
-        ...criteria.questionRule,
         question: selectedUnit.question,
+        outcomeCriteria:
+          "This market resolves Yes if Alice appears on the final ballot and wins the election, according to the election authority, by the resolution deadline. Otherwise it resolves No.",
       },
-      conditionCriteria,
     };
     expect(
       parseConnectorResolutionCriteria(conditionalCriteria, selectedUnit)
-        .conditionCriteria?.statement,
-    ).toBe(selectedUnit.condition.statement);
+        .questionRule,
+    ).toEqual(conditionalCriteria.questionRule);
     expect(() =>
       parseConnectorResolutionCriteria(criteria, selectedUnit),
-    ).toThrow("Conditional units require conditionCriteria");
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        {
-          ...conditionalCriteria,
-          conditionCriteria: {
-            ...conditionCriteria,
-            statement: "Alice registers to run",
-          },
-        },
-        selectedUnit,
-      ),
-    ).toThrow("must exactly match selectedUnit.condition.statement");
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        { ...criteria, conditionCriteria },
-        input.selected_unit,
-      ),
-    ).toThrow("Unconditional units cannot have conditionCriteria");
+    ).toThrow("questionRule.question must exactly match selectedUnit.question");
   });
 
   test("resolution rule text can use concise or multi-sentence question-specific logic", () => {
@@ -806,6 +794,13 @@ describe("public forecast interface", () => {
       ),
       "utf8",
     );
+    const criteriaValidation = readFileSync(
+      new URL(
+        "../../skills/define-resolution-criteria/references/criteria-validation.md",
+        import.meta.url,
+      ),
+      "utf8",
+    );
 
     expect(foresightServerInstructions).toContain(
       "Submission tools validate and store a pending stage.",
@@ -820,10 +815,20 @@ describe("public forecast interface", () => {
     expect(criteriaSkill).toContain(
       "Read [references/criteria-spec.md](references/criteria-spec.md)",
     );
+    expect(criteriaSkill).toContain(
+      "[references/criteria-validation.md](references/criteria-validation.md)",
+    );
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
     expect(criteriaReference).toContain("entire current frontier");
     expect(criteriaReference).toContain("❓ **1 · <short title>**");
-    expect(criteriaReference).toContain("`resolvesYesWhen`");
+    expect(criteriaReference).toContain("`questionRule.outcomeCriteria`");
+    expect(criteriaReference).toContain(
+      "[criteria-validation.md](criteria-validation.md)",
+    );
+    expect(criteriaValidation).toContain(
+      "State the approved deadline as a concrete date",
+    );
+    expect(criteriaValidation).toContain("Name every approved fallback");
     expect(criteriaReference).toContain(
       "the failed submission changed nothing",
     );

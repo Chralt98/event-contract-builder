@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  ResolutionCriteria,
+  parseConnectorResolutionCriteria,
+} from "./resolution-criteria";
+import { ForecastBackgroundInformation } from "./background-information";
+import { ForecastNewsTimeline } from "./news-timeline";
+import type { DraftUnitT } from "./display-question";
 import { MAX_SOURCE_HIERARCHY_ENTRIES, SourceHierarchy } from "./resolution";
 import {
   DraftUnit,
@@ -176,7 +183,13 @@ export function validateQuestionWorkingDraft(
   return visible;
 }
 
-export const ContentStage = z.enum(["defined_terms", "resolution_sources"]);
+export const ContentStage = z.enum([
+  "defined_terms",
+  "resolution_sources",
+  "resolution_criteria",
+  "background_information",
+  "news_timeline",
+]);
 export type ContentStage = z.infer<typeof ContentStage>;
 export const TermsWorkingDraft = boundedPayload(
   z.strictObject({
@@ -200,9 +213,63 @@ export const SourcesWorkingDraft = boundedPayload(
     condition_sources: uniqueRows(SourceWorkingRow, 50).nullable(),
   }),
 );
+const workingRule = z.strictObject({
+  question: text,
+  outcomeCriteria: text,
+});
+export const CriteriaWorkingDraft = boundedPayload(
+  z.strictObject({
+    stage: z.literal("resolution_criteria"),
+    resolution_criteria: z.strictObject({
+      questionRule: workingRule,
+      resolutionSources: text,
+      resolutionMethod: text,
+      exceptionAndUnresolvedRules: text,
+    }),
+  }),
+);
+export const BackgroundWorkingDraft = boundedPayload(
+  z.strictObject({
+    stage: z.literal("background_information"),
+    background_information: text,
+  }),
+);
+export const NewsWorkingDraft = boundedPayload(
+  z.strictObject({
+    stage: z.literal("news_timeline"),
+    items: uniqueRows(
+      z.strictObject({
+        id: WorkspaceRowId,
+        unit_number: z.number().int().positive(),
+        published_at: z.string().max(64),
+        publisher: text,
+        url: text,
+        summary: z.string().max(1200),
+      }),
+      12,
+    ),
+  }),
+);
+export const NewsChoice = z.enum([
+  "undecided",
+  "opted_in",
+  "declined",
+  "unavailable",
+]);
+export const WorkspaceNextStage = z.enum([
+  "defined_terms",
+  "resolution_sources",
+  "resolution_criteria",
+  "background_information",
+  "news_timeline",
+  "completed",
+]);
 export const ContentWorkingDraft = z.union([
   TermsWorkingDraft,
   SourcesWorkingDraft,
+  CriteriaWorkingDraft,
+  BackgroundWorkingDraft,
+  NewsWorkingDraft,
 ]);
 export type ContentWorkingDraft = z.infer<typeof ContentWorkingDraft>;
 export const WorkspaceDraft = z.union([
@@ -214,8 +281,24 @@ export const editableWorkspaceStages = z.enum([
   "selected_unit",
   "defined_terms",
   "resolution_sources",
+  "resolution_criteria",
+  "background_information",
+  "news_timeline",
 ]);
 export function contentDomainInput(draft: ContentWorkingDraft) {
+  if (draft.stage === "resolution_criteria") {
+    return {
+      resolution_criteria: {
+        ...draft.resolution_criteria,
+      },
+    };
+  }
+  if (draft.stage === "background_information")
+    return { background_information: draft.background_information };
+  if (draft.stage === "news_timeline")
+    return {
+      news_timeline: { items: draft.items.map(({ id, ...item }) => item) },
+    };
   if (draft.stage === "defined_terms")
     return {
       definitions: Object.fromEntries(
@@ -240,6 +323,7 @@ export function contentDomainInput(draft: ContentWorkingDraft) {
 export function validateContentWorkingDraft(
   draft: ContentWorkingDraft,
   conditional = false,
+  selectedUnit?: DraftUnitT,
 ): WorkspaceValidationIssue[] {
   const issues: WorkspaceValidationIssue[] = [];
   const add = (path: string[], message: string) =>
@@ -260,7 +344,7 @@ export function validateContentWorkingDraft(
         add(["definitions", row.id, "term"], "Terms must be unique.");
       terms.add(row.term);
     }
-  } else {
+  } else if (draft.stage === "resolution_sources") {
     for (const key of ["sources", "condition_sources"] as const) {
       const rows = draft[key];
       if (rows === null) continue;
@@ -291,6 +375,56 @@ export function validateContentWorkingDraft(
           ? "A conditional unit requires condition sources."
           : "Condition sources require a conditional selected unit.",
       );
+  }
+  if (
+    draft.stage === "resolution_criteria" ||
+    draft.stage === "background_information" ||
+    draft.stage === "news_timeline"
+  ) {
+    try {
+      if (draft.stage === "resolution_criteria") {
+        const criteria = ResolutionCriteria.parse(
+          (domain as { resolution_criteria: unknown }).resolution_criteria,
+        );
+        parseConnectorResolutionCriteria(criteria, selectedUnit);
+      } else if (draft.stage === "background_information")
+        ForecastBackgroundInformation.parse(draft.background_information);
+      else
+        ForecastNewsTimeline.parse(
+          (domain as { news_timeline: unknown }).news_timeline,
+        );
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) throw error;
+      for (const issue of error.issues) {
+        let path = issue.path.map(String);
+        if (path[0] === "resolutionCriteria") path.shift();
+        if (
+          draft.stage === "resolution_criteria" &&
+          path[0] !== "resolution_criteria"
+        )
+          path = ["resolution_criteria", ...path];
+        if (draft.stage === "background_information")
+          path = ["background_information"];
+        if (
+          draft.stage === "news_timeline" &&
+          typeof issue.path[1] === "number"
+        )
+          path[1] = draft.items[issue.path[1]]!.id;
+        const message =
+          issue.code === "too_small"
+            ? "Add enough text to complete this field."
+            : issue.code === "invalid_union" && path.at(-1) === "published_at"
+              ? "Enter a publication date (YYYY-MM-DD) or an ISO date-time with its offset."
+              : issue.code === "invalid_format" && path.at(-1) === "url"
+                ? "Enter a valid source URL."
+                : issue.message.includes(
+                      "questionRule.question must exactly match",
+                    )
+                  ? "Use the exact approved question."
+                  : issue.message;
+        add(path.length ? path : [draft.stage], message);
+      }
+    }
   }
   return issues.slice(0, 200);
 }
@@ -348,6 +482,105 @@ export const contentStageDefinitions = {
       })),
     ]),
   },
+  resolution_criteria: {
+    stage: "resolution_criteria",
+    label: "Resolution Criteria",
+    next_stage: "background_information",
+    skill: "define-background-information",
+    fields: [
+      {
+        path: ["resolution_criteria"],
+        label: "Resolution Criteria",
+        control: "group",
+        validation: "ResolutionCriteria",
+      },
+      {
+        path: ["resolution_criteria", "questionRule"],
+        label: "Outcome Rules",
+        control: "group",
+        validation: "QuestionResolutionRule",
+      },
+      {
+        path: ["resolution_criteria", "questionRule", "outcomeCriteria"],
+        label: "Outcome Rules",
+        control: "prose",
+        multiline: true,
+        validation: "QuestionResolutionRule.outcomeCriteria",
+      },
+      {
+        path: ["resolution_criteria", "resolutionSources"],
+        label: "Resolution Sources",
+        control: "prose",
+        multiline: true,
+        validation: "ResolutionCriteria.resolutionSources",
+      },
+      {
+        path: ["resolution_criteria", "resolutionMethod"],
+        label: "Resolution Method",
+        control: "prose",
+        multiline: true,
+        validation: "ResolutionCriteria.resolutionMethod",
+      },
+      {
+        path: ["resolution_criteria", "exceptionAndUnresolvedRules"],
+        label: "Exceptions and Unresolved Outcomes",
+        control: "prose",
+        multiline: true,
+        validation: "ResolutionCriteria.exceptionAndUnresolvedRules",
+      },
+    ],
+  },
+  background_information: {
+    stage: "background_information",
+    label: "Background",
+    next_stage: "news_timeline",
+    skill: null,
+    fields: [
+      {
+        path: ["background_information"],
+        label: "Background",
+        control: "prose",
+        multiline: true,
+        validation: "ForecastBackgroundInformation",
+      },
+    ],
+  },
+  news_timeline: {
+    stage: "news_timeline",
+    label: "News",
+    next_stage: "completed",
+    skill: null,
+    fields: [
+      {
+        path: ["items"],
+        label: "News",
+        control: "rows",
+        maxRows: 12,
+        validation: "ForecastNewsTimeline",
+      },
+      {
+        path: ["items", "*", "unit_number"],
+        label: "News item number",
+        control: "prose",
+        readOnly: true,
+        validation: "ForecastNewsItem.unit_number",
+      },
+      ...["published_at", "publisher", "url", "summary"].map((key) => ({
+        path: ["items", "*", key],
+        label: (
+          {
+            published_at: "Publication Date",
+            publisher: "Publisher",
+            url: "Source URL",
+            summary: "Summary",
+          } as Record<string, string>
+        )[key]!,
+        control: key === "published_at" ? "date" : "prose",
+        multiline: key === "summary",
+        validation: `ForecastNewsItem.${key}`,
+      })),
+    ],
+  },
 } as const;
 export const WorkspaceControlKind = z.enum([
   "prose",
@@ -365,6 +598,7 @@ export const WorkspaceFieldDefinition = z.strictObject({
   validation: z.string().min(1).max(200),
   multiline: z.boolean().optional(),
   internal: z.boolean().optional(),
+  readOnly: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),
   options: z
     .array(
@@ -453,6 +687,7 @@ export const questionStageDefinition = {
 
 export const WorkspaceActionKind = z.enum([
   "reopen",
+  "set_news_choice",
   "edit_draft",
   "submit_proposal",
   "apply_proposal",
@@ -465,6 +700,7 @@ export const WorkspaceActionKind = z.enum([
 ]);
 export const workspaceActionLabels = {
   reopen: "Refresh",
+  set_news_choice: "Choose news",
   edit_draft: "Save draft",
   submit_proposal: "Propose changes",
   apply_proposal: "Apply",
@@ -538,6 +774,12 @@ export const WorkspaceCommand = boundedPayload(
         kind: z.literal("select_and_approve"),
         candidate_id: WorkspaceRowId,
       }),
+      z.strictObject({
+        ...mutation,
+        stage: z.literal("news_timeline"),
+        kind: z.literal("set_news_choice"),
+        choice: NewsChoice.exclude(["undecided"]),
+      }),
       z.strictObject({ ...mutation, kind: z.literal("approve") }),
       z.strictObject({
         ...mutation,
@@ -550,11 +792,7 @@ export const WorkspaceCommand = boundedPayload(
         ...mutation,
         kind: z.literal("continue"),
         approved_revision: WorkspaceRevision,
-        next_stage: z.enum([
-          "defined_terms",
-          "resolution_sources",
-          "resolution_criteria",
-        ]),
+        next_stage: WorkspaceNextStage,
       }),
     ])
     .superRefine((command, ctx) => {
@@ -591,6 +829,7 @@ const nodeBase = {
   maxLength: z.number().int().min(1).max(4000).optional(),
   multiline: z.boolean().optional(),
   internal: z.boolean().optional(),
+  readOnly: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),
 };
 const leaf = z.discriminatedUnion("control", [
@@ -753,8 +992,21 @@ export const ContentWorkspaceSnapshot = boundedPayload(
       forecast_specification_id: ForecastSpecificationId,
       language_code: ForecastSpecificationLanguageCode,
       stage: ContentStage,
+      selected_unit: DraftUnit.optional(),
       revision: WorkspaceRevision,
       prerequisite_revisions: WorkspacePrerequisites,
+      news_choice: NewsChoice.optional(),
+      news_outcome: z
+        .enum([
+          "undecided",
+          "pending",
+          "declined",
+          "unavailable",
+          "empty",
+          "approved",
+          "outdated",
+        ])
+        .optional(),
       draft: ContentWorkingDraft,
       approved: z
         .strictObject({
@@ -841,11 +1093,7 @@ export const WorkspaceCommandResult = boundedPayload(
       status: z.literal("continue_intent"),
       language_code: ForecastSpecificationLanguageCode,
       approved_revision: WorkspaceRevision,
-      next_stage: z.enum([
-        "defined_terms",
-        "resolution_sources",
-        "resolution_criteria",
-      ]),
+      next_stage: WorkspaceNextStage,
       chat_instruction: z.string().min(1).max(4000),
     }),
   ]),

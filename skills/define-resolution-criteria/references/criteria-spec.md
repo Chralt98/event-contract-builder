@@ -3,17 +3,13 @@
 Convert one exact unit, its approved definitions, and its approved source
 hierarchy into deterministic Yes/No rules for its question.
 
-For a conditional unit, first determine whether the declarative condition
-statement holds using its approved condition sources. Submit `conditionCriteria`
-with the exact selected statement, criteria for when it is met and established
-as unmet, and evidence and exception rules for ambiguous or unavailable
-condition evidence. Apply the outcome rule only when the condition is met. When
-it is established as unmet, apply the selected unit's `ifUnmet` disposition,
-including any `customIfUnmet` action; for `resolve-50-50`, state that each
-binary outcome receives an equal 50% share. Make a custom action operational by
+Write one complete user-facing outcome rule in `questionRule.outcomeCriteria`.
+For a conditional unit, include its exact approved condition and the selected
+`ifUnmet` disposition in that rule, using approved condition sources and
+relevant exception handling. For `resolve-50-50`, state that each binary
+outcome receives an equal 50% share. Make a custom action operational by
 specifying any required cutoff, reference value, and source. An unresolved
 condition must follow its stated unresolved treatment, not be assumed unmet.
-Keep both rules within this criteria stage and its single approval.
 
 ## Decision interview
 
@@ -68,14 +64,13 @@ pre-submission response.
 
 ## Criteria
 
-Write `resolvesYesWhen` as the bare, necessary-and-sufficient Yes condition.
-The renderer supplies the standard “This question will resolve as Yes if …”
-sentence and its No complement, so do not repeat that wrapper or another
-“resolve Yes if” phrase in this field. Keep specific source links in
-`evidenceAndSourceRules`. Before submission, check that the wrapper will appear
-only once in the rendered review and correct the payload before submitting if
-needed; submit only the finished criteria rather than announcing a later
-wording correction.
+Write `questionRule.outcomeCriteria` as the complete user-facing outcome rule
+in one open-text field, and complete the other three editable fields:
+`resolutionSources`, `resolutionMethod`, and
+`exceptionAndUnresolvedRules`. Before submission, check all four fields against
+the requirements in [criteria-validation.md](criteria-validation.md). The
+editor's Suggest action uses model judgment; do not use regular expressions or
+fixed-phrase checks for semantic requirements.
 
 Audit the complete criteria, including evidence and exception rules, for
 outcome-bearing terms introduced beyond the selected unit. Define any term
@@ -111,38 +106,37 @@ specify how plausible failures affect resolution, including any fallback or
 unresolved treatment.
 
 Create one `questionRule` object whose `question` exactly matches the selected
-unit question, including its placeholders. Give it one `resolvesYesWhen` and
-one `resolvesNoWhen`; do not create separate question rules for each
+unit question, including its placeholders, and whose `outcomeCriteria` contains
+the complete open-text rule. Do not create separate question rules for each
 placeholder value or range. Use the selected unit's declared values as the
-complete set of possible substitutions, and state one Yes/No rule
-that applies uniformly to every allowed value and meaningful combination.
-Refer to placeholders by their declared names where needed. If a single
-complete rule cannot cover the selected unit uniformly, report that the unit
-needs revision instead of expanding the criteria by value.
+complete set of possible substitutions, and state one rule that applies
+uniformly to every allowed value and meaningful combination. Refer to
+placeholders by their declared names where needed. If a single complete rule
+cannot cover the selected unit uniformly, report that the unit needs revision
+instead of expanding the criteria by value.
 
-`resolvesYesWhen` states every necessary and sufficient condition, including
-the deadline, for all allowed values. `resolvesNoWhen` is only the concise
-complement: No when the complete Yes condition is not met by the deadline. Do
-not repeat negative versions of every Yes element or force a closed criterion
-taxonomy.
+The No complement should say that the outcome resolves No otherwise (or an
+equivalent concise phrase). Do not enumerate additional negative conditions;
+complex exceptions belong in `exceptionAndUnresolvedRules`.
 
 Use plain language for an informed non-specialist, avoiding jargon and
 preferring words to symbols when precision is unchanged. Use LaTeX math
 delimiters for equations when they improve precision: inline `\( ... \)` or
 display `\[ ... \]`. Define variables and units in ordinary text as well.
 
-`evidenceAndSourceRules` identifies controlling public evidence and applies the
-approved hierarchy. Address corrections, revisions, conflicts, fallback,
-non-publication, or methodology changes only when relevant. For estimates that
-may be revised, name the controlling release (such as preliminary or final) or
-the date from which the latest available value counts. For finite numeric or
-date ranges, state what happens if the value falls outside all listed outcomes.
-When a methodology change affects an estimate, specify the controlling method,
-how material changes are handled, and what comparable fallback or unresolved
+`resolutionSources` names only the previously approved public sources that
+control the outcome and states their priority. `resolutionMethod` explains how
+to locate and evaluate the evidence in those sources and apply the outcome
+rule. Address corrections, revisions, conflicts, fallback, non-publication, or
+methodology changes only when relevant. For estimates that may be revised,
+name the controlling release (such as preliminary or final) or the date from
+which the latest available value counts. For finite numeric or date ranges,
+state what happens if the value falls outside all listed outcomes. When a
+methodology change affects an estimate, specify the controlling method, how
+material changes are handled, and what comparable fallback or unresolved
 treatment applies. After relevant sources and fallbacks are exhausted,
 distinguish insufficient or conflicting evidence from evidence that the Yes
-condition failed. In
-`exceptionAndUnresolvedRules`, distinguish
+condition failed. In `exceptionAndUnresolvedRules`, distinguish
 **Ambiguous** cases, where available evidence cannot establish the outcome,
 from **Annulled** cases, where reality is clear but the question or criteria
 cannot fairly map it to an outcome. State the disposition for each; do not
@@ -157,10 +151,10 @@ and exception rules consistently to every allowed value.
 After all interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
 criteria review before approval. Do not show a separate draft. Render the
-question once, followed by its single Yes/No rule. The selected unit already
+question once, followed by its single complete outcome rule. The selected unit already
 displays its placeholders and allowed values; do not duplicate them as
-per-value criteria. Do not append the internal No complement or repeat the
-original unit question inside the criteria.
+per-value criteria. Do not append a second No complement or repeat the original
+unit question inside the criteria.
 
 After explicit approval, approve `resolution_criteria`, then compare the display
 question with the approved criteria. Ask whether to adapt the display question

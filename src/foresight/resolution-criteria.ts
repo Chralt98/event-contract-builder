@@ -19,20 +19,28 @@ const ResolutionText = z
     "Precise resolution text; may contain prose, formulas, source fields, dates, thresholds, classifications, or other question-appropriate logic.",
   );
 
-/** One complete Yes/No rule for the forecast outcome question. */
-export const QuestionResolutionRule = z
-  .object({
-    question: DisplayQuestion.describe(
-      "The exact question being resolved, including its placeholders; this single rule applies uniformly to every allowed value and combination.",
+const QuestionIdentity = DisplayQuestion.describe(
+  "The exact question being resolved, including its placeholders.",
+);
+
+/** The current open-text rule plus the legacy structured form accepted for older clients. */
+export const QuestionResolutionRule = z.union([
+  z.strictObject({
+    question: QuestionIdentity,
+    outcomeCriteria: ResolutionText.describe(
+      "Complete user-facing outcome criteria prose, including the Yes rule, the concise No complement, relevant resolution deadline, and source references. The wording is open; do not require a fixed lead-in phrase.",
     ),
+  }),
+  z.strictObject({
+    question: QuestionIdentity,
     resolvesYesWhen: ResolutionText.describe(
       "Necessary and sufficient conditions under which this question resolves Yes for every allowed value and combination.",
     ),
     resolvesNoWhen: ResolutionText.describe(
-      "Concise complement of the complete Yes rule for every allowed value and combination: the question resolves No when the necessary-and-sufficient Yes condition is not met by the deadline. Do not enumerate the Yes elements again as separate negative conditions.",
+      "Concise complement of the complete Yes rule for every allowed value and combination: the question resolves No when the necessary-and-sufficient Yes condition is not met by the deadline.",
     ),
-  })
-  .strict();
+  }),
+]);
 
 /**
  * The schema structures only the universal parts of resolution. The actual
@@ -40,15 +48,22 @@ export const QuestionResolutionRule = z
  * occurrences, rankings, calculations, classifications, combinations, or any
  * other source-grounded method that fits the question.
  */
-const BaseResolutionCriteria = z.object({
+const sharedResolutionCriteria = {
   questionRule: QuestionResolutionRule.describe(
-    "One complete Yes/No rule for the exact question. Apply it to every allowed placeholder substitution; do not turn variable values into answer choices within one multi-outcome question.",
-  ),
-  evidenceAndSourceRules: ResolutionText.describe(
-    "What public evidence determines the outcome and how the approved source hierarchy is applied, including corrections, revisions, conflicts, or unavailable evidence when relevant.",
+    "One complete outcome rule for the exact question. Apply it to every allowed placeholder substitution; do not turn variable values into answer choices within one multi-outcome question.",
   ),
   exceptionAndUnresolvedRules: ResolutionText.describe(
     "How applicable boundary cases, ties, multiple or absent matches, postponements, cancellations, and otherwise unresolved states are handled; include only relevant cases.",
+  ),
+};
+
+const CurrentResolutionCriteria = z.strictObject({
+  ...sharedResolutionCriteria,
+  resolutionSources: ResolutionText.describe(
+    "Which approved resolution sources govern the outcome and their applicable priority. Refer only to the previously approved source records; do not introduce or change sources here.",
+  ),
+  resolutionMethod: ResolutionText.describe(
+    "How to locate, read, and apply evidence from the approved resolution sources, including relevant queries, fields, releases, corrections, and the resolution deadline.",
   ),
 });
 
@@ -72,13 +87,22 @@ const ConditionResolutionCriteria = z
   })
   .strict();
 
-export const ResolutionCriteria = BaseResolutionCriteria.extend({
-  conditionCriteria: ConditionResolutionCriteria.optional().describe(
-    "Separate rule for deciding whether the selected unit's declarative prerequisite is met or established as unmet; required only for a conditional unit.",
+/** Older approved criteria used one combined field for sources and method. */
+const LegacyResolutionCriteria = z.object({
+  ...sharedResolutionCriteria,
+  evidenceAndSourceRules: ResolutionText.describe(
+    "Legacy combined source and method instructions retained for older criteria.",
   ),
-}).describe(
-  "Source-grounded criteria for the selected outcome and, when present, its prerequisite.",
-);
+  conditionCriteria: ConditionResolutionCriteria.optional().describe(
+    "Legacy prerequisite criteria retained when reading old data.",
+  ),
+});
+
+export const ResolutionCriteria = z
+  .union([CurrentResolutionCriteria, LegacyResolutionCriteria])
+  .describe(
+    "Source-grounded criteria for the selected outcome and, when present, its prerequisite.",
+  );
 
 /** The open domain shape is already safe for connector JSON schemas. */
 export const ConnectorResolutionCriteria = ResolutionCriteria;
@@ -98,32 +122,6 @@ const ResolutionCriteriaForUnit = z
         path: ["resolutionCriteria", "questionRule", "question"],
         message:
           "questionRule.question must exactly match selectedUnit.question.",
-      });
-    }
-    if (selectedUnit.condition && !resolutionCriteria.conditionCriteria) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolutionCriteria", "conditionCriteria"],
-        message: "Conditional units require conditionCriteria.",
-      });
-    }
-    if (!selectedUnit.condition && resolutionCriteria.conditionCriteria) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolutionCriteria", "conditionCriteria"],
-        message: "Unconditional units cannot have conditionCriteria.",
-      });
-    }
-    if (
-      selectedUnit.condition &&
-      resolutionCriteria.conditionCriteria?.statement !==
-        selectedUnit.condition.statement
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolutionCriteria", "conditionCriteria", "statement"],
-        message:
-          "conditionCriteria.statement must exactly match selectedUnit.condition.statement.",
       });
     }
   });

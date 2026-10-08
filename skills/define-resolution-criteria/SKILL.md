@@ -9,12 +9,16 @@ Read [references/criteria-spec.md](references/criteria-spec.md) before asking
 questions or drafting criteria. It contains the adapted Grilling interview,
 coverage rules, payload semantics, rendering, and retry behavior. The adaptation
 is attributed in [THIRD_PARTY_LICENSES.md](../../THIRD_PARTY_LICENSES.md).
+Before submission, read and apply
+[references/criteria-validation.md](references/criteria-validation.md) to the
+complete four-field criteria candidate.
 
 1. Require one exact selected unit with approved definitions and sources.
 2. Complete every frontier round in the reference before drafting. Each round
    is the final user-visible response for that turn.
-3. Once all decisions are settled, construct the criteria and call
-   `submit_resolution_criteria` once. Do not show a pre-submission draft.
+3. Once all decisions are settled, construct and validate the criteria, then
+   call `submit_resolution_criteria` once. Resolve any missing material choice
+   in the interview first. Do not show a pre-submission draft.
 4. Present the rendered submission as the single criteria review. After
    explicit approval, approve `resolution_criteria`, apply the reference's post-approval question
    alignment check, and continue with `define-background-information`.

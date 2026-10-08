@@ -184,6 +184,7 @@ export const resolutionSourceShape = {
 };
 
 export const resolutionCriteriaShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
     .number()
@@ -201,6 +202,7 @@ export const resolutionCriteriaShape = {
 };
 
 export const backgroundInformationShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
     .number()
@@ -216,6 +218,7 @@ export const backgroundInformationShape = {
 };
 
 export const newsTimelineShape = {
+  ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
     .number()
@@ -280,12 +283,15 @@ export const resolutionSourceOutputSchema = workflowOutput({
 });
 export const resolutionCriteriaOutputSchema = workflowOutput({
   ...resolutionCriteriaShape,
+  workspace: ContentWorkspaceSnapshot,
 });
 export const backgroundInformationOutputSchema = workflowOutput({
   ...backgroundInformationShape,
+  workspace: ContentWorkspaceSnapshot,
 });
 export const newsTimelineOutputSchema = workflowOutput({
   ...newsTimelineShape,
+  workspace: ContentWorkspaceSnapshot,
 });
 export const selectedUnitOutputSchema = z
   .object({
@@ -300,230 +306,279 @@ export const selectedUnitOutputSchema = z
   .strict();
 
 /** Client-visible MCP contract. Execution is provided by the private backend. */
-export const foresightTools = {
-  create_question_workspace: {
-    title: "Create Question Workspace",
-    description:
-      "Start an empty resumable question draft with an immutable language. Saving and approving are separate operations.",
-    inputSchema: { language_code: ForecastSpecificationLanguageCode },
-    outputSchema: z.strictObject({
-      workspace: QuestionWorkspaceSnapshot,
-      review_markdown: ReviewMarkdown,
-    }),
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: false,
-    },
-  },
-  execute_workspace_command: {
-    title: "Workspace Command",
-    description:
-      "Reopen or execute a revision-bound Question, Terms, or Sources command. Edits and proposal application do not approve content.",
-    inputSchema: WorkspaceCommand,
-    outputSchema: z.strictObject({
-      result: WorkspaceCommandResult,
-      review_markdown: ReviewMarkdown,
-    }),
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  get_forecast_stage_review: {
-    title: "Get Forecast Stage Review",
-    description:
-      "Open an editable stage or retrieve a saved later-stage review with its current approval bindings. Opening an untouched editable stage saves an incomplete draft without approval.",
-    inputSchema: {
-      forecast_specification_id: ForecastSpecificationId,
-      stage: approvalStageSchema,
-    },
-    outputSchema: z.strictObject({
-      forecast_specification_id: ForecastSpecificationId,
-      stage: approvalStageSchema,
-      workspace: WorkspaceSnapshot.optional(),
-      ...workspaceRevisionBindingShape,
-      review_markdown: ReviewMarkdown,
-    }),
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  approve_forecast_specification: {
-    title: "Approve Forecast Specification Stage",
-    description:
-      "Approve one pending workflow stage after the user explicitly accepts its rendered review. Requires the exact revision and prerequisite bindings from its canonical review.",
-    inputSchema: approvalShape,
-    outputSchema: approvalOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  get_approved_forecast_specification: {
-    title: "Get Approved Forecast Specification",
-    description:
-      "Retrieve the approved stages of one Forecast Specification. Omit the ID only for the current session's most recently updated record; provide it for an explicit HTTP handoff.",
-    inputSchema: approvedForecastSpecificationLookupShape,
-    outputSchema: approvedForecastSpecificationRecallSchema,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  delete_forecast_specification: {
-    title: "Delete Forecast Specification",
-    description:
-      "Immediately and permanently delete one stored Forecast Specification. Call only when the user explicitly asks to delete it and supplies its forecast specification ID.",
-    inputSchema: deleteForecastSpecificationShape,
-    outputSchema: deleteForecastSpecificationOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  get_plugin_feedback_step: {
-    title: "Get Plugin Feedback Step",
-    description:
-      "Return canonical Markdown for the feedback channel menu or private-submission privacy notice. Call after the user chooses feedback or the private channel.",
-    inputSchema: pluginFeedbackStepShape,
-    outputSchema: pluginFeedbackStepOutputSchema,
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_plugin_feedback: {
-    title: "Submit Plugin Feedback",
-    description:
-      "Store feedback the user explicitly chose to submit about Bleavit Foresight. Stores only the submitted text and a deletion receipt for 180 days.",
-    inputSchema: submitPluginFeedbackShape,
-    outputSchema: submitPluginFeedbackOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: false,
-      idempotentHint: false,
-      openWorldHint: true,
-    },
-  },
-  delete_plugin_feedback: {
-    title: "Delete Plugin Feedback",
-    description:
-      "Immediately delete one private feedback submission. Call only when the user explicitly asks and supplies its feedback receipt.",
-    inputSchema: deletePluginFeedbackShape,
-    outputSchema: deletePluginFeedbackOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_defined_terms: {
-    title: "Submit Defined Terms",
-    description:
-      "Validate and submit a complete definition map for an approved selected unit. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
-    inputSchema: definedTermsShape,
-    outputSchema: definedTermsOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_drafted_questions: {
-    title: "Submit Drafted Questions",
-    description:
-      "Validate, store, and render selectable forecast units, including optional prerequisite conditions. This starts a record with an immutable specification language.",
-    inputSchema: draftedQuestionsShape,
-    outputSchema: draftedQuestionsOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_resolution_source: {
-    title: "Resolution Source Hierarchy",
-    description:
-      "Validate and submit complete source hierarchies after definitions are approved. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
-    inputSchema: resolutionSourceShape,
-    outputSchema: resolutionSourceOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_resolution_criteria: {
-    title: "Resolution Criteria",
-    description:
-      "Validate and store source-grounded outcome criteria and, for conditional units, prerequisite criteria after source approval.",
-    inputSchema: resolutionCriteriaShape,
-    outputSchema: resolutionCriteriaOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_background_information: {
-    title: "Context and Background Information",
-    description:
-      "Validate, store, and render pending neutral background information after criteria approval.",
-    inputSchema: backgroundInformationShape,
-    outputSchema: backgroundInformationOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_news_timeline: {
-    title: "Submit Relevant News Timeline",
-    description:
-      "Validate, store, and render an optional newest-first news timeline after explicit opt-in and background approval. Use an empty timeline only to review removal of previously approved news.",
-    inputSchema: newsTimelineShape,
-    outputSchema: newsTimelineOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
-  submit_selected_unit: {
-    title: "Submit Selected Unit",
-    description:
-      "Save a selected unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
-    inputSchema: selectedUnitShape,
-    outputSchema: selectedUnitOutputSchema,
-    annotations: {
-      readOnlyHint: false,
-      destructiveHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
+const create_question_workspaceTool = {
+  title: "Create Question Workspace",
+  description:
+    "Start an empty resumable question draft with an immutable language. Saving and approving are separate operations.",
+  inputSchema: { language_code: ForecastSpecificationLanguageCode },
+  outputSchema: z.strictObject({
+    workspace: QuestionWorkspaceSnapshot,
+    review_markdown: ReviewMarkdown,
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
   },
 } as const;
+
+const execute_workspace_commandTool = {
+  title: "Workspace Command",
+  description:
+    "Reopen or execute a revision-bound command for any workflow stage. Edits and proposal application do not approve content.",
+  inputSchema: WorkspaceCommand,
+  outputSchema: z.strictObject({
+    result: WorkspaceCommandResult,
+    review_markdown: ReviewMarkdown,
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const get_forecast_stage_reviewTool = {
+  title: "Get Forecast Stage Review",
+  description:
+    "Open any workflow stage with its current approval bindings. Opening an untouched editable stage saves an incomplete draft without approval.",
+  inputSchema: {
+    forecast_specification_id: ForecastSpecificationId,
+    stage: approvalStageSchema,
+  },
+  outputSchema: z.strictObject({
+    forecast_specification_id: ForecastSpecificationId,
+    stage: approvalStageSchema,
+    workspace: WorkspaceSnapshot.optional(),
+    ...workspaceRevisionBindingShape,
+    review_markdown: ReviewMarkdown,
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const approve_forecast_specificationTool = {
+  title: "Approve Forecast Specification Stage",
+  description:
+    "Approve one pending workflow stage after the user explicitly accepts its rendered review. Requires the exact revision and prerequisite bindings from its canonical review.",
+  inputSchema: approvalShape,
+  outputSchema: approvalOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const get_approved_forecast_specificationTool = {
+  title: "Get Approved Forecast Specification",
+  description:
+    "Retrieve the approved stages of one Forecast Specification. Omit the ID only for the current session's most recently updated record; provide it for an explicit HTTP handoff.",
+  inputSchema: approvedForecastSpecificationLookupShape,
+  outputSchema: approvedForecastSpecificationRecallSchema,
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const delete_forecast_specificationTool = {
+  title: "Delete Forecast Specification",
+  description:
+    "Immediately and permanently delete one stored Forecast Specification. Call only when the user explicitly asks to delete it and supplies its forecast specification ID.",
+  inputSchema: deleteForecastSpecificationShape,
+  outputSchema: deleteForecastSpecificationOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const get_plugin_feedback_stepTool = {
+  title: "Get Plugin Feedback Step",
+  description:
+    "Return canonical Markdown for the feedback channel menu or private-submission privacy notice. Call after the user chooses feedback or the private channel.",
+  inputSchema: pluginFeedbackStepShape,
+  outputSchema: pluginFeedbackStepOutputSchema,
+  annotations: {
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_plugin_feedbackTool = {
+  title: "Submit Plugin Feedback",
+  description:
+    "Store feedback the user explicitly chose to submit about Bleavit Foresight. Stores only the submitted text and a deletion receipt for 180 days.",
+  inputSchema: submitPluginFeedbackShape,
+  outputSchema: submitPluginFeedbackOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: true,
+  },
+} as const;
+
+const delete_plugin_feedbackTool = {
+  title: "Delete Plugin Feedback",
+  description:
+    "Immediately delete one private feedback submission. Call only when the user explicitly asks and supplies its feedback receipt.",
+  inputSchema: deletePluginFeedbackShape,
+  outputSchema: deletePluginFeedbackOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_defined_termsTool = {
+  title: "Submit Defined Terms",
+  description:
+    "Validate and submit a complete definition map for an approved selected unit. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
+  inputSchema: definedTermsShape,
+  outputSchema: definedTermsOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_drafted_questionsTool = {
+  title: "Submit Drafted Questions",
+  description:
+    "Validate, store, and render selectable forecast units, including optional prerequisite conditions. This starts a record with an immutable specification language.",
+  inputSchema: draftedQuestionsShape,
+  outputSchema: draftedQuestionsOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_resolution_sourceTool = {
+  title: "Resolution Source Hierarchy",
+  description:
+    "Validate and submit complete source hierarchies after definitions are approved. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
+  inputSchema: resolutionSourceShape,
+  outputSchema: resolutionSourceOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_resolution_criteriaTool = {
+  title: "Resolution Criteria",
+  description:
+    "Validate and store source-grounded outcome criteria and, for conditional units, prerequisite criteria after source approval.",
+  inputSchema: resolutionCriteriaShape,
+  outputSchema: resolutionCriteriaOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_background_informationTool = {
+  title: "Context and Background Information",
+  description:
+    "Validate, store, and render pending neutral background information after criteria approval.",
+  inputSchema: backgroundInformationShape,
+  outputSchema: backgroundInformationOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_news_timelineTool = {
+  title: "Submit Relevant News Timeline",
+  description:
+    "Validate, store, and render an optional newest-first news timeline after explicit opt-in and background approval. Use an empty timeline only to review removal of previously approved news.",
+  inputSchema: newsTimelineShape,
+  outputSchema: newsTimelineOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const submit_selected_unitTool = {
+  title: "Submit Selected Unit",
+  description:
+    "Save a selected unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
+  inputSchema: selectedUnitShape,
+  outputSchema: selectedUnitOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+export const foresightTools: {
+  readonly create_question_workspace: typeof create_question_workspaceTool;
+  readonly execute_workspace_command: typeof execute_workspace_commandTool;
+  readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
+  readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
+  readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
+  readonly delete_forecast_specification: typeof delete_forecast_specificationTool;
+  readonly get_plugin_feedback_step: typeof get_plugin_feedback_stepTool;
+  readonly submit_plugin_feedback: typeof submit_plugin_feedbackTool;
+  readonly delete_plugin_feedback: typeof delete_plugin_feedbackTool;
+  readonly submit_defined_terms: typeof submit_defined_termsTool;
+  readonly submit_drafted_questions: typeof submit_drafted_questionsTool;
+  readonly submit_resolution_source: typeof submit_resolution_sourceTool;
+  readonly submit_resolution_criteria: typeof submit_resolution_criteriaTool;
+  readonly submit_background_information: typeof submit_background_informationTool;
+  readonly submit_news_timeline: typeof submit_news_timelineTool;
+  readonly submit_selected_unit: typeof submit_selected_unitTool;
+} = {
+  create_question_workspace: create_question_workspaceTool,
+  execute_workspace_command: execute_workspace_commandTool,
+  get_forecast_stage_review: get_forecast_stage_reviewTool,
+  approve_forecast_specification: approve_forecast_specificationTool,
+  get_approved_forecast_specification: get_approved_forecast_specificationTool,
+  delete_forecast_specification: delete_forecast_specificationTool,
+  get_plugin_feedback_step: get_plugin_feedback_stepTool,
+  submit_plugin_feedback: submit_plugin_feedbackTool,
+  delete_plugin_feedback: delete_plugin_feedbackTool,
+  submit_defined_terms: submit_defined_termsTool,
+  submit_drafted_questions: submit_drafted_questionsTool,
+  submit_resolution_source: submit_resolution_sourceTool,
+  submit_resolution_criteria: submit_resolution_criteriaTool,
+  submit_background_information: submit_background_informationTool,
+  submit_news_timeline: submit_news_timelineTool,
+  submit_selected_unit: submit_selected_unitTool,
+};
 
 export type ForesightToolName = keyof typeof foresightTools;

@@ -13,6 +13,8 @@ import {
   workspaceReviewEnvelopeSchema,
   approvedForecastSpecificationRecallSchema,
   contentStageDefinitions,
+  validateContentWorkingDraft,
+  contentDomainInput,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -620,4 +622,125 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
       { ...source, rank: 2, name: "Independent Agency" },
     ]).success,
   ).toBe(false);
+});
+
+test("Criteria and News workspace approval reuse canonical identity and ordering validators", () => {
+  const unit = {
+    question: "Will Berlin report rain tomorrow?",
+    condition: {
+      statement: "The report is published",
+      ifUnmet: "annulled" as const,
+    },
+  };
+  const criteria = {
+    stage: "resolution_criteria" as const,
+    resolution_criteria: {
+      questionRule: {
+        question: unit.question,
+        outcomeCriteria:
+          "This market settles Yes if the approved daily report records precipitation by the resolution deadline; otherwise, it settles No.",
+      },
+      resolutionSources: "Use the approved daily report.",
+      resolutionMethod:
+        "Read the report for the target date and compare its measured value to the outcome criteria.",
+      exceptionAndUnresolvedRules: "Annul without evidence.",
+    },
+  };
+  expect(validateContentWorkingDraft(criteria, true, unit)).toEqual([]);
+  const mismatch = structuredClone(criteria);
+  mismatch.resolution_criteria.questionRule.question =
+    "Will Paris report rain tomorrow?";
+  expect(
+    validateContentWorkingDraft(mismatch, true, unit).length,
+  ).toBeGreaterThan(0);
+  const news = {
+    stage: "news_timeline" as const,
+    items: [
+      {
+        id: id(),
+        unit_number: 7,
+        published_at: "2026-10-07T11:00:00+02:00",
+        publisher: "Agency",
+        url: "https://example.com/update",
+        summary: "The agency published an updated report.",
+      },
+      {
+        id: id(),
+        unit_number: 3,
+        published_at: "2026-10-06",
+        publisher: "Agency",
+        url: "https://example.com/report",
+        summary: "The agency published its initial report.",
+      },
+    ],
+  };
+  expect(validateContentWorkingDraft(news)).toEqual([]);
+  expect(contentDomainInput(news).news_timeline!.items[0]).not.toHaveProperty(
+    "id",
+  );
+  news.items.reverse();
+  expect(validateContentWorkingDraft(news).length).toBeGreaterThan(0);
+  news.items[0]!.published_at = "";
+  expect(validateContentWorkingDraft(news).length).toBeGreaterThan(0);
+});
+
+test("Criteria keeps the complete open-text outcome rule without requiring a fixed lead-in", () => {
+  const draft = {
+    stage: "resolution_criteria" as const,
+    resolution_criteria: {
+      questionRule: {
+        question: "Will Berlin report rain tomorrow?",
+        outcomeCriteria:
+          "This market settles Yes if the Weather Service reports rain by October 22. Otherwise, it resolves No.",
+      },
+      resolutionSources: "Use the official report.",
+      resolutionMethod:
+        "Read the published value for the target date and apply the outcome criteria.",
+      exceptionAndUnresolvedRules: "Annul if evidence is unavailable.",
+    },
+  };
+  expect(contentDomainInput(draft).resolution_criteria?.questionRule).toEqual(
+    draft.resolution_criteria.questionRule,
+  );
+});
+
+test("Criteria exposes four editable outcome, source, method, and exception fields", () => {
+  expect(contentStageDefinitions.resolution_criteria.label).toBe(
+    "Resolution Criteria",
+  );
+  expect(contentStageDefinitions.resolution_criteria.fields[0]?.label).toBe(
+    "Resolution Criteria",
+  );
+  expect(
+    contentStageDefinitions.resolution_criteria.fields.find(
+      (field) => field.path.at(-1) === "questionRule",
+    )?.label,
+  ).toBe("Outcome Rules");
+  const fields = contentStageDefinitions.resolution_criteria.fields.filter(
+    (field) => field.control === "prose",
+  );
+  expect(fields.map((field) => field.label)).toEqual([
+    "Outcome Rules",
+    "Resolution Sources",
+    "Resolution Method",
+    "Exceptions and Unresolved Outcomes",
+  ]);
+  expect(
+    fields.every((field) => !("readOnly" in field) || !field.readOnly),
+  ).toBe(true);
+});
+
+test("News timeline fields use title case for Publication Date", () => {
+  expect(contentStageDefinitions.news_timeline.fields[0]?.label).toBe("News");
+  expect(
+    contentStageDefinitions.news_timeline.fields
+      .filter((field) => field.path.length > 2)
+      .map((field) => field.label),
+  ).toEqual([
+    "News item number",
+    "Publication Date",
+    "Publisher",
+    "Source URL",
+    "Summary",
+  ]);
 });
