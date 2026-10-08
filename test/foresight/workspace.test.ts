@@ -582,6 +582,11 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
       .filter((field) => field.control === "rows")
       .map((field) => ("maxRows" in field ? field.maxRows : undefined)),
   ).toEqual([4, 4]);
+  expect(
+    contentStageDefinitions.resolution_sources.fields
+      .filter((field) => field.control === "rows")
+      .map((field) => field.label),
+  ).toEqual(["Resolution Sources", "Condition Sources"]);
   const sourceFieldLabels = contentStageDefinitions.resolution_sources.fields
     .filter((field) => field.control !== "rows")
     .map((field) => field.label);

@@ -175,7 +175,7 @@ describe("public forecast interface", () => {
 
   test("one source name can identify a social account and its platform", () => {
     const accountSource = {
-      id: "truth-social-account",
+      id: "example-social-account",
       rank: 1,
       name: "Official account on a social platform",
     };

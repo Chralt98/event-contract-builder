@@ -330,7 +330,7 @@ export const contentStageDefinitions = {
     fields: ["sources", "condition_sources"].flatMap((key) => [
       {
         path: [key],
-        label: key === "sources" ? "Outcome Sources" : "Condition Sources",
+        label: key === "sources" ? "Resolution Sources" : "Condition Sources",
         control: "rows",
         maxRows: MAX_SOURCE_HIERARCHY_ENTRIES,
         validation: "SourceHierarchy",
