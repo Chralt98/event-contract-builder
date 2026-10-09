@@ -832,9 +832,9 @@ describe("public forecast interface", () => {
       " ",
     );
     expect(normalizedInstructions).toContain(
-      "Only after explicit user confirmation of a displayed export",
+      "Exporting saves the displayed approved revision as complete",
     );
-    expect(normalizedInstructions).toContain("displayed_revision");
+    expect(normalizedInstructions).not.toContain("kind: confirm");
     expect(normalizedInstructions).toContain(
       "without carrying over its predecessor's ID or approvals",
     );

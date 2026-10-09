@@ -14,35 +14,19 @@ export const CompletionCommand = z.discriminatedUnion("kind", [
     formats: z.array(ExportFormat).min(1).max(3),
     expected_revision: WorkspaceRevision,
   }),
-  z.strictObject({
-    kind: z.literal("confirm"),
-    forecast_specification_id: ForecastSpecificationId,
-    displayed_revision: WorkspaceRevision.describe(
-      "Revision returned with a complete export displayed to the user; confirm only on explicit user approval.",
-    ),
-  }),
 ]);
 export type CompletionCommand = z.infer<typeof CompletionCommand>;
 export const CompletionSnapshot = z.strictObject({
   forecast_specification_id: ForecastSpecificationId,
   revision: WorkspaceRevision,
   ready: z.boolean(),
-  confirmed: z.boolean(),
-  can_confirm: z.boolean(),
+  complete: z.boolean(),
   news_available: z.boolean(),
   blocked_reason: z.string().optional(),
   actions: z
     .array(
       z.strictObject({
-        kind: z.enum([
-          "export",
-          "news",
-          "feedback",
-          "confirm",
-          "start_new",
-          "translate",
-          "delete",
-        ]),
+        kind: z.enum(["export", "feedback", "start_new"]),
         label: z.string(),
         enabled: z.boolean(),
         format: ExportFormat.optional(),

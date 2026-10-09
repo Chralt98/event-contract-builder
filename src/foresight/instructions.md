@@ -170,7 +170,9 @@ wait for the user's plain-text selection.
 
 ## Completion and exports
 
-After background approval, call `execute_completion_command` with `kind: reopen`
+After background approval, open the `news_timeline` workspace and let the user
+choose whether to include optional news. Once that choice and any opted-in
+timeline are approved, call `execute_completion_command` with `kind: reopen`
 to obtain the completion menu and current revision. Its available actions derive
 from saved approvals and the optional-news choice; accept one or several numbers
 from that menu. News research still requires explicit opt-in. Feedback remains
@@ -178,25 +180,17 @@ available after prior submissions; invite additional feedback when selected agai
 
 For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
 `kind: export`, the requested `formats`, and the reopened `expected_revision`.
-Present its complete `review_markdown` verbatim, including every labeled fenced
-export, feedback invitation, and correctness question. The server excludes
-internal metadata and outdated approvals. Route requested changes through the
-affected stage and its approvals, then display new exports. Edits invalidate an
-earlier export confirmation.
+Present its complete `review_markdown` verbatim. Exporting saves the displayed
+approved revision as complete. The server excludes internal metadata and
+outdated approvals. Route requested changes through the affected stage and its
+approvals, then display new exports.
 
 If feedback was selected with exports, display the exports first and then offer
-the feedback channels without a redundant yes-or-no prompt. After the feedback
-choice, ask whether the displayed specification looks correct. If feedback was
-selected alone, finish that flow and reopen the completion menu; do not request
-export confirmation before displaying a complete export.
-
-Only after explicit user confirmation of a displayed export, call
-`execute_completion_command` with `kind: confirm` and that export's
-`displayed_revision`. Present its canonical completion review, including the
-additional feedback invitation and offer to start another specification. On a
-stale revision, display a current export before asking for confirmation again.
-Start another or translated specification as a new record in the requested
-language, without carrying over its predecessor's ID or approvals.
+the feedback channels without a redundant yes-or-no prompt. If feedback was
+selected alone, finish that flow and reopen the completion menu. A requested
+specification change goes through the affected stage and its approvals before a
+new export is generated. Start another specification as a new record in the
+requested language, without carrying over its predecessor's ID or approvals.
 
 ### Optional product feedback
 

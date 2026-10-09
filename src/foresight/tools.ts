@@ -309,7 +309,7 @@ export const selectedUnitOutputSchema = z
 const execute_completion_commandTool = {
   title: "Forecast Completion",
   description:
-    "Review completion or display approved exports of the current saved specification. Confirm only after the user explicitly approves a displayed export of the same revision.",
+    "Review completion or display approved exports of the current saved specification. Exporting saves that approved revision as complete.",
   inputSchema: CompletionCommand,
   outputSchema: CompletionOutput,
   annotations: {
