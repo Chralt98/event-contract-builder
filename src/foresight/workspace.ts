@@ -31,6 +31,7 @@ export const WorkspaceRevision = z
 export const WorkspaceRowId = z.uuid();
 const text = z.string().max(4000);
 const resolutionCriteriaText = z.string().max(16_000);
+const presentationText = z.string().max(16_000);
 export const workspacePayloadLimitBytes = 256 * 1024;
 export const workspaceReviewLimitBytes = 2 * 1024 * 1024;
 function boundedPayload<T extends z.ZodType>(
@@ -499,6 +500,7 @@ export const contentStageDefinitions = {
         label: "Resolution Criteria",
         control: "prose",
         multiline: true,
+        maxLength: 16_000,
         validation: "ResolutionCriteria.criteria",
       },
     ],
@@ -799,14 +801,18 @@ export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
 const nodeBase = {
   path: WorkspaceFieldPath,
   label: z.string().min(1).max(200),
-  maxLength: z.number().int().min(1).max(4000).optional(),
+  maxLength: z.number().int().min(1).max(16_000).optional(),
   multiline: z.boolean().optional(),
   internal: z.boolean().optional(),
   readOnly: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),
 };
 const leaf = z.discriminatedUnion("control", [
-  z.strictObject({ ...nodeBase, control: z.literal("prose"), value: text }),
+  z.strictObject({
+    ...nodeBase,
+    control: z.literal("prose"),
+    value: presentationText,
+  }),
   z.strictObject({
     ...nodeBase,
     control: z.literal("date"),

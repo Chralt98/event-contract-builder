@@ -32,19 +32,9 @@ const input = {
 };
 
 const criteria = {
-  questionRule: {
-    question: input.selected_unit.question,
-    resolvesYesWhen:
-      "The approved source reports that measurable rainfall occurred before the question deadline.",
-    resolvesNoWhen:
-      "The approved source reports no measurable rainfall by the deadline, or the Yes condition is otherwise not met.",
-  },
-  resolutionSources:
-    "Use the approved national weather service and the independent daily report in that priority order.",
-  resolutionMethod:
-    "Use the highest-ranked approved source that publishes a result by the deadline. Apply an official correction published before resolution.",
-  exceptionAndUnresolvedRules:
-    "If no approved source can establish the result by the resolution deadline, apply the platform's documented unresolved-outcome policy.",
+  question: input.selected_unit.question,
+  criteria:
+    "The approved source reports measurable rainfall for the target date by the deadline. Otherwise it resolves No; use the approved source hierarchy and document unresolved evidence.",
 };
 
 const backgroundInformation =
@@ -588,7 +578,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("resolution criteria use open question rules instead of closed criterion kinds or comparators", () => {
+  test("resolution criteria accept one complete text bound to the approved question", () => {
     const schema = z.object(
       foresightTools.submit_resolution_criteria.inputSchema,
     );
@@ -602,72 +592,15 @@ describe("public forecast interface", () => {
     };
 
     expect(schema.safeParse(payload).success).toBe(true);
-    const parsedCriteria = parseConnectorResolutionCriteria(
-      criteria,
-      input.selected_unit,
-    );
     expect(
-      "question" in parsedCriteria
-        ? parsedCriteria.question
-        : parsedCriteria.questionRule.question,
-    ).toBe(input.selected_unit.question);
-
-    const openTextCriteria = {
-      ...criteria,
-      questionRule: {
-        question: input.selected_unit.question,
-        outcomeCriteria:
-          "This market resolves Yes if the published value meets the deadline. Otherwise, it resolves No.",
-      },
-    };
-    expect(
-      schema.safeParse({ ...payload, resolution_criteria: openTextCriteria })
-        .success,
-    ).toBe(true);
-    const parsedOpenText = parseConnectorResolutionCriteria(
-      openTextCriteria,
-      input.selected_unit,
-    );
-    expect(
-      "questionRule" in parsedOpenText ? parsedOpenText.questionRule : null,
-    ).toEqual(openTextCriteria.questionRule);
-
-    const unifiedCriteria = {
-      question: input.selected_unit.question,
-      criteria:
-        "This market resolves Yes if the published value meets the condition by October 5, 2026 at 23:59 UTC. Otherwise, it resolves No. Use the approved primary source and its fallback; read the final corrected report and mark conflicting evidence Ambiguous.",
-    };
-    expect(
-      schema.safeParse({ ...payload, resolution_criteria: unifiedCriteria })
-        .success,
-    ).toBe(true);
-    expect(
-      parseConnectorResolutionCriteria(unifiedCriteria, input.selected_unit),
-    ).toEqual(unifiedCriteria);
-
-    const rankingCriteria = {
-      ...criteria,
-      questionRule: {
-        question: input.selected_unit.question,
-        resolvesYesWhen:
-          "Resolve Yes when the approved source ranks the named item first after applying its own published tie-break procedure.",
-        resolvesNoWhen:
-          "Resolve No when the named item is not ranked first under that procedure.",
-      },
-    };
-    expect(
-      schema.safeParse({
-        ...payload,
-        resolution_criteria: rankingCriteria,
-      }).success,
-    ).toBe(true);
-
+      parseConnectorResolutionCriteria(criteria, input.selected_unit),
+    ).toEqual(criteria);
     expect(
       schema.safeParse({
         ...payload,
         resolution_criteria: {
-          ...criteria,
-          questionRule: undefined,
+          questionRule: { question: input.selected_unit.question },
+          evidenceAndSourceRules: "Old structured criteria",
         },
       }).success,
     ).toBe(false);
@@ -675,16 +608,14 @@ describe("public forecast interface", () => {
       schema.safeParse({
         ...payload,
         resolution_criteria: {
-          criterion: {
-            kind: "threshold",
-            comparator: "greater-than",
-          },
+          question: input.selected_unit.question,
+          criteria: "",
         },
       }).success,
     ).toBe(false);
   });
 
-  test("one Yes/No rule covers every placeholder substitution", () => {
+  test("one complete criteria text applies to every placeholder substitution", () => {
     const scalarUnit = {
       question: "Will the value be <range>?",
       variables: [
@@ -703,52 +634,23 @@ describe("public forecast interface", () => {
         },
       ],
     };
-    const makeCriteria = (question: string) => ({
-      questionRule: {
-        question,
-        resolvesYesWhen:
-          "The approved public evidence satisfies the exact condition stated by this question.",
-        resolvesNoWhen:
-          "The approved public evidence establishes the complementary outcome or the Yes condition is not met by the deadline.",
-      },
-      resolutionSources:
-        "Use the highest-ranked approved source that publishes the relevant facts.",
-      resolutionMethod:
-        "Use the highest-ranked approved source that publishes the facts needed by the applicable question rule.",
-      exceptionAndUnresolvedRules:
-        "Apply the stated range boundaries, source tie-breaking procedure, or template substitution as applicable; otherwise use the documented unresolved-outcome policy.",
-    });
-
-    for (const { unit, candidate } of [
-      { unit: scalarUnit, candidate: makeCriteria(scalarUnit.question) },
-      {
-        unit: categoryUnit,
-        candidate: makeCriteria(categoryUnit.question),
-      },
-    ]) {
-      const parsed = parseConnectorResolutionCriteria(candidate, unit);
-      expect(
-        "question" in parsed ? parsed.question : parsed.questionRule.question,
-      ).toBe(unit.question);
+    for (const unit of [scalarUnit, categoryUnit]) {
+      const candidate = {
+        question: unit.question,
+        criteria:
+          "Resolve Yes when the approved evidence establishes the question's condition; otherwise No.",
+      };
+      expect(parseConnectorResolutionCriteria(candidate, unit).question).toBe(
+        unit.question,
+      );
     }
-
     expect(() =>
       parseConnectorResolutionCriteria(
         {
-          ...makeCriteria("Will the value be <range>?"),
-          questionRule: {
-            ...makeCriteria("Will the value be <range>?").questionRule,
-            question: "Will another value be <range>?",
-          },
+          question: "Will Candidate C control the Senate?",
+          criteria:
+            "Resolve Yes if Candidate C controls the Senate; otherwise No.",
         },
-        scalarUnit,
-      ),
-    ).toThrow(
-      "The criteria question must exactly match selectedUnit.question.",
-    );
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        makeCriteria("Will Candidate C control the Senate?"),
         categoryUnit,
       ),
     ).toThrow(
@@ -756,7 +658,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("conditional outcomes can be resolved in the single open-text rule", () => {
+  test("conditional criteria retain the selected unit's exact question", () => {
     const selectedUnit = {
       question: "Will Alice win the election?",
       condition: {
@@ -765,45 +667,30 @@ describe("public forecast interface", () => {
       },
     };
     const conditionalCriteria = {
-      ...criteria,
-      questionRule: {
-        question: selectedUnit.question,
-        outcomeCriteria:
-          "This market resolves Yes if Alice appears on the final ballot and wins the election, according to the election authority, by the resolution deadline. Otherwise it resolves No.",
-      },
+      question: selectedUnit.question,
+      criteria:
+        "Resolve Yes if Alice appears on the final ballot and wins, according to the election authority. Otherwise resolve No; if she is absent from the final ballot, annul.",
     };
-    const parsedConditional = parseConnectorResolutionCriteria(
-      conditionalCriteria,
-      selectedUnit,
-    );
     expect(
-      "questionRule" in parsedConditional
-        ? parsedConditional.questionRule
-        : null,
-    ).toEqual(conditionalCriteria.questionRule);
+      parseConnectorResolutionCriteria(conditionalCriteria, selectedUnit),
+    ).toEqual(conditionalCriteria);
     expect(() =>
-      parseConnectorResolutionCriteria(criteria, selectedUnit),
+      parseConnectorResolutionCriteria(
+        { ...conditionalCriteria, question: "Will Bob win the election?" },
+        selectedUnit,
+      ),
     ).toThrow(
       "The criteria question must exactly match selectedUnit.question.",
     );
   });
 
-  test("resolution rule text can use concise or multi-sentence question-specific logic", () => {
-    const conciseCriteria = {
-      ...criteria,
-      questionRule: {
-        ...criteria.questionRule,
-        resolvesNoWhen: "Otherwise resolve No.",
-      },
-      exceptionAndUnresolvedRules:
-        "A tie uses the source's published tie-break. A cancellation follows the platform policy.",
+  test("criteria text accepts concise or multi-sentence question-specific logic", () => {
+    const candidate = {
+      question: input.selected_unit.question,
+      criteria:
+        "Otherwise resolve No. A tie uses the source's published tie-break. A cancellation follows the approved disposition.",
     };
-
-    const parsedConciseCriteria =
-      parseConnectorResolutionCriteria(conciseCriteria);
-    expect(parsedConciseCriteria).toMatchObject({
-      questionRule: { resolvesNoWhen: "Otherwise resolve No." },
-    });
+    expect(parseConnectorResolutionCriteria(candidate)).toEqual(candidate);
   });
 
   test("keeps shared and stage-specific guidance in one owner", () => {
