@@ -1,3 +1,4 @@
+import { CompletionCommand, CompletionOutput } from "./completion";
 import { z } from "zod";
 import {
   WorkspaceCommand,
@@ -305,6 +306,20 @@ export const selectedUnitOutputSchema = z
   })
   .strict();
 
+const execute_completion_commandTool = {
+  title: "Forecast Completion",
+  description:
+    "Review completion or display approved exports of the current saved specification. Confirm only after the user explicitly approves a displayed export of the same revision.",
+  inputSchema: CompletionCommand,
+  outputSchema: CompletionOutput,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
 /** Client-visible MCP contract. Execution is provided by the private backend. */
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
@@ -551,6 +566,7 @@ export const foresightTools: {
   readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
   readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
   readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
+  readonly execute_completion_command: typeof execute_completion_commandTool;
   readonly delete_forecast_specification: typeof delete_forecast_specificationTool;
   readonly get_plugin_feedback_step: typeof get_plugin_feedback_stepTool;
   readonly submit_plugin_feedback: typeof submit_plugin_feedbackTool;
@@ -568,6 +584,7 @@ export const foresightTools: {
   get_forecast_stage_review: get_forecast_stage_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,
+  execute_completion_command: execute_completion_commandTool,
   delete_forecast_specification: delete_forecast_specificationTool,
   get_plugin_feedback_step: get_plugin_feedback_stepTool,
   submit_plugin_feedback: submit_plugin_feedbackTool,

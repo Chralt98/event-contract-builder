@@ -170,50 +170,33 @@ wait for the user's plain-text selection.
 
 ## Completion and exports
 
-After background approval, the canonical completion review contains this
-localized menu:
+After background approval, call `execute_completion_command` with `kind: reopen`
+to obtain the completion menu and current revision. Its available actions derive
+from saved approvals and the optional-news choice; accept one or several numbers
+from that menu. News research still requires explicit opt-in. Feedback remains
+available after prior submissions; invite additional feedback when selected again.
 
-```text
-1. Show YAML in chat
-2. Show JSON in chat
-3. Show Markdown in chat
-4. Add the optional recent-news timeline
-5. Leave feedback about Bleavit Foresight
-```
+For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
+`kind: export`, the requested `formats`, and the reopened `expected_revision`.
+Present its complete `review_markdown` verbatim, including every labeled fenced
+export, feedback invitation, and correctness question. The server excludes
+internal metadata and outdated approvals. Route requested changes through the
+affected stage and its approvals, then display new exports. Edits invalidate an
+earlier export confirmation.
 
-After news is approved, declined, empty, or unavailable, remove the news option
-and renumber feedback as option 4. Keep feedback available on every completion
-menu, including after a prior submission; when the user chooses it again,
-invite additional feedback. Accept one or several numbers from the current menu
-and retrieve the record once, removing internal metadata from exports. Preserve
-the complete returned record and its exact field names and nested structure in
-YAML and JSON. For Markdown, present the user-meaningful content in readable
-prose with human-facing headings and lists; do not expose schema property
-names, internal IDs, or variable identifiers. When
-`get_approved_forecast_specification` returns a reader-facing Markdown
-rendering in `content[0].text`, use that rendering for the Markdown export.
-Show each requested export completely in a labeled fenced block. After showing
-all requested YAML, JSON, and/or Markdown exports, directly invite the user to
-share feedback about Bleavit Foresight, then ask whether the Forecast
-Specification looks correct. This is the second feedback invitation; if the
-user already submitted feedback, invite any additional feedback. Route
-requested specification changes through the affected stage and repeat its
-review and approvals. If the user selected the feedback option with export
-choices, show the requested exports first, then offer the feedback channels
-without a redundant yes-or-no prompt; after the feedback choice, ask whether the
-Forecast Specification looks correct.
+If feedback was selected with exports, display the exports first and then offer
+the feedback channels without a redundant yes-or-no prompt. After the feedback
+choice, ask whether the displayed specification looks correct. If feedback was
+selected alone, finish that flow and reopen the completion menu; do not request
+export confirmation before displaying a complete export.
 
-If the user selects the feedback option without an export choice, finish the
-feedback flow and then repeat the current Stage: Complete review verbatim,
-including its full localized Next Action menu. Do not ask whether the Forecast
-Specification looks correct or call it complete until at least one complete
-export has been displayed and the user explicitly confirms that displayed
-export.
-
-After the user explicitly confirms the displayed export is correct, say the
-Forecast Specification is complete and make a third feedback invitation. Also
-ask whether they want to start another Forecast Specification. If they do,
-begin a new draft without carrying over the previous record ID or approvals.
+Only after explicit user confirmation of a displayed export, call
+`execute_completion_command` with `kind: confirm` and that export's
+`displayed_revision`. Present its canonical completion review, including the
+additional feedback invitation and offer to start another specification. On a
+stale revision, display a current export before asking for confirmation again.
+Start another or translated specification as a new record in the requested
+language, without carrying over its predecessor's ID or approvals.
 
 ### Optional product feedback
 

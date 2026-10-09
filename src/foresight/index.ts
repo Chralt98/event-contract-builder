@@ -10,3 +10,5 @@ export * from "./tools";
 export * from "./instructions";
 
 export * from "./workspace";
+
+export * from "./completion";

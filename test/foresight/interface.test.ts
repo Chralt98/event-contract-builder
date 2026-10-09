@@ -326,7 +326,7 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(Object.keys(foresightTools)).toHaveLength(16);
+    expect(foresightTools.execute_completion_command).toBeDefined();
   });
 
   test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
@@ -722,7 +722,7 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Pass the returned `forecast_specification_id` to every approval call",
     );
-    expect(foresightServerInstructions).toContain("Show YAML in chat");
+    expect(foresightServerInstructions).toContain("execute_completion_command");
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
 
@@ -810,9 +810,7 @@ describe("public forecast interface", () => {
         request_processed: true,
       }).success,
     ).toBe(true);
-    expect(foresightServerInstructions).toContain(
-      "5. Leave feedback about Bleavit Foresight",
-    );
+    expect(foresightServerInstructions).toContain("Feedback remains");
     expect(foresightServerInstructions).toContain(
       "`get_plugin_feedback_step` with `step: channels`",
     );
@@ -833,20 +831,12 @@ describe("public forecast interface", () => {
       /\s+/g,
       " ",
     );
-    const initialInvite = normalizedInstructions.indexOf(
-      "5. Leave feedback about Bleavit Foresight",
+    expect(normalizedInstructions).toContain(
+      "Only after explicit user confirmation of a displayed export",
     );
-    const exportInvite = normalizedInstructions.indexOf(
-      "After showing all requested YAML",
-    );
-    const finalInvite = normalizedInstructions.indexOf(
-      "After the user explicitly confirms the displayed export is correct",
-    );
-    expect(initialInvite).toBeGreaterThanOrEqual(0);
-    expect(exportInvite).toBeGreaterThan(initialInvite);
-    expect(finalInvite).toBeGreaterThan(exportInvite);
-    expect(foresightServerInstructions).toContain(
-      "start another Forecast Specification",
+    expect(normalizedInstructions).toContain("displayed_revision");
+    expect(normalizedInstructions).toContain(
+      "without carrying over its predecessor's ID or approvals",
     );
   });
 });

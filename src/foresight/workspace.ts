@@ -933,6 +933,7 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
       .max(5),
     presentation: z.strictObject({
       title: z.string().min(1).max(200),
+      export_available: z.boolean().optional(),
       stages: z
         .array(
           z.strictObject({
@@ -940,6 +941,7 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
             label: z.string().min(1).max(200),
             available: z.boolean(),
             status: z.enum(["not_started", "pending", "approved", "outdated"]),
+            has_suggestions: z.boolean().optional(),
           }),
         )
         .max(6)
