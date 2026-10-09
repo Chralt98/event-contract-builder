@@ -194,7 +194,7 @@ export const resolutionCriteriaShape = {
     "The exact approved unit receiving criteria.",
   ),
   resolution_criteria: ResolutionCriteria.describe(
-    "Source-grounded criteria for the selected outcome and its condition, when present, covering every declared value and combination.",
+    "One complete source-grounded Resolution Criteria text covering outcome rules, all approved resolution sources, the resolution method, and relevant exceptions or unresolved outcomes for the exact selected unit.",
   ),
   followUp: z
     .string()
@@ -492,7 +492,7 @@ const submit_resolution_sourceTool = {
 const submit_resolution_criteriaTool = {
   title: "Resolution Criteria",
   description:
-    "Validate and store source-grounded outcome criteria and, for conditional units, prerequisite criteria after source approval.",
+    "Validate and store one complete source-grounded Resolution Criteria text after source approval.",
   inputSchema: resolutionCriteriaShape,
   outputSchema: resolutionCriteriaOutputSchema,
   annotations: {

@@ -1,11 +1,12 @@
 # Resolution-criteria validation
 
-Run this semantic review on the complete four-field candidate after the
-decision interview and before `submit_resolution_criteria`. Compare it with the
+Run this semantic review on the single complete Resolution Criteria text after
+the decision interview and before `submit_resolution_criteria`. Compare it with the
 exact selected question, approved condition and `ifUnmet` disposition,
 definitions, resolution deadline, and approved source hierarchy. Review meaning
 and coverage; wording may vary, so do not require exact phrases, case, or regex
-matches.
+matches. The four headings below describe required content, not separate input
+fields; combine them into coherent prose in the one text field.
 
 ## Outcome Rules
 
@@ -18,8 +19,8 @@ matches.
   threshold, outcome, and time frame.
 - Ground the Yes determination in the approved evidence and identify its
   approved source basis, for example, “according to [primary source]” or the
-  approved source hierarchy. The full ordered source list belongs in Resolution
-  Sources.
+  approved source hierarchy. Name every approved source and its role in the
+  complete text.
 - State the approved deadline as a concrete date and, when specified or
   outcome-relevant, its exact time and time zone. A generic phrase such as “by
   the resolution deadline” does not identify the cutoff. Never invent a time
@@ -27,7 +28,7 @@ matches.
   user before submission.
 - Include a concise No complement, such as an equivalent of “Otherwise, it
   resolves as No.” It must not add a second test, exception, or separate route
-  to No. Keep material edge cases in Exceptions and Unresolved Outcomes.
+  to No. Explain material edge cases in the same text.
 - For conditional questions, preserve the approved `ifUnmet` disposition. If
   it is a custom action or an equal 50/50 allocation, state that disposition
   precisely; do not replace it with an ordinary No complement.
@@ -70,15 +71,15 @@ inventing a procedure.
   settlement policy.
 - For conditional questions, make sure the selected unmet disposition is
   consistent with Outcome Rules and that unresolved condition evidence is not
-  silently treated as unmet. The specific custom action or 50/50 allocation
-  belongs in Outcome Rules; this field explains its interaction with relevant
-  edge cases and unresolved evidence.
+  silently treated as unmet. State the specific custom action or 50/50
+  allocation and explain its interaction with relevant edge cases and
+  unresolved evidence in the same text.
 
 ## Review result
 
-Treat each check above as semantic coverage, not a wording template. If a field
+Treat each check above as semantic coverage, not a wording template. If the text
 misses something recoverable from approved inputs, correct it before submission
-and review the full set again for consistency. If a deadline, source priority,
+and review it again for consistency. If a deadline, source priority,
 condition, or disposition is not settled and could alter the result, return to
 the relevant interview decision before submitting. Submit only when all four
-fields agree with each other and with the approved forecast specification.
+content areas agree with each other and with the approved forecast specification.

@@ -15,6 +15,7 @@ import {
   contentStageDefinitions,
   validateContentWorkingDraft,
   contentDomainInput,
+  CriteriaWorkingDraft,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -635,21 +636,14 @@ test("Criteria and News workspace approval reuse canonical identity and ordering
   const criteria = {
     stage: "resolution_criteria" as const,
     resolution_criteria: {
-      questionRule: {
-        question: unit.question,
-        outcomeCriteria:
-          "This market settles Yes if the approved daily report records precipitation by the resolution deadline; otherwise, it settles No.",
-      },
-      resolutionSources: "Use the approved daily report.",
-      resolutionMethod:
-        "Read the report for the target date and compare its measured value to the outcome criteria.",
-      exceptionAndUnresolvedRules: "Annul without evidence.",
+      question: unit.question,
+      criteria:
+        "Outcome Rules: This market settles Yes if the approved daily report records precipitation by October 5, 2026; otherwise, it settles No. Resolution Sources: Use the approved daily report. Resolution Method: Read the report for the target date and compare its measured value to the outcome rule. Exceptions and Unresolved Outcomes: If evidence is insufficient, mark the result Ambiguous.",
     },
   };
   expect(validateContentWorkingDraft(criteria, true, unit)).toEqual([]);
   const mismatch = structuredClone(criteria);
-  mismatch.resolution_criteria.questionRule.question =
-    "Will Paris report rain tomorrow?";
+  mismatch.resolution_criteria.question = "Will Paris report rain tomorrow?";
   expect(
     validateContentWorkingDraft(mismatch, true, unit).length,
   ).toBeGreaterThan(0);
@@ -684,47 +678,50 @@ test("Criteria and News workspace approval reuse canonical identity and ordering
   expect(validateContentWorkingDraft(news).length).toBeGreaterThan(0);
 });
 
-test("Criteria keeps the complete open-text outcome rule without requiring a fixed lead-in", () => {
+test("Criteria keeps one complete open-text field without requiring a fixed lead-in", () => {
   const draft = {
     stage: "resolution_criteria" as const,
     resolution_criteria: {
-      questionRule: {
-        question: "Will Berlin report rain tomorrow?",
-        outcomeCriteria:
-          "This market settles Yes if the Weather Service reports rain by October 22. Otherwise, it resolves No.",
-      },
-      resolutionSources: "Use the official report.",
-      resolutionMethod:
-        "Read the published value for the target date and apply the outcome criteria.",
-      exceptionAndUnresolvedRules: "Annul if evidence is unavailable.",
+      question: "Will Berlin report rain tomorrow?",
+      criteria:
+        "This market settles Yes if the Weather Service reports rain by October 22. Otherwise, it resolves No. Use the official report, read the published value for the target date, and apply the rule. Annul if evidence is unavailable.",
     },
   };
-  expect(contentDomainInput(draft).resolution_criteria?.questionRule).toEqual(
-    draft.resolution_criteria.questionRule,
+  expect(contentDomainInput(draft).resolution_criteria).toEqual(
+    draft.resolution_criteria,
   );
 });
 
-test("Criteria exposes four editable outcome, source, method, and exception fields", () => {
+test("Criteria permits a full combined draft larger than an individual field", () => {
+  expect(
+    CriteriaWorkingDraft.safeParse({
+      stage: "resolution_criteria",
+      resolution_criteria: {
+        question: "Will the report meet the threshold?",
+        criteria: "x".repeat(12_000),
+      },
+    }).success,
+  ).toBe(true);
+});
+
+test("Criteria exposes one editable field and retains the question internally", () => {
   expect(contentStageDefinitions.resolution_criteria.label).toBe(
     "Resolution Criteria",
   );
   expect(contentStageDefinitions.resolution_criteria.fields[0]?.label).toBe(
     "Resolution Criteria",
   );
-  expect(
-    contentStageDefinitions.resolution_criteria.fields.find(
-      (field) => field.path.at(-1) === "questionRule",
-    )?.label,
-  ).toBe("Outcome Rules");
   const fields = contentStageDefinitions.resolution_criteria.fields.filter(
-    (field) => field.control === "prose",
+    (field) =>
+      field.control === "prose" && !("internal" in field && field.internal),
   );
-  expect(fields.map((field) => field.label)).toEqual([
-    "Outcome Rules",
-    "Resolution Sources",
-    "Resolution Method",
-    "Exceptions and Unresolved Outcomes",
-  ]);
+  expect(fields.map((field) => field.label)).toEqual(["Resolution Criteria"]);
+  expect(
+    contentStageDefinitions.resolution_criteria.fields.filter(
+      (field) =>
+        field.control === "prose" && "internal" in field && field.internal,
+    ),
+  ).toHaveLength(1);
   expect(
     fields.every((field) => !("readOnly" in field) || !field.readOnly),
   ).toBe(true);

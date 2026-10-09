@@ -602,9 +602,14 @@ describe("public forecast interface", () => {
     };
 
     expect(schema.safeParse(payload).success).toBe(true);
+    const parsedCriteria = parseConnectorResolutionCriteria(
+      criteria,
+      input.selected_unit,
+    );
     expect(
-      parseConnectorResolutionCriteria(criteria, input.selected_unit)
-        .questionRule.question,
+      "question" in parsedCriteria
+        ? parsedCriteria.question
+        : parsedCriteria.questionRule.question,
     ).toBe(input.selected_unit.question);
 
     const openTextCriteria = {
@@ -619,10 +624,26 @@ describe("public forecast interface", () => {
       schema.safeParse({ ...payload, resolution_criteria: openTextCriteria })
         .success,
     ).toBe(true);
+    const parsedOpenText = parseConnectorResolutionCriteria(
+      openTextCriteria,
+      input.selected_unit,
+    );
     expect(
-      parseConnectorResolutionCriteria(openTextCriteria, input.selected_unit)
-        .questionRule,
+      "questionRule" in parsedOpenText ? parsedOpenText.questionRule : null,
     ).toEqual(openTextCriteria.questionRule);
+
+    const unifiedCriteria = {
+      question: input.selected_unit.question,
+      criteria:
+        "This market resolves Yes if the published value meets the condition by October 5, 2026 at 23:59 UTC. Otherwise, it resolves No. Use the approved primary source and its fallback; read the final corrected report and mark conflicting evidence Ambiguous.",
+    };
+    expect(
+      schema.safeParse({ ...payload, resolution_criteria: unifiedCriteria })
+        .success,
+    ).toBe(true);
+    expect(
+      parseConnectorResolutionCriteria(unifiedCriteria, input.selected_unit),
+    ).toEqual(unifiedCriteria);
 
     const rankingCriteria = {
       ...criteria,
@@ -705,9 +726,10 @@ describe("public forecast interface", () => {
         candidate: makeCriteria(categoryUnit.question),
       },
     ]) {
+      const parsed = parseConnectorResolutionCriteria(candidate, unit);
       expect(
-        parseConnectorResolutionCriteria(candidate, unit).questionRule,
-      ).toMatchObject({ question: unit.question });
+        "question" in parsed ? parsed.question : parsed.questionRule.question,
+      ).toBe(unit.question);
     }
 
     expect(() =>
@@ -722,7 +744,7 @@ describe("public forecast interface", () => {
         scalarUnit,
       ),
     ).toThrow(
-      "questionRule.question must exactly match selectedUnit.question.",
+      "The criteria question must exactly match selectedUnit.question.",
     );
     expect(() =>
       parseConnectorResolutionCriteria(
@@ -730,7 +752,7 @@ describe("public forecast interface", () => {
         categoryUnit,
       ),
     ).toThrow(
-      "questionRule.question must exactly match selectedUnit.question.",
+      "The criteria question must exactly match selectedUnit.question.",
     );
   });
 
@@ -750,13 +772,20 @@ describe("public forecast interface", () => {
           "This market resolves Yes if Alice appears on the final ballot and wins the election, according to the election authority, by the resolution deadline. Otherwise it resolves No.",
       },
     };
+    const parsedConditional = parseConnectorResolutionCriteria(
+      conditionalCriteria,
+      selectedUnit,
+    );
     expect(
-      parseConnectorResolutionCriteria(conditionalCriteria, selectedUnit)
-        .questionRule,
+      "questionRule" in parsedConditional
+        ? parsedConditional.questionRule
+        : null,
     ).toEqual(conditionalCriteria.questionRule);
     expect(() =>
       parseConnectorResolutionCriteria(criteria, selectedUnit),
-    ).toThrow("questionRule.question must exactly match selectedUnit.question");
+    ).toThrow(
+      "The criteria question must exactly match selectedUnit.question.",
+    );
   });
 
   test("resolution rule text can use concise or multi-sentence question-specific logic", () => {
@@ -772,11 +801,9 @@ describe("public forecast interface", () => {
 
     const parsedConciseCriteria =
       parseConnectorResolutionCriteria(conciseCriteria);
-    expect(
-      "resolvesNoWhen" in parsedConciseCriteria.questionRule
-        ? parsedConciseCriteria.questionRule.resolvesNoWhen
-        : undefined,
-    ).toBe("Otherwise resolve No.");
+    expect(parsedConciseCriteria).toMatchObject({
+      questionRule: { resolvesNoWhen: "Otherwise resolve No." },
+    });
   });
 
   test("keeps shared and stage-specific guidance in one owner", () => {
@@ -821,7 +848,10 @@ describe("public forecast interface", () => {
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
     expect(criteriaReference).toContain("entire current frontier");
     expect(criteriaReference).toContain("❓ **1 · <short title>**");
-    expect(criteriaReference).toContain("`questionRule.outcomeCriteria`");
+    expect(criteriaReference).toContain("single editable");
+    expect(criteriaReference).toContain(
+      "outcome rules, approved resolution sources",
+    );
     expect(criteriaReference).toContain(
       "[criteria-validation.md](criteria-validation.md)",
     );

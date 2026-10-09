@@ -58,6 +58,15 @@ const sharedResolutionCriteria = {
 };
 
 const CurrentResolutionCriteria = z.strictObject({
+  question: QuestionIdentity.describe(
+    "The exact question being resolved, including its placeholders.",
+  ),
+  criteria: ResolutionText.describe(
+    "One complete user-facing resolution-criteria text covering the outcome rules, approved resolution sources, resolution method, and relevant exceptions or unresolved outcomes.",
+  ),
+});
+
+const StructuredResolutionCriteria = z.strictObject({
   ...sharedResolutionCriteria,
   resolutionSources: ResolutionText.describe(
     "Which approved resolution sources govern the outcome and their applicable priority. Refer only to the previously approved source records; do not introduce or change sources here.",
@@ -99,9 +108,13 @@ const LegacyResolutionCriteria = z.object({
 });
 
 export const ResolutionCriteria = z
-  .union([CurrentResolutionCriteria, LegacyResolutionCriteria])
+  .union([
+    CurrentResolutionCriteria,
+    StructuredResolutionCriteria,
+    LegacyResolutionCriteria,
+  ])
   .describe(
-    "Source-grounded criteria for the selected outcome and, when present, its prerequisite.",
+    "One complete source-grounded Resolution Criteria text for the selected outcome and, when present, its conditional disposition.",
   );
 
 /** The open domain shape is already safe for connector JSON schemas. */
@@ -116,12 +129,16 @@ const ResolutionCriteriaForUnit = z
     resolutionCriteria: ResolutionCriteria,
   })
   .superRefine(({ selectedUnit, resolutionCriteria }, ctx) => {
-    if (resolutionCriteria.questionRule.question !== selectedUnit.question) {
+    const question =
+      "question" in resolutionCriteria
+        ? resolutionCriteria.question
+        : resolutionCriteria.questionRule.question;
+    if (question !== selectedUnit.question) {
       ctx.addIssue({
         code: "custom",
-        path: ["resolutionCriteria", "questionRule", "question"],
+        path: ["resolutionCriteria", "question"],
         message:
-          "questionRule.question must exactly match selectedUnit.question.",
+          "The criteria question must exactly match selectedUnit.question.",
       });
     }
   });

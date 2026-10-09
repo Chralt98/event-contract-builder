@@ -30,6 +30,7 @@ export const WorkspaceRevision = z
   .max(128);
 export const WorkspaceRowId = z.uuid();
 const text = z.string().max(4000);
+const resolutionCriteriaText = z.string().max(16_000);
 export const workspacePayloadLimitBytes = 256 * 1024;
 export const workspaceReviewLimitBytes = 2 * 1024 * 1024;
 function boundedPayload<T extends z.ZodType>(
@@ -213,18 +214,12 @@ export const SourcesWorkingDraft = boundedPayload(
     condition_sources: uniqueRows(SourceWorkingRow, 50).nullable(),
   }),
 );
-const workingRule = z.strictObject({
-  question: text,
-  outcomeCriteria: text,
-});
 export const CriteriaWorkingDraft = boundedPayload(
   z.strictObject({
     stage: z.literal("resolution_criteria"),
     resolution_criteria: z.strictObject({
-      questionRule: workingRule,
-      resolutionSources: text,
-      resolutionMethod: text,
-      exceptionAndUnresolvedRules: text,
+      question: text,
+      criteria: resolutionCriteriaText,
     }),
   }),
 );
@@ -417,9 +412,7 @@ export function validateContentWorkingDraft(
               ? "Enter a publication date (YYYY-MM-DD) or an ISO date-time with its offset."
               : issue.code === "invalid_format" && path.at(-1) === "url"
                 ? "Enter a valid source URL."
-                : issue.message.includes(
-                      "questionRule.question must exactly match",
-                    )
+                : issue.message.includes("criteria question must exactly match")
                   ? "Use the exact approved question."
                   : issue.message;
         add(path.length ? path : [draft.stage], message);
@@ -495,38 +488,18 @@ export const contentStageDefinitions = {
         validation: "ResolutionCriteria",
       },
       {
-        path: ["resolution_criteria", "questionRule"],
-        label: "Outcome Rules",
-        control: "group",
-        validation: "QuestionResolutionRule",
+        path: ["resolution_criteria", "question"],
+        label: "Question",
+        control: "prose",
+        validation: "ResolutionCriteria.question",
+        internal: true,
       },
       {
-        path: ["resolution_criteria", "questionRule", "outcomeCriteria"],
-        label: "Outcome Rules",
+        path: ["resolution_criteria", "criteria"],
+        label: "Resolution Criteria",
         control: "prose",
         multiline: true,
-        validation: "QuestionResolutionRule.outcomeCriteria",
-      },
-      {
-        path: ["resolution_criteria", "resolutionSources"],
-        label: "Resolution Sources",
-        control: "prose",
-        multiline: true,
-        validation: "ResolutionCriteria.resolutionSources",
-      },
-      {
-        path: ["resolution_criteria", "resolutionMethod"],
-        label: "Resolution Method",
-        control: "prose",
-        multiline: true,
-        validation: "ResolutionCriteria.resolutionMethod",
-      },
-      {
-        path: ["resolution_criteria", "exceptionAndUnresolvedRules"],
-        label: "Exceptions and Unresolved Outcomes",
-        control: "prose",
-        multiline: true,
-        validation: "ResolutionCriteria.exceptionAndUnresolvedRules",
+        validation: "ResolutionCriteria.criteria",
       },
     ],
   },

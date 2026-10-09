@@ -11,7 +11,7 @@ coverage rules, payload semantics, rendering, and retry behavior. The adaptation
 is attributed in [THIRD_PARTY_LICENSES.md](../../THIRD_PARTY_LICENSES.md).
 Before submission, read and apply
 [references/criteria-validation.md](references/criteria-validation.md) to the
-complete four-field criteria candidate.
+single complete Resolution Criteria text.
 
 1. Require one exact selected unit with approved definitions and sources.
 2. Complete every frontier round in the reference before drafting. Each round

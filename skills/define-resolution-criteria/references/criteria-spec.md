@@ -3,13 +3,15 @@
 Convert one exact unit, its approved definitions, and its approved source
 hierarchy into deterministic Yes/No rules for its question.
 
-Write one complete user-facing outcome rule in `questionRule.outcomeCriteria`.
-For a conditional unit, include its exact approved condition and the selected
-`ifUnmet` disposition in that rule, using approved condition sources and
-relevant exception handling. For `resolve-50-50`, state that each binary
-outcome receives an equal 50% share. Make a custom action operational by
-specifying any required cutoff, reference value, and source. An unresolved
-condition must follow its stated unresolved treatment, not be assumed unmet.
+Write one complete user-facing Resolution Criteria text. Include the outcome
+rule, approved resolution sources and their priority, the method for looking up
+and applying source evidence, and relevant exceptions or unresolved outcomes.
+For a conditional unit, include its exact approved condition and selected
+`ifUnmet` disposition, using approved condition sources and relevant exception
+handling. For `resolve-50-50`, state that each binary outcome receives an equal
+50% share. Make a custom action operational by specifying any required cutoff,
+reference value, and source. An unresolved condition must follow its stated
+unresolved treatment, not be assumed unmet.
 
 ## Decision interview
 
@@ -64,13 +66,12 @@ pre-submission response.
 
 ## Criteria
 
-Write `questionRule.outcomeCriteria` as the complete user-facing outcome rule
-in one open-text field, and complete the other three editable fields:
-`resolutionSources`, `resolutionMethod`, and
-`exceptionAndUnresolvedRules`. Before submission, check all four fields against
-the requirements in [criteria-validation.md](criteria-validation.md). The
-editor's Suggest action uses model judgment; do not use regular expressions or
-fixed-phrase checks for semantic requirements.
+Write one complete user-facing Resolution Criteria text in the single editable
+field. It must cover the outcome rules, approved resolution sources, resolution
+method, and relevant exceptions or unresolved outcomes. Before submission,
+check that complete text against [criteria-validation.md](criteria-validation.md).
+The editor's Suggest action uses model judgment; do not use regular expressions
+or fixed-phrase checks for semantic requirements.
 
 Audit the complete criteria, including evidence and exception rules, for
 outcome-bearing terms introduced beyond the selected unit. Define any term
@@ -105,30 +106,31 @@ occurring, a report being issued, or a data series remaining comparable, and
 specify how plausible failures affect resolution, including any fallback or
 unresolved treatment.
 
-Create one `questionRule` object whose `question` exactly matches the selected
-unit question, including its placeholders, and whose `outcomeCriteria` contains
-the complete open-text rule. Do not create separate question rules for each
-placeholder value or range. Use the selected unit's declared values as the
-complete set of possible substitutions, and state one rule that applies
-uniformly to every allowed value and meaningful combination. Refer to
+Create one criteria object whose `question` exactly matches the selected unit
+question, including its placeholders, and whose `criteria` contains the
+complete open-text rule and all required content areas. Do not create separate
+criteria for each placeholder value or range. Use the selected unit's declared
+values as the complete set of possible substitutions, and state one rule that
+applies uniformly to every allowed value and meaningful combination. Refer to
 placeholders by their declared names where needed. If a single complete rule
 cannot cover the selected unit uniformly, report that the unit needs revision
 instead of expanding the criteria by value.
 
 The No complement should say that the outcome resolves No otherwise (or an
 equivalent concise phrase). Do not enumerate additional negative conditions;
-complex exceptions belong in `exceptionAndUnresolvedRules`.
+explain material exceptions and unresolved outcomes within the same complete
+criteria text.
 
 Use plain language for an informed non-specialist, avoiding jargon and
 preferring words to symbols when precision is unchanged. Use LaTeX math
 delimiters for equations when they improve precision: inline `\( ... \)` or
 display `\[ ... \]`. Define variables and units in ordinary text as well.
 
-`resolutionSources` names only the previously approved public sources that
-control the outcome and states their priority. `resolutionMethod` explains how
-to locate and evaluate the evidence in those sources and apply the outcome
-rule. Address corrections, revisions, conflicts, fallback, non-publication, or
-methodology changes only when relevant. For estimates that may be revised,
+Name only the previously approved public sources that control the outcome and
+state their priority. Explain how to locate and evaluate the evidence in those
+sources and apply the outcome rule. Address corrections, revisions, conflicts,
+fallback, non-publication, or methodology changes only when relevant. For
+estimates that may be revised,
 name the controlling release (such as preliminary or final) or the date from
 which the latest available value counts. For finite numeric or date ranges,
 state what happens if the value falls outside all listed outcomes. When a
@@ -136,14 +138,14 @@ methodology change affects an estimate, specify the controlling method, how
 material changes are handled, and what comparable fallback or unresolved
 treatment applies. After relevant sources and fallbacks are exhausted,
 distinguish insufficient or conflicting evidence from evidence that the Yes
-condition failed. In `exceptionAndUnresolvedRules`, distinguish
+condition failed. Distinguish
 **Ambiguous** cases, where available evidence cannot establish the outcome,
 from **Annulled** cases, where reality is clear but the question or criteria
 cannot fairly map it to an outcome. State the disposition for each; do not
 assume platform-specific scoring or refund behavior, and never treat missing
-proof as No. Use this field only for material boundaries, ties, multiple or
-absent matches, postponement, cancellation, invalidated assumptions,
-underspecified criteria, or unresolved outcomes. Apply the evidence, source,
+proof as No. Address only material boundaries, ties, multiple or absent
+matches, postponement, cancellation, invalidated assumptions, underspecified
+criteria, or unresolved outcomes. Apply the evidence, source,
 and exception rules consistently to every allowed value.
 
 ## Submission and recovery
