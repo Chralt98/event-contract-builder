@@ -418,7 +418,7 @@ describe("public forecast interface", () => {
       "Every successful workflow submission and approval returns `review_markdown`",
     );
     expect(foresightServerInstructions).toContain(
-      "the\nauthoritative, complete user-facing result:",
+      "In chat-only mode, `review_markdown` is the authoritative, complete user-facing",
     );
     expect(foresightServerInstructions).toContain(
       "Intermediate approval reviews after the question stage are never user-facing",
@@ -427,10 +427,20 @@ describe("public forecast interface", () => {
       "immediately invoke the next stage",
     );
     expect(foresightServerInstructions).toContain(
-      "present\nonly that next stage's review",
+      "and present only that next stage's review on the chosen surface",
     );
     expect(foresightServerInstructions).toContain(
       "Selection or editing alone does not approve content.",
+    );
+    expect(foresightServerInstructions).toContain("including the first draft");
+    expect(foresightServerInstructions).toContain(
+      "do not require an app to be already loaded",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Do not require a button click or a separate Continue request",
+    );
+    expect(foresightServerInstructions).not.toContain(
+      "then an explicit Continue request",
     );
     expect(foresightServerInstructions).toMatch(
       /copying never changes the draft/,
@@ -444,9 +454,7 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toMatch(
       /Save `opted_in` before researching/,
     );
-    expect(foresightServerInstructions).toMatch(
-      /copy the\s+complete\s+rendered Markdown exactly/,
-    );
+    expect(foresightServerInstructions).toMatch(/copy it verbatim/);
   });
 
   test("background information is plain text without subheadings or references", () => {

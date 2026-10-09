@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bleavit-foresight",
-  "version": "0.4.0+codex.20261003192935",
+  "version": "0.13.0+codex.20261009190727",
   "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
@@ -32,7 +32,7 @@
         "category": "Productivity",
         "capabilities": ["Interactive"],
         "defaultPrompt": [
-          "Draft forecast questions for: ",
+          "Draft a forecast question for: ",
           "What are the possibilities when drafting forecast specifications?",
           "How to use the forecast specification workflow?"
         ],

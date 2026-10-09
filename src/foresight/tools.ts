@@ -37,7 +37,7 @@ export const ReviewMarkdown = z
   .string()
   .min(1)
   .describe(
-    "Canonical complete Markdown review. Present this exact string verbatim to the user without summarizing, reordering, or adding content.",
+    "Canonical complete Markdown fallback review. Choose the presentation surface using the server instructions.",
   );
 
 export const approvalOutputSchema = z
@@ -324,7 +324,7 @@ const execute_completion_commandTool = {
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
   description:
-    "Start an empty resumable question draft with an immutable language. Saving and approving are separate operations.",
+    "Start an empty resumable question draft with an immutable language for manual entry. The draft cannot be approved until it contains a valid question.",
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,
@@ -479,7 +479,7 @@ const submit_defined_termsTool = {
 const submit_drafted_questionsTool = {
   title: "Submit Drafted Questions",
   description:
-    "Validate, store, and render selectable forecast units, including optional prerequisite conditions. This starts a record with an immutable specification language.",
+    "Validate and store forecast questions, including optional prerequisite conditions. Starts a new record when no ID is supplied, or stores a proposal when editing an existing draft.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {

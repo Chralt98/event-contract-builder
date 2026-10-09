@@ -15,8 +15,11 @@ Use commands returned in `workspace.presentation.actions`; replace editable
 payloads as needed and use a fresh command ID for a new operation. Preserve the
 same command ID and payload when retrying a lost acknowledgement.
 
-`submit_drafted_questions` fills an empty draft. On an existing record, pass
-the revision fetched before generation; later output is stored as a proposal.
+For a new model-generated question, call `submit_drafted_questions` directly;
+it creates the record and workspace. Do not call `create_question_workspace`
+first. Use `create_question_workspace` only when the user wants an empty
+workspace for manual entry. On an existing record, pass the revision fetched
+before generation; later output is stored as a proposal.
 Applying a proposal changes the draft without approving it. `submit_selected_unit`
 saves a pending selection with the current workspace revision. A user's explicit
 select-and-approve request may execute `select_and_approve` on the exact saved
@@ -43,6 +46,16 @@ Continue validates and advances without automatically reviewing the completed
 stage or waiting for a model response. Keep stage-specific research and
 post-approval procedures in the corresponding skill reference.
 
+Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
+as acceptance of the current reviewed stage when the referent is clear. Use its latest tool
+bindings to approve the exact reviewed content, then execute its enabled
+`continue` action and follow the returned next-stage instruction in the same
+turn. Do not require a button click or a separate Continue request. A pending
+proposal still requires a clear choice of the draft or suggestion; do not
+silently apply suggestions. Optional News still requires explicit opt-in.
+Content presented in the loaded app counts as reviewed content; the user may
+accept it in chat without having it repeated there.
+
 After background approval, open the News workspace to record the user's optional
 choice with `set_news_choice`. Save `opted_in` before researching or generating
 news. Save `declined` when the user skips news; after opted-in research, save
@@ -56,9 +69,9 @@ MCP App, keep the normal draft editor above the read-only suggestion. The user
 may copy individual suggested text values to the clipboard and paste them into
 the editor; copying never changes the draft. Continue confirms the editable
 draft, discards the pending proposal, and follows the stage workflow without
-an additional Continue request. In text-only core chat, wait for the user's
-choice and then an explicit Continue request. If there is no proposal, report
-that no actionable improvement was found and keep the draft available.
+an additional Continue request. In text-only core chat, the user's acceptance
+of the exact displayed selection also authorizes continuation. If there is no
+proposal, report that no actionable improvement was found and keep the draft available.
 Execute the available `continue` command when the user requests progression,
 then follow its returned chat instruction. A Continue intent or successful message delivery does not
 establish that generation has started or finished. If app messaging is
@@ -116,19 +129,30 @@ interpretation or resolution. Follow schema-required formats for structured
 fields.
 
 Every successful workflow submission and approval returns `review_markdown`.
-For submissions and approvals that complete the workflow, it is the
-authoritative, complete user-facing result: copy the returned
-`review_markdown` value verbatim as the entire next reply and nothing else. Do
-not paraphrase, summarize, retype, or add a conversational lead-in, even when
-the review is a short completion menu. All workspace reviews use their
-shared presentation fields, sections, and available actions; they replace the
-legacy draft-review layout below. For draft reviews, copy the
-complete rendered Markdown exactly; do not recreate it from structured data,
-condense the variables, or combine their allowed values.
+Choose one presentation surface for the current stage. When the client supports
+MCP Apps and the tool advertises a UI resource, use that app for the complete
+review, menus, and actions, including the first draft. The submission tool
+opens or updates its associated app; do not require an app to be already loaded
+for the record or revision, and do not create an empty workspace first.
+An app-directed tool response also selects this surface. Chat may briefly guide
+the next decision or add information absent from the app; never repeat the
+complete question, stage content, or menu there. App availability is a display
+signal, not approval or a substitute for current tool bindings. Use the complete
+chat fallback when the client lacks app support or reports that the app failed
+to open or render the result; a closed or previously stale app alone does not
+establish failure. Reopen the saved stage to obtain its current review when
+recovering in chat.
+
+In chat-only mode, `review_markdown` is the authoritative, complete user-facing
+result: copy it verbatim, without recreating fields from structured data,
+condensing variables, or combining their allowed values. All workspace reviews
+use their shared presentation fields, sections, and available actions; they
+replace the legacy draft-review layout below. Apply this surface choice to
+submissions, completion menus, exports, and feedback reviews as well.
 Intermediate approval reviews after the question stage are never user-facing.
-Treat these approvals as a silent transition, immediately invoke the next stage, and present
-only that next stage's review. Do not summarize, reword, reorder, omit fields,
-or add a preface. Translate only generated labels and fixed UI text; preserve
+Treat these approvals as a silent transition, immediately invoke the next stage,
+and present only that next stage's review on the chosen surface. Do not summarize,
+reword, reorder, omit fields, or add a preface. Translate only generated labels and fixed UI text; preserve
 data-bearing content exactly, including questions, definitions, placeholders,
 variable values, source identities, URLs, ranks, dates, and status codes.
 
@@ -162,11 +186,11 @@ Decision interviews within a stage use numbered questions and lettered options
 options plus a separate free-form fallback and a recommendation. Stage-specific
 interview logic and formats live in the relevant skill reference.
 
-Present every interview round, workflow menu, confirmation, and channel choice
-as ordinary Markdown in the assistant's chat response. Do not use a host-native
-input dialog or `request_user_input` for these choices; the dialog can disappear
-when the response finishes. Keep the choices in the conversation transcript and
-wait for the user's plain-text selection.
+Present interviews that have no app control as ordinary Markdown in chat.
+Use the chosen presentation surface for workflow menus, confirmations, and
+channel choices. Do not use a host-native input dialog or `request_user_input` for these choices; the dialog can disappear
+when the response finishes. Keep chat-only choices in the conversation transcript
+and wait for the user's plain-text selection.
 
 ## Completion and exports
 
@@ -180,8 +204,8 @@ available after prior submissions; invite additional feedback when selected agai
 
 For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
 `kind: export`, the requested `formats`, and the reopened `expected_revision`.
-Present its complete `review_markdown` verbatim. Exporting saves the displayed
-approved revision as complete. The server excludes internal metadata and
+Present the result using the Language and rendering rules above. Exporting saves
+the displayed approved revision as complete. The server excludes internal metadata and
 outdated approvals. Route requested changes through the affected stage and its
 approvals, then display new exports.
 
@@ -195,15 +219,14 @@ requested language, without carrying over its predecessor's ID or approvals.
 ### Optional product feedback
 
 When the user selects feedback or accepts either direct invitation, call
-`get_plugin_feedback_step` with `step: channels`. Return its complete
-`review_markdown` verbatim as the next reply and wait for the channel choice;
-do not ask for feedback text yet. A direct request to draft the feedback email
+`get_plugin_feedback_step` with `step: channels`. Present the result using the
+Language and rendering rules above and wait for the channel choice; do not ask for feedback text yet. A direct request to draft the feedback email
 counts as choosing the email channel. Never use a host-native input dialog for
 the channel menu.
 
 If the user chooses private submission, call `get_plugin_feedback_step` with
-`step: private_notice`. Return its complete `review_markdown` verbatim and wait
-for the feedback text. If the user supplied text before seeing the notice, ask
+`step: private_notice`. Present it using the Language and rendering rules above
+and wait for the feedback text. If the user supplied text before seeing the notice, ask
 them to confirm that exact text after the notice before submitting it. The
 tool's rendered review is the sole owner of the privacy notice; show it only
 for private submission.

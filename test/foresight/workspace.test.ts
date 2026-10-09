@@ -137,8 +137,8 @@ test("incomplete saves do not weaken canonical domain validation", () => {
     validateQuestionWorkingDraft({
       candidates: [],
       selected_candidate_id: null,
-    })[0]?.code,
-  ).toBe("selection_required");
+    }),
+  ).toEqual([]);
 });
 
 test("nested validation paths survive row reordering", () => {

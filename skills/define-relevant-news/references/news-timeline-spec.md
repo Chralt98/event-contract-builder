@@ -32,7 +32,8 @@ selected timeline: treat that response as approval and approve it directly,
 without resubmitting or asking for approval again. For a subset or edited
 timeline, resubmit only the selected items in their existing newest-first
 order, show the complete filtered timeline, and ask for approval. Approve only
-the exact timeline fully visible in the immediately preceding response.
+the exact timeline fully visible in the current review. Use the server's shared
+rendering rules to choose the app or chat presentation surface.
 
 If no item qualifies or the user selects none, do not submit or approve an
 empty timeline; retain the background-only specification. An empty `items`

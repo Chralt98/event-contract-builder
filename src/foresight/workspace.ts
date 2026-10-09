@@ -28,7 +28,11 @@ export const WorkspaceRevision = z
   })
   .min(1)
   .max(128);
-export const WorkspaceRowId = z.uuid();
+export const WorkspaceRowId = z
+  .uuid()
+  .describe(
+    "Stable row UUID. Preserve it when editing; assign a new UUID to every newly added row, including news items.",
+  );
 const text = z.string().max(4000);
 const resolutionCriteriaText = z.string().max(16_000);
 const presentationText = z.string().max(16_000);
@@ -176,7 +180,7 @@ export function validateQuestionWorkingDraft(
   }
   // Reserve room for the selection error even on a heavily incomplete draft.
   const visible = issues.slice(0, draft.selected_candidate_id ? 200 : 199);
-  if (!draft.selected_candidate_id)
+  if (draft.candidates.length > 0 && !draft.selected_candidate_id)
     visible.push({
       path: ["selected_candidate_id"],
       code: "selection_required",
