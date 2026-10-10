@@ -15,13 +15,11 @@ itself is unclear; leave ambiguous terms for
 Use active voice and a question that makes sense on its own. Questions must be
 10–200 characters and end with `?`.
 
-Produce one main draft, first in `units`, faithful to the user's intent. Add
-one or two distinct nearby proxy ideas when they offer a clearer observable
-outcome or stronger prospective resolution sources. Keep these suggestions
-compact; do not replace the main intent with a proxy without the user's choice,
-and do not pad the list with superficial rewrites. If no useful proxy exists,
-submit only the main draft. Check source feasibility internally without treating
-a display question's lack of technical detail as a defect.
+Submit one main draft question for App review. Keep the main intent intact and
+do not replace it with a proxy. Check source feasibility internally without
+treating a display question's lack of technical detail as a defect. Offer
+nearby forecast ideas conversationally when they add useful context; they are
+not additional App candidates.
 
 Every unit is one Yes/No forecast question. A finite variable supplies values
 for a same-named angle-bracket placeholder in the question or condition; every
@@ -90,9 +88,7 @@ variable value.
 
 ## Output detail
 
-Keep the main draft first and show it in full. Present additional units as
-compact nearby ideas, with their full variables and conditions available on
-request or expansion. Invite the user to refine the main draft or explicitly
-choose an idea; do not require comparing several full drafts. Preserve the
-saved unit numbers for selection, and identify term definition as the next
-stage. Suggestions are not approved or selected automatically.
+The App workspace presents the proposed question and ranges for review. In chat,
+ask whether the proposal looks right and add only context the App does not show,
+such as how the horizon or ranges were chosen. Nearby ideas may be mentioned in
+chat when useful. Do not describe App review as a candidate-selection flow.

@@ -14,14 +14,22 @@ Before submission, read and apply
 single complete Resolution Criteria text.
 
 1. Require one exact selected unit with approved definitions and sources.
-2. Complete every frontier round in the reference before drafting. Each round
-   is the final user-visible response for that turn.
+2. On entry from Sources, use `next_stage_bindings` from the Continue result to
+   publish the interview round directly. If that result has no target bindings,
+   fetch `resolution_criteria` once and use its response. Do not reopen Sources
+   or Question. Complete the App interview described in the reference before
+   drafting.
+   Publish one question per screen and keep interview questions out of chat.
+   Treat an answer sent by the App through host messaging as the answer to its
+   referenced question.
 3. Once all decisions are settled, construct and validate the criteria, then
    call `submit_resolution_criteria` once. Resolve any missing material choice
    in the interview first. Do not show a pre-submission draft.
-4. Present the rendered submission as the single criteria review. After
-   explicit approval, approve `resolution_criteria`, apply the reference's post-approval question
-   alignment check, and continue with `define-background-information`.
+4. Use the submission response according to the server-wide
+   [MCP App rendering rule](../../src/foresight/instructions.md#language-and-rendering).
+   After explicit approval, approve `resolution_criteria`, apply the
+   reference's post-approval question alignment check, and continue with
+   `define-background-information`.
 
 Do not modify the selected unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.

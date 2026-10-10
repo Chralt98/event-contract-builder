@@ -34,8 +34,9 @@ export const WorkspaceRowId = z
     "Stable row UUID. Preserve it when editing; assign a new UUID to every newly added row, including news items.",
   );
 const text = z.string().max(4000);
-const resolutionCriteriaText = z.string().max(16_000);
-const presentationText = z.string().max(16_000);
+const MAX_EXPANDED_TEXT_LENGTH = 32_000;
+const resolutionCriteriaText = z.string().max(MAX_EXPANDED_TEXT_LENGTH);
+const presentationText = z.string().max(MAX_EXPANDED_TEXT_LENGTH);
 export const workspacePayloadLimitBytes = 256 * 1024;
 export const workspaceReviewLimitBytes = 2 * 1024 * 1024;
 function boundedPayload<T extends z.ZodType>(
@@ -121,7 +122,7 @@ export const WorkspaceFieldPath = z
   .max(12);
 export const WorkspaceValidationIssue = z.strictObject({
   path: WorkspaceFieldPath,
-  code: z.enum(["domain_validation", "required", "selection_required"]),
+  code: z.enum(["domain_validation", "required", "approval_required"]),
   message: z.string().min(1).max(1000),
 });
 export type WorkspaceValidationIssue = z.infer<typeof WorkspaceValidationIssue>;
@@ -178,13 +179,13 @@ export function validateQuestionWorkingDraft(
       });
     }
   }
-  // Reserve room for the selection error even on a heavily incomplete draft.
+  // Reserve room for the approval issue even on a heavily incomplete draft.
   const visible = issues.slice(0, draft.selected_candidate_id ? 200 : 199);
   if (draft.candidates.length > 0 && !draft.selected_candidate_id)
     visible.push({
       path: ["selected_candidate_id"],
-      code: "selection_required",
-      message: "Select a candidate before approval.",
+      code: "approval_required",
+      message: "The question draft must be approved before continuing.",
     });
   return visible;
 }
@@ -256,6 +257,116 @@ export const NewsChoice = z.enum([
   "declined",
   "unavailable",
 ]);
+const CriteriaInterviewOption = z.strictObject({
+  letter: z
+    .enum(["A", "B", "C"])
+    .describe("Consecutive option letter, starting with A."),
+  label: z
+    .string()
+    .trim()
+    .min(1)
+    .max(200)
+    .describe("Short, distinct outcome or behavior the user can choose."),
+  consequence: z
+    .string()
+    .trim()
+    .min(1)
+    .max(500)
+    .describe("Practical resolution consequence of choosing this option."),
+});
+const CriteriaInterviewQuestion = z
+  .strictObject({
+    decision_id: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .describe("Short stable key used to associate the user's answer."),
+    title: z
+      .string()
+      .trim()
+      .min(1)
+      .max(120)
+      .describe("Short heading for this separate decision."),
+    question: z
+      .string()
+      .trim()
+      .min(1)
+      .max(1000)
+      .describe("One clear question about a material user-dependent choice."),
+    options: z
+      .array(CriteriaInterviewOption)
+      .length(3)
+      .describe(
+        "Exactly three substantive alternatives; the app adds a custom answer.",
+      ),
+    recommendation: z.strictObject({
+      letter: z.enum(["A", "B", "C"]).describe("Letter of one listed option."),
+      reason: z
+        .string()
+        .trim()
+        .min(1)
+        .max(500)
+        .describe("Reason for recommending that listed option."),
+    }),
+  })
+  .superRefine((question, ctx) => {
+    const ids = question.options.map((option) => option.letter);
+    if (new Set(ids).size !== ids.length)
+      ctx.addIssue({
+        code: "custom",
+        path: ["options"],
+        message: "Option letters must be unique.",
+      });
+    if (!ids.includes(question.recommendation.letter))
+      ctx.addIssue({
+        code: "custom",
+        path: ["recommendation", "letter"],
+        message: "The recommendation must refer to a listed option.",
+      });
+  });
+/** One adaptive decision shown on a Resolution Criteria app screen. */
+export const CriteriaInterviewRound = boundedPayload(
+  z
+    .strictObject({
+      question_number: z
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .describe("1-based position of this question in the interview."),
+      questions_remaining: z.strictObject({
+        kind: z
+          .enum(["exact", "estimate"])
+          .describe(
+            "Whether the count after this question is exact or estimated.",
+          ),
+        count: z
+          .number()
+          .int()
+          .min(0)
+          .max(99)
+          .describe(
+            "Exact or estimated number of questions expected after this one; update estimates when answers change branches.",
+          ),
+      }),
+      question: CriteriaInterviewQuestion,
+    })
+    .superRefine((screen, ctx) => {
+      const expectedLetters = ["A", "B", "C"];
+      if (
+        screen.question.options.some(
+          (option, index) => option.letter !== expectedLetters[index],
+        )
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["question", "options"],
+          message: "Options must use A, B, and C in order.",
+        });
+    }),
+);
+export type CriteriaInterviewRound = z.infer<typeof CriteriaInterviewRound>;
 export const WorkspaceNextStage = z.enum([
   "defined_terms",
   "resolution_sources",
@@ -504,7 +615,7 @@ export const contentStageDefinitions = {
         label: "Resolution Criteria",
         control: "prose",
         multiline: true,
-        maxLength: 16_000,
+        maxLength: MAX_EXPANDED_TEXT_LENGTH,
         validation: "ResolutionCriteria.criteria",
       },
     ],
@@ -520,6 +631,7 @@ export const contentStageDefinitions = {
         label: "Background",
         control: "prose",
         multiline: true,
+        maxLength: MAX_EXPANDED_TEXT_LENGTH,
         validation: "ForecastBackgroundInformation",
       },
     ],
@@ -668,6 +780,7 @@ export const WorkspaceActionKind = z.enum([
   "reopen",
   "set_news_choice",
   "edit_draft",
+  "submit_generated_draft",
   "submit_proposal",
   "apply_proposal",
   "discard_proposal",
@@ -676,20 +789,36 @@ export const WorkspaceActionKind = z.enum([
   "approve",
   "complete_review",
   "continue",
+  "set_criteria_interview_round",
 ]);
 export const workspaceActionLabels = {
   reopen: "Refresh",
   set_news_choice: "Choose news",
   edit_draft: "Save draft",
+  submit_generated_draft: "Save generated draft",
   submit_proposal: "Propose changes",
   apply_proposal: "Apply",
   discard_proposal: "Discard",
   accept_proposal: "Accept suggestion",
-  select_and_approve: "Select and approve",
+  select_and_approve: "Approve",
   approve: "Approve",
   complete_review: "Complete AI review",
   continue: "Continue",
+  set_criteria_interview_round: "Update interview question",
 } satisfies Record<z.infer<typeof WorkspaceActionKind>, string>;
+export function workspaceActionLabel(command: WorkspaceCommand): string {
+  if (command.kind === "set_news_choice") {
+    switch (command.choice) {
+      case "opted_in":
+        return "Research";
+      case "declined":
+        return "Skip";
+      case "unavailable":
+        return "No qualifying news";
+    }
+  }
+  return workspaceActionLabels[command.kind];
+}
 export const WorkspacePrerequisites = z.partialRecord(
   approvalStageSchema,
   WorkspaceRevision,
@@ -724,10 +853,23 @@ export const WorkspaceCommand = boundedPayload(
       }),
       z.strictObject({
         ...mutation,
+        kind: z.literal("submit_generated_draft"),
+        draft: WorkspaceDraft,
+      }),
+      z.strictObject({
+        ...mutation,
         kind: z.literal("submit_proposal"),
         proposal_id: z.uuid(),
         draft: WorkspaceDraft,
         rationale: z.string().trim().min(1).max(1000).optional(),
+      }),
+      z.strictObject({
+        ...mutation,
+        stage: z.literal("resolution_criteria"),
+        kind: z.literal("set_criteria_interview_round"),
+        round: CriteriaInterviewRound.nullable().describe(
+          "The current single-question screen to show in the Resolution Criteria app. Use null to clear it.",
+        ),
       }),
       z.strictObject({
         ...mutation,
@@ -805,7 +947,7 @@ export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
 const nodeBase = {
   path: WorkspaceFieldPath,
   label: z.string().min(1).max(200),
-  maxLength: z.number().int().min(1).max(16_000).optional(),
+  maxLength: z.number().int().min(1).max(MAX_EXPANDED_TEXT_LENGTH).optional(),
   multiline: z.boolean().optional(),
   internal: z.boolean().optional(),
   readOnly: z.boolean().optional(),
@@ -944,7 +1086,11 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
           z.strictObject({
             stage: approvalStageSchema,
             label: z.string().min(1).max(200),
-            available: z.boolean(),
+            available: z
+              .boolean()
+              .describe(
+                "Whether this stage can be opened from the stage menu. Stage navigation remains available regardless of approval status; status reports completion separately.",
+              ),
             status: z.enum(["not_started", "pending", "approved", "outdated"]),
             has_suggestions: z.boolean().optional(),
           }),
@@ -1009,6 +1155,9 @@ export const ContentWorkspaceSnapshot = boundedPayload(
         })
         .nullable()
         .default(null),
+      criteria_interview_round: CriteriaInterviewRound.optional().describe(
+        "Current Resolution Criteria interview question for the MCP App interface, when an interview is in progress.",
+      ),
       proposals: z
         .array(
           z.strictObject({
@@ -1033,6 +1182,18 @@ export const ContentWorkspaceSnapshot = boundedPayload(
         ctx.addIssue({
           code: "custom",
           message: "Snapshot drafts must match its stage.",
+        });
+      if (
+        snapshot.criteria_interview_round &&
+        (snapshot.stage !== "resolution_criteria" ||
+          snapshot.draft.stage !== "resolution_criteria" ||
+          snapshot.proposals.length > 0)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["criteria_interview_round"],
+          message:
+            "An interview round is available only in the Resolution Criteria stage without a pending proposal.",
         });
     }),
   workspaceReviewLimitBytes,
@@ -1080,6 +1241,13 @@ export const WorkspaceCommandResult = boundedPayload(
       language_code: ForecastSpecificationLanguageCode,
       approved_revision: WorkspaceRevision,
       next_stage: WorkspaceNextStage,
+      next_stage_bindings: z
+        .strictObject({
+          stage: ContentStage,
+          expected_revision: WorkspaceRevision,
+          prerequisite_revisions: WorkspacePrerequisites,
+        })
+        .optional(),
       chat_instruction: z.string().min(1).max(4000),
     }),
   ]),

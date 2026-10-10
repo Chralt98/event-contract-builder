@@ -186,7 +186,7 @@ describe("public forecast interface", () => {
       z.object(foresightTools.submit_selected_unit.inputSchema),
     );
     const draftSchema = z.toJSONSchema(
-      z.object(foresightTools.submit_drafted_questions.inputSchema),
+      z.object(foresightTools.submit_drafted_question.inputSchema),
     );
     const unit = schema.properties!.selected_unit!;
     expect(unit).not.toHaveProperty("oneOf");
@@ -207,9 +207,9 @@ describe("public forecast interface", () => {
     ).toThrow();
   });
 
-  test("first drafts accept one main unit and at most four distinct ideas", () => {
+  test("first drafts submit one App question and keep nearby ideas in chat", () => {
     const schema = z.object(
-      foresightTools.submit_drafted_questions.inputSchema,
+      foresightTools.submit_drafted_question.inputSchema,
     );
     const unit = (question: string) => ({
       question,
@@ -220,7 +220,7 @@ describe("public forecast interface", () => {
     const payload = {
       language_code: "de",
       units: [first],
-      followUp: "Which unit should we define next?",
+      followUp: "Does this question look right?",
     };
 
     expect(schema.safeParse(payload).success).toBe(true);
@@ -235,7 +235,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
     expect(
       schema.safeParse({ ...payload, units: [first, second, third] }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       schema.safeParse({
         ...payload,
@@ -247,12 +247,12 @@ describe("public forecast interface", () => {
           unit("Will data source B report an outcome?"),
         ],
       }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
-      foresightTools.submit_drafted_questions.outputSchema.safeParse({
+      foresightTools.submit_drafted_question.outputSchema.safeParse({
         ...payload,
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-        units: [first, second, third],
+        units: [first],
         expected_revision: "r1",
         prerequisite_revisions: {},
         workspace: {
@@ -270,11 +270,10 @@ describe("public forecast interface", () => {
             actions: [],
           },
         },
-        review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(true);
     expect(
-      foresightTools.submit_drafted_questions.outputSchema.safeParse({
+      foresightTools.submit_drafted_question.outputSchema.safeParse({
         ...payload,
         forecast_specification_id: "00000000-0000-4000-8000-000000000001",
         language_code: undefined,
@@ -296,7 +295,6 @@ describe("public forecast interface", () => {
             actions: [],
           },
         },
-        review_markdown: "# Forecast Specification\n\nDraft review",
       }).success,
     ).toBe(false);
     expect(
@@ -329,7 +327,7 @@ describe("public forecast interface", () => {
     expect(foresightTools.execute_completion_command).toBeDefined();
   });
 
-  test("approval outputs carry a canonical review and handoff metadata at every stage", () => {
+  test("approval outputs carry handoff metadata without a text review", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
     const finalSummary = {
       expected_revision: "r1",
@@ -339,10 +337,13 @@ describe("public forecast interface", () => {
       unit_number: 1,
       selected_unit: input.selected_unit,
       approved_stage: "background_information" as const,
-      review_markdown: "# Forecast Specification\n\n## Stage: Complete",
     };
 
     expect(schema.safeParse(finalSummary).success).toBe(true);
+    expect(
+      schema.safeParse({ ...finalSummary, review_markdown: "A text review" })
+        .success,
+    ).toBe(false);
     expect(
       schema.safeParse({
         ...finalSummary,
@@ -377,8 +378,6 @@ describe("public forecast interface", () => {
       unit_number: 1,
       selected_unit: input.selected_unit,
       approved_stage: "resolution_criteria" as const,
-      review_markdown:
-        "# Forecast Specification\n\n## Stage: Resolution Criteria Approved",
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
     expect(foresightServerInstructions).toContain(
@@ -413,28 +412,29 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow output instructions require canonical reviews and advance after intermediate approval", () => {
+  test("workflow instructions require App reviews and advance after intermediate approval", () => {
     expect(foresightServerInstructions).toContain(
-      "Every successful workflow submission and approval returns `review_markdown`",
+      "The MCP App is the supported surface for complete workflow reviews",
     );
     expect(foresightServerInstructions).toContain(
-      "In chat-only mode, `review_markdown` is the authoritative, complete user-facing",
+      "a client without MCP App support has no text review fallback",
     );
     expect(foresightServerInstructions).toContain(
-      "Intermediate approval reviews after the question stage are never user-facing",
+      "Intermediate approval reviews after the question stage are not user-facing",
     );
     expect(foresightServerInstructions).toContain(
       "immediately invoke the next stage",
     );
     expect(foresightServerInstructions).toContain(
-      "and present only that next stage's review on the chosen surface",
+      "present only its review in the App",
     );
     expect(foresightServerInstructions).toContain(
-      "Selection or editing alone does not approve content.",
+      "the proposed question and its ranges for review.",
     );
-    expect(foresightServerInstructions).toContain("including the first draft");
+    expect(foresightServerInstructions).not.toContain("review_markdown");
+    expect(foresightServerInstructions).not.toContain("presentation surface");
     expect(foresightServerInstructions).toContain(
-      "do not require an app to be already loaded",
+      "validation messages, or available actions in chat",
     );
     expect(foresightServerInstructions).toContain(
       "Do not require a button click or a separate Continue request",
@@ -454,7 +454,6 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toMatch(
       /Save `opted_in` before researching/,
     );
-    expect(foresightServerInstructions).toMatch(/copy it verbatim/);
   });
 
   test("background information is plain text without subheadings or references", () => {
@@ -741,8 +740,11 @@ describe("public forecast interface", () => {
       "[references/criteria-validation.md](references/criteria-validation.md)",
     );
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
-    expect(criteriaReference).toContain("entire current frontier");
-    expect(criteriaReference).toContain("❓ **1 · <short title>**");
+    expect(criteriaReference).toContain("settled frontier");
+    expect(criteriaReference).toContain(
+      "three substantive lettered choices (A, B, and C)",
+    );
+    expect(criteriaReference).toContain("single-question screen");
     expect(criteriaReference).toContain("single editable");
     expect(criteriaReference).toContain(
       "outcome rules, approved resolution sources",
@@ -767,6 +769,24 @@ describe("public forecast interface", () => {
     }
   });
 
+  test("keeps every tool schema representable as JSON Schema", () => {
+    for (const tool of Object.values(foresightTools)) {
+      const input =
+        tool.inputSchema instanceof z.ZodType
+          ? tool.inputSchema
+          : z.object(tool.inputSchema);
+      expect(() =>
+        z.toJSONSchema(input, { target: "draft-2020-12", io: "input" }),
+      ).not.toThrow();
+      expect(() =>
+        z.toJSONSchema(tool.outputSchema, {
+          target: "draft-2020-12",
+          io: "output",
+        }),
+      ).not.toThrow();
+    }
+  });
+
   test("plugin feedback is bounded and has a deletion receipt contract", () => {
     const promptInput = z.object(
       foresightTools.get_plugin_feedback_step.inputSchema,
@@ -779,9 +799,14 @@ describe("public forecast interface", () => {
     expect(
       foresightTools.get_plugin_feedback_step.outputSchema.safeParse({
         step: "private_notice",
-        review_markdown: "# Bleavit Foresight Feedback",
       }).success,
     ).toBe(true);
+    expect(
+      foresightTools.get_plugin_feedback_step.outputSchema.safeParse({
+        step: "private_notice",
+        review_markdown: "# Bleavit Foresight Feedback",
+      }).success,
+    ).toBe(false);
     const submitInput = z.object(
       foresightTools.submit_plugin_feedback.inputSchema,
     );

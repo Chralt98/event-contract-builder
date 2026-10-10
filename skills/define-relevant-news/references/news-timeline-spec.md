@@ -24,16 +24,15 @@ selected subset.
 
 ## Review and approval
 
-First submit all qualifying candidates and show the complete rendered timeline
-and follow-up together. Ask which item numbers are relevant or need changes;
+First submit all qualifying candidates and show the complete timeline and
+follow-up in the MCP App. Ask which item numbers are relevant or need changes;
 this is selection, not approval. If the user keeps all displayed items without
 changes (for example, “all keep”), the displayed proposal is already the exact
 selected timeline: treat that response as approval and approve it directly,
 without resubmitting or asking for approval again. For a subset or edited
 timeline, resubmit only the selected items in their existing newest-first
-order, show the complete filtered timeline, and ask for approval. Approve only
-the exact timeline fully visible in the current review. Use the server's shared
-rendering rules to choose the app or chat presentation surface.
+order, show the complete filtered timeline in the App, and ask for approval.
+Approve only the exact timeline fully visible in the App.
 
 If no item qualifies or the user selects none, do not submit or approve an
 empty timeline; retain the background-only specification. An empty `items`

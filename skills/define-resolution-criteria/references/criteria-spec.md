@@ -16,50 +16,65 @@ unresolved treatment, not be assumed unmet.
 ## Decision interview
 
 Before drafting criteria, map only material user-dependent decisions as a
-dependency tree. Resolve factual prerequisites yourself. In each round, ask the
-entire current frontier: decisions whose prerequisites are settled. Never ask a
-downstream question with an unanswered prerequisite.
+dependency tree. Resolve factual prerequisites yourself. Ask one decision from
+the settled frontier per App screen and recompute the frontier after each
+answer. Do not expose a downstream question while one of its prerequisites is
+unanswered.
 
-Track the round number and an exact maximum when knowable, otherwise a
-conservative estimate that is updated when branches change. For an estimate,
-immediately suggest answering every question in the round, accepting or
-rejecting each recommendation, supplying custom fallbacks, and stating logical
-consequences in one response.
+Track the question number and the exact or estimated number of questions
+expected after the current question. Update the estimate when answers change
+the dependency branches. Each decision is a separate question with exactly
+three substantive lettered choices (A, B, and C), a recommendation with its
+reason, and a free-form fallback. Do not pad choices, collapse decisions, or
+treat agreement with unshown choices as an answer.
 
-Each decision is a separate numbered question with two or three substantive
-lettered choices, a recommendation, and an unnumbered free-form fallback. Do
-not pad choices, collapse decisions, or treat agreement with unshown choices as
-an answer. Use this localized structure:
+Continuing from Sources starts the interview automatically. Opening Criteria
+directly shows its editable criteria field and a **Start interview**
+action; starting that action opens the interview and prepares a draft. For
+existing criteria, the user can choose **Refresh interview**. Publish each
+single-question screen with `execute_workspace_command` using this complete
+revision-bound command shape (take current revision bindings from the latest
+workspace response):
 
-```text
-# Forecast Specification
-
-## Stage: Resolution Criteria
-
-**Selected Unit <unit_number>: <label>**
-- <exact complete unit>
-
----
-
-🧭 **Question round <current> of <total> (exact)**
-
-❓ **1 · <short title>**
-<one question>
-
-**1.A** — **<option>** — <consequence>
-**1.B** — **<option>** — <consequence>
-
-➡️ **Recommendation:** Option 1.<letter> — <reason>
-↪️ If none fits, state the result or behavior you want.
-
----
+```ts
+{
+  contract_version: 1,
+  command_id: crypto.randomUUID(),
+  forecast_specification_id,
+  kind: "set_criteria_interview_round",
+  stage: "resolution_criteria",
+  expected_revision,
+  prerequisite_revisions,
+  round: {
+    question_number: 1,
+    questions_remaining: { kind: "exact", count: 0 },
+    question: {
+      decision_id: "stable-decision-key",
+      title: "Short decision title",
+      question: "One material user decision?",
+      options: [
+        { letter: "A", label: "Option A", consequence: "Effect of A." },
+        { letter: "B", label: "Option B", consequence: "Effect of B." },
+        { letter: "C", label: "Option C", consequence: "Effect of C." },
+      ],
+      recommendation: { letter: "A", reason: "Why A is recommended." },
+    },
+  },
+}
 ```
 
-For an estimate, use “of about <estimate> (estimate)” and place the round-
-reduction suggestion before question 1. Separate multiple questions with
-`---`, and keep the final separator. Make the complete round the final
-user-visible response for that turn, then wait. Record partial and free-form
-answers, recompute the frontier, and continue until no decision remains.
+Use `questions_remaining.kind: "estimate"` when the remaining count is not
+known exactly. The App presents the choices, recommendation, and custom-answer
+field. If the decision frontier is empty, skip the interview round and submit
+the complete criteria immediately.
+The App sends the user's answer through normal host messaging with a reference
+to the question. Treat it as the answer to that question; do not ask it again
+in chat. Recompute the frontier and publish the next single-question screen.
+If no decisions remain, construct and submit the criteria immediately. Do not
+reproduce the interview questions, approved specification, or an interview
+transcript in chat. If the host cannot display the App, the criteria interview
+is unsupported; do not fall back to chat questions.
+
 After each answer, if the frontier is empty, immediately construct and submit
 the criteria in that same turn; do not end with a status message or another
 pre-submission response.

@@ -33,13 +33,6 @@ export const approvalShape = {
   ),
 };
 
-export const ReviewMarkdown = z
-  .string()
-  .min(1)
-  .describe(
-    "Canonical complete Markdown fallback review. Choose the presentation surface using the server instructions.",
-  );
-
 export const approvalOutputSchema = z
   .object({
     forecast_specification_id: ForecastSpecificationId,
@@ -49,7 +42,6 @@ export const approvalOutputSchema = z
     workspace: WorkspaceSnapshot.optional(),
     approved_stage: approvalStageSchema,
     ...workspaceRevisionBindingShape,
-    review_markdown: ReviewMarkdown,
   })
   .strict();
 
@@ -77,7 +69,6 @@ export type PluginFeedbackStep = z.infer<typeof pluginFeedbackStepShape.step>;
 export const pluginFeedbackStepOutputSchema = z
   .object({
     step: pluginFeedbackStepShape.step,
-    review_markdown: ReviewMarkdown,
   })
   .strict();
 
@@ -108,6 +99,18 @@ export const deletePluginFeedbackOutputSchema = z
   .object({ request_processed: z.literal(true) })
   .strict();
 
+const proposalRationaleShape = {
+  rationale: z
+    .string()
+    .trim()
+    .min(1)
+    .max(1000)
+    .optional()
+    .describe(
+      "For a proposal, explain the material changes and why they improve the draft. Use short paragraphs or bullets.",
+    ),
+};
+
 export const definedTermsShape = {
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
@@ -121,6 +124,7 @@ export const definedTermsShape = {
   definitions: Definitions.describe(
     "Map from each ambiguous term to its precise, unambiguous definition.",
   ),
+  ...proposalRationaleShape,
   followUp: z
     .string()
     .describe("Ask whether the definitions are approved or need changes."),
@@ -137,29 +141,15 @@ export const draftedQuestionsShape = {
   units: z
     .array(ConnectorDraftUnit)
     .min(1)
-    .max(
-      5,
-      "A draft may contain one main question and up to four nearby ideas.",
-    )
-    .superRefine((units, ctx) => {
-      const signatures = units.map(({ question, variables, condition }) =>
-        JSON.stringify({ question, variables: variables ?? [], condition }),
-      );
-
-      if (new Set(signatures).size !== signatures.length) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Drafted forecast specification units must be distinct.",
-        });
-      }
-    })
+    .max(1)
     .describe(
-      "One main draft first, followed by up to four distinct nearby proxy ideas.",
+      "Submit the one forecast question derived from the user's intent for the App draft. Mention useful nearby forecast questions conversationally in chat.",
     ),
+  ...proposalRationaleShape,
   followUp: z
     .string()
     .describe(
-      "Ask which unit to use or revise, noting that term definition comes next.",
+      "Ask whether the proposed forecast question looks right. Add useful nearby forecast questions or brief context in chat without repeating details shown in the App.",
     ),
 };
 
@@ -179,6 +169,7 @@ export const resolutionSourceShape = {
   condition_sources: SourceHierarchy.optional().describe(
     "Separate ranked hierarchy for the selected unit's condition.",
   ),
+  ...proposalRationaleShape,
   followUp: z
     .string()
     .describe("Ask whether to approve or revise the source hierarchy."),
@@ -197,6 +188,7 @@ export const resolutionCriteriaShape = {
   resolution_criteria: ResolutionCriteria.describe(
     "One complete source-grounded Resolution Criteria text covering outcome rules, all approved resolution sources, the resolution method, and relevant exceptions or unresolved outcomes for the exact selected unit.",
   ),
+  ...proposalRationaleShape,
   followUp: z
     .string()
     .describe("Ask whether the criteria are approved or need changes."),
@@ -212,6 +204,7 @@ export const backgroundInformationShape = {
   selected_unit: ConnectorDraftUnit.describe(
     "The exact approved unit receiving background information.",
   ),
+  ...proposalRationaleShape,
   background_information: ForecastBackgroundInformation,
   followUp: z
     .string()
@@ -228,6 +221,7 @@ export const newsTimelineShape = {
   selected_unit: ConnectorDraftUnit.describe(
     "The exact approved unit receiving optional news.",
   ),
+  ...proposalRationaleShape,
   news_timeline: ForecastNewsTimeline.describe(
     "Newest-first, incremental factual news; empty only for requested removal.",
   ),
@@ -265,7 +259,6 @@ const workflowOutput = <T extends z.ZodRawShape>(shape: T) =>
     .extend({
       forecast_specification_id: ForecastSpecificationId,
       language_code: ForecastSpecificationLanguageCode,
-      review_markdown: ReviewMarkdown,
       ...workspaceRevisionBindingShape,
     })
     .strict();
@@ -302,14 +295,13 @@ export const selectedUnitOutputSchema = z
     workspace: QuestionWorkspaceSnapshot,
     unit_number: selectedUnitShape.unit_number,
     selected_unit: selectedUnitShape.selected_unit,
-    review_markdown: ReviewMarkdown,
   })
   .strict();
 
 const execute_completion_commandTool = {
   title: "Forecast Completion",
   description:
-    "Review completion or display approved exports of the current saved specification. Exporting saves that approved revision as complete.",
+    "Load the App completion/export flow or generate approved YAML, JSON, and Markdown documents. Exporting saves that revision as complete.",
   inputSchema: CompletionCommand,
   outputSchema: CompletionOutput,
   annotations: {
@@ -328,7 +320,6 @@ const create_question_workspaceTool = {
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,
-    review_markdown: ReviewMarkdown,
   }),
   annotations: {
     readOnlyHint: false,
@@ -341,11 +332,10 @@ const create_question_workspaceTool = {
 const execute_workspace_commandTool = {
   title: "Workspace Command",
   description:
-    "Reopen or execute a revision-bound command for any workflow stage. Edits and proposal application do not approve content.",
+    "Run one revision-bound workspace command for edits, approval, continuation, or Criteria interview updates. Use the complete action object from the latest workspace, including its stage and revision bindings.",
   inputSchema: WorkspaceCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
-    review_markdown: ReviewMarkdown,
   }),
   annotations: {
     readOnlyHint: false,
@@ -358,7 +348,7 @@ const execute_workspace_commandTool = {
 const get_forecast_stage_reviewTool = {
   title: "Get Forecast Stage Review",
   description:
-    "Open any workflow stage with its current approval bindings. Opening an untouched editable stage saves an incomplete draft without approval.",
+    "Fetch and open or update a saved workflow stage, returning its workspace, revision, and prerequisite bindings. Fetching an untouched stage initializes an incomplete draft without approval.",
   inputSchema: {
     forecast_specification_id: ForecastSpecificationId,
     stage: approvalStageSchema,
@@ -368,7 +358,6 @@ const get_forecast_stage_reviewTool = {
     stage: approvalStageSchema,
     workspace: WorkspaceSnapshot.optional(),
     ...workspaceRevisionBindingShape,
-    review_markdown: ReviewMarkdown,
   }),
   annotations: {
     readOnlyHint: false,
@@ -381,7 +370,7 @@ const get_forecast_stage_reviewTool = {
 const approve_forecast_specificationTool = {
   title: "Approve Forecast Specification Stage",
   description:
-    "Approve one pending workflow stage after the user explicitly accepts its rendered review. Requires the exact revision and prerequisite bindings from its canonical review.",
+    "Approve one pending workflow stage after the user explicitly accepts its App-rendered review. Requires the exact revision and prerequisite bindings from that workspace.",
   inputSchema: approvalShape,
   outputSchema: approvalOutputSchema,
   annotations: {
@@ -423,7 +412,7 @@ const delete_forecast_specificationTool = {
 const get_plugin_feedback_stepTool = {
   title: "Get Plugin Feedback Step",
   description:
-    "Return canonical Markdown for the feedback channel menu or private-submission privacy notice. Call after the user chooses feedback or the private channel.",
+    "Select which feedback step the MCP App should show after the user chooses feedback or private submission.",
   inputSchema: pluginFeedbackStepShape,
   outputSchema: pluginFeedbackStepOutputSchema,
   annotations: {
@@ -465,7 +454,7 @@ const delete_plugin_feedbackTool = {
 const submit_defined_termsTool = {
   title: "Submit Defined Terms",
   description:
-    "Validate and submit a complete definition map for an approved selected unit. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
+    "Submit the approved unit's definitions. Fills an untouched stage or updates the generator's unedited draft; output after an App edit becomes a proposal.",
   inputSchema: definedTermsShape,
   outputSchema: definedTermsOutputSchema,
   annotations: {
@@ -476,10 +465,10 @@ const submit_defined_termsTool = {
   },
 } as const;
 
-const submit_drafted_questionsTool = {
-  title: "Submit Drafted Questions",
+const submit_drafted_questionTool = {
+  title: "Submit Drafted Question",
   description:
-    "Validate and store forecast questions, including optional prerequisite conditions. Starts a new record when no ID is supplied, or stores a proposal when editing an existing draft.",
+    "Submit a forecast question and its optional condition. Starts a record, fills an empty workspace, updates the generator's unedited draft, or proposes output after an App edit.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {
@@ -493,7 +482,7 @@ const submit_drafted_questionsTool = {
 const submit_resolution_sourceTool = {
   title: "Resolution Source Hierarchy",
   description:
-    "Validate and submit complete source hierarchies after definitions are approved. Fills an untouched stage or stores a revision-bound proposal for an existing draft.",
+    "Submit source hierarchies after definitions are approved. Fills an untouched stage or updates the generator's unedited draft; output after an App edit becomes a proposal.",
   inputSchema: resolutionSourceShape,
   outputSchema: resolutionSourceOutputSchema,
   annotations: {
@@ -572,7 +561,7 @@ export const foresightTools: {
   readonly submit_plugin_feedback: typeof submit_plugin_feedbackTool;
   readonly delete_plugin_feedback: typeof delete_plugin_feedbackTool;
   readonly submit_defined_terms: typeof submit_defined_termsTool;
-  readonly submit_drafted_questions: typeof submit_drafted_questionsTool;
+  readonly submit_drafted_question: typeof submit_drafted_questionTool;
   readonly submit_resolution_source: typeof submit_resolution_sourceTool;
   readonly submit_resolution_criteria: typeof submit_resolution_criteriaTool;
   readonly submit_background_information: typeof submit_background_informationTool;
@@ -590,7 +579,7 @@ export const foresightTools: {
   submit_plugin_feedback: submit_plugin_feedbackTool,
   delete_plugin_feedback: delete_plugin_feedbackTool,
   submit_defined_terms: submit_defined_termsTool,
-  submit_drafted_questions: submit_drafted_questionsTool,
+  submit_drafted_question: submit_drafted_questionTool,
   submit_resolution_source: submit_resolution_sourceTool,
   submit_resolution_criteria: submit_resolution_criteriaTool,
   submit_background_information: submit_background_informationTool,

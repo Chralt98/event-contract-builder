@@ -46,5 +46,4 @@ export const CompletionOutput = z.strictObject({
       }),
     )
     .max(3),
-  review_markdown: z.string().min(1),
 });

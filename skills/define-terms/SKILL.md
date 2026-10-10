@@ -11,8 +11,11 @@ analysis. It is the sole source for ambiguity and definition rules.
 1. Require one exact, already approved selected unit and its unit number.
 2. Analyze the complete unit without rewriting it. Ask the user only when
    materially different defensible definitions require their choice.
-3. Call `submit_defined_terms` once, including an empty map when nothing needs
-   definition, and present the complete rendered review.
+3. For an existing specification, fetch `defined_terms` once with
+   `get_forecast_stage_review` immediately before submission to obtain current
+   bindings. Then call `submit_defined_terms` once, including an empty map when
+   nothing needs definition. Use its response as the updated review and follow
+   the shared presentation rules; do not resubmit to inspect the same result.
 4. After explicit approval, approve `defined_terms`. Then run the server-wide
    post-approval review for that exact revision before continuing with
    `define-resolution-source`.

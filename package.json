@@ -28,6 +28,7 @@
   ],
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "pack": "bun run build && bun pm pack",
     "test": "bun run build && bun test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

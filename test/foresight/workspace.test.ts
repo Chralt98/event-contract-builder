@@ -6,6 +6,8 @@ import {
   QuestionWorkspaceSnapshot,
   WorkspaceCommand,
   WorkspaceCommandResult,
+  WorkspaceAvailableAction,
+  WorkspacePresentationField,
   WorkspaceFieldDefinition,
   parseQuestionWorkingUnit,
   validateQuestionWorkingDraft,
@@ -15,7 +17,9 @@ import {
   contentStageDefinitions,
   validateContentWorkingDraft,
   contentDomainInput,
+  workspaceActionLabel,
   CriteriaWorkingDraft,
+  CriteriaInterviewRound,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -62,7 +66,7 @@ const snapshot = {
     validation_issues: [],
     actions: [
       {
-        label: "Select and approve",
+        label: "Approve",
         enabled: true,
         command: {
           ...identity,
@@ -210,6 +214,7 @@ test("duplicate row identities and dangling selection are rejected", () => {
 test("every mutation requires its base revision and prerequisite bindings", () => {
   const commands = [
     { kind: "edit_draft", draft },
+    { kind: "submit_generated_draft", draft },
     {
       kind: "submit_proposal",
       proposal_id: id(),
@@ -250,6 +255,91 @@ test("every mutation requires its base revision and prerequisite bindings", () =
     ).toBe(false);
   }
   expect(WorkspaceCommand.parse({ ...identity, kind: "reopen" })).toBeDefined();
+});
+
+test("criteria interview screens contain one question with three choices", () => {
+  const round = {
+    question_number: 1,
+    questions_remaining: { kind: "estimate", count: 2 },
+    question: {
+      decision_id: "price-cutoff",
+      title: "Price cutoff",
+      question: "Which BTC/USD measurement should control?",
+      options: [
+        {
+          letter: "A",
+          label: "The 23:59 UTC observation",
+          consequence: "Uses the final observation of the target day.",
+        },
+        {
+          letter: "B",
+          label: "The daily candle close",
+          consequence: "Uses the selected source's daily candle boundary.",
+        },
+        {
+          letter: "C",
+          label: "The volume-weighted daily average",
+          consequence:
+            "Uses the approved source's mean price over the target day.",
+        },
+      ],
+      recommendation: {
+        letter: "A",
+        reason: "It matches the forecast's stated UTC cutoff.",
+      },
+    },
+  } satisfies import("../../src/foresight").CriteriaInterviewRound;
+  expect(CriteriaInterviewRound.parse(round)).toEqual(round);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...identity,
+      ...binding,
+      stage: "resolution_criteria",
+      kind: "set_criteria_interview_round",
+      round,
+    }).success,
+  ).toBe(true);
+  expect(
+    CriteriaInterviewRound.safeParse({
+      ...round,
+      questions_remaining: { kind: "exact", count: -1 },
+    }).success,
+  ).toBe(false);
+  expect(
+    CriteriaInterviewRound.safeParse({
+      ...round,
+      question: {
+        ...round.question,
+        options: round.question.options.slice(0, 2),
+      },
+    }).success,
+  ).toBe(false);
+});
+
+test("News choice labels stay JSON-Schema-compatible with the action shape", () => {
+  const base = {
+    command: {
+      ...identity,
+      ...binding,
+      stage: "news_timeline" as const,
+      kind: "set_news_choice" as const,
+    },
+    label: "Choose news",
+    enabled: true,
+  };
+
+  expect(
+    WorkspaceAvailableAction.parse({
+      ...base,
+      command: { ...base.command, choice: "opted_in" },
+    }).label,
+  ).toBe("Choose news");
+  expect(
+    workspaceActionLabel({ ...base.command, choice: "opted_in" as const }),
+  ).toBe("Research");
+  expect(
+    workspaceActionLabel({ ...base.command, choice: "declined" as const }),
+  ).toBe("Skip");
 });
 
 test("review feedback must contain non-whitespace text", () => {
@@ -463,7 +553,7 @@ test("all shared primitives accept editable values and bounded diagnostics", () 
   };
   const issues = validateQuestionWorkingDraft(incomplete);
   expect(issues.length).toBeLessThanOrEqual(200);
-  expect(issues.at(-1)?.code).toBe("selection_required");
+  expect(issues.at(-1)?.code).toBe("approval_required");
   expect(
     QuestionWorkspaceSnapshot.safeParse({
       ...snapshot,
@@ -698,10 +788,61 @@ test("Criteria permits a full combined draft larger than an individual field", (
       stage: "resolution_criteria",
       resolution_criteria: {
         question: "Will the report meet the threshold?",
-        criteria: "x".repeat(12_000),
+        criteria: "x".repeat(32_000),
       },
     }).success,
   ).toBe(true);
+  expect(
+    CriteriaWorkingDraft.safeParse({
+      stage: "resolution_criteria",
+      resolution_criteria: {
+        question: "Will the report meet the threshold?",
+        criteria: "x".repeat(32_001),
+      },
+    }).success,
+  ).toBe(false);
+});
+
+test("Criteria and Background text fields allow 32,000 characters", () => {
+  const criteriaField = contentStageDefinitions.resolution_criteria.fields.find(
+    (
+      field,
+    ): field is Extract<
+      (typeof contentStageDefinitions.resolution_criteria.fields)[number],
+      { readonly control: "prose" }
+    > => field.control === "prose" && field.path.at(-1) === "criteria",
+  );
+  const backgroundField =
+    contentStageDefinitions.background_information.fields[0];
+  expect(
+    criteriaField && "maxLength" in criteriaField
+      ? criteriaField.maxLength
+      : undefined,
+  ).toBe(32_000);
+  expect(backgroundField?.maxLength).toBe(32_000);
+
+  for (const field of [criteriaField, backgroundField]) {
+    expect(
+      WorkspacePresentationField.safeParse({
+        path: field!.path,
+        label: field!.label,
+        control: "prose",
+        multiline: true,
+        maxLength: 32_000,
+        value: "x".repeat(32_000),
+      }).success,
+    ).toBe(true);
+  }
+  expect(
+    WorkspacePresentationField.safeParse({
+      path: backgroundField!.path,
+      label: backgroundField!.label,
+      control: "prose",
+      multiline: true,
+      maxLength: 32_001,
+      value: "x".repeat(32_001),
+    }).success,
+  ).toBe(false);
 });
 
 test("Criteria exposes one editable field and retains the question internally", () => {

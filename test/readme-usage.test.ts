@@ -10,8 +10,8 @@ describe("README package usage", () => {
     };
 
     expect(DraftUnit.parse(draft)).toEqual(draft);
-    expect(foresightTools.submit_drafted_questions.title).toBe(
-      "Submit Drafted Questions",
+    expect(foresightTools.submit_drafted_question.title).toBe(
+      "Submit Drafted Question",
     );
   });
 });

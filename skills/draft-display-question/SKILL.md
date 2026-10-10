@@ -6,18 +6,20 @@ description: Draft short forecast specification display questions from a new fre
 # Draft display questions
 
 Read [references/drafting-spec.md](references/drafting-spec.md) for the drafting,
-template, alternative-question, and selection rules.
+template, numeric range, and App presentation rules.
 
-1. Distinguish a new event from a selection of an existing draft. Ask for
-   missing event, outcome, or future time information rather than guessing.
-2. For a new event, draft the units defined in the reference and call
-   `submit_drafted_questions` once.
-3. Reopen an existing workspace before generation or selection. Use its revision
-   and available commands through `execute_workspace_command`, following the
+1. Distinguish a new event from an update to an existing draft. Ask for missing
+   event, outcome, or future time information rather than guessing.
+2. For a new event, draft one main question as defined in the reference and call
+   `submit_drafted_question` directly once; it creates the record and workspace.
+   Do not create an empty workspace or fetch a stage review first.
+3. For an update to an existing record, fetch its current question and revision
+   with `get_forecast_stage_review` before generation or editing. Use its
+   available commands through `execute_workspace_command`, following the
    server's shared workspace routing.
-4. Submit a saved selection with `submit_selected_unit`, or execute the available
-   `select_and_approve` command when the user explicitly approves that candidate.
-   Follow the server's approval and Continue routing before `define-terms`.
+4. Save user edits with `submit_selected_unit`. Approval remains a separate
+   explicit action. Follow the server's approval and Continue routing before
+   `define-terms`.
 
 Follow the server-wide rules for language, internal metadata, rendering,
 separate records, and approvals. A selected alternative or translated unit is

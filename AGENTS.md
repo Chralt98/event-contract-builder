@@ -69,6 +69,21 @@ When a rule appears to fit several places, choose by scope:
 - Keep public documentation high level. Link to the canonical implementation or
   instruction owner instead of restating changing internal details.
 
+## Server dependency references
+
+When changing an exported contract consumed by the sibling
+`bleavit-foresight` server, update that server to use a package artifact built
+from this checkout. Run `bun run pack` here, then from the server repository
+run:
+
+```sh
+bun run use:package ../event-contract-builder/event-contract-builder-<version>.tgz
+```
+
+Keep the server's `package.json` and `bun.lock` dependency references current,
+and verify the server against the updated contract before finishing. Do not
+leave server code producing fields that its pinned contract package rejects.
+
 ## Validation
 
 Run checks proportional to the change:

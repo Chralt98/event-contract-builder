@@ -38,10 +38,10 @@ const draft: DraftUnitT = {
 };
 
 const validatedDraft = DraftUnit.parse(draft);
-const submitQuestionsTool = foresightTools.submit_drafted_questions;
+const submitQuestionTool = foresightTools.submit_drafted_question;
 
 console.log(validatedDraft.question);
-console.log(submitQuestionsTool.title);
+console.log(submitQuestionTool.title);
 ```
 
 The npm package describes and validates the public interface. It does not
