@@ -132,9 +132,13 @@ already displays its placeholders and allowed values; do not duplicate them as
 per-value criteria. Do not append a second No complement or repeat the original
 unit question inside the criteria.
 
-After explicit approval, follow the server-wide
-[approval routing](../../../src/foresight/instructions.md#workflow-state), then
-compare the display question with the approved criteria. A reasonable reader
+For the initial criteria review, ask whether the user approves the criteria
+and wants to continue to Background, or wants changes. On assent, follow the
+server-wide [approval routing](../../../src/foresight/instructions.md#workflow-state)
+to approve and continue, then follow the returned handoff to draft Background
+in the same turn. Approve and stay only when the user explicitly asks to stay
+at Criteria. After approval, compare the display question with the approved
+criteria. A reasonable reader
 must not infer a materially different event, subject, threshold, outcome, or
 time frame; technical precision or omitted resolution details alone are not a
 mismatch. If the question and criteria substantially agree, do not propose a

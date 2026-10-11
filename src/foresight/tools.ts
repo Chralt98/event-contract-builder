@@ -110,7 +110,7 @@ const proposalRationaleShape = {
     .max(1000)
     .optional()
     .describe(
-      "For a proposal, explain the material changes and why they improve the draft. Use short paragraphs or bullets.",
+      "For a proposal, provide the material changes and why they improve the draft so the assistant can explain the suggestion in chat. The App shows the concrete proposed values for review and copying.",
     ),
 };
 

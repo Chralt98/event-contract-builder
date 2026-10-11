@@ -142,7 +142,9 @@ still requires explicit opt-in.
 When generated output is a proposal against an App-edited draft, include a
 `rationale` with the material changes and why they improve the draft. Keep it
 specific to the forecast and source evidence; use short paragraphs or bullets.
-The App presents this reasoning alongside a concrete field-by-field comparison.
+After the proposal is saved, explain its rationale in the text chat. The App
+shows the concrete suggested values for review and copying, without the
+rationale field.
 
 If a command fails input validation, correct the missing or invalid fields from
 the returned action before retrying, without fetching or reopening a different
