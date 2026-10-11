@@ -1,7 +1,7 @@
 # Resolution-criteria validation
 
 Run this semantic review on the single complete Resolution Criteria text after
-the decision interview and before `submit_resolution_criteria`. Compare it with the
+the chat interview and before `submit_resolution_criteria`. Compare it with the
 exact selected question, approved condition and `ifUnmet` disposition,
 definitions, resolution deadline, and approved source hierarchy. Review meaning
 and coverage; wording may vary, so do not require exact phrases, case, or regex
@@ -53,7 +53,7 @@ geography, query, or aggregation to use; and how the observed evidence maps to
 the Yes condition. State the order and trigger for using fallbacks, and explain
 how to handle relevant corrections, revisions, publication times, or source
 conflicts. Include only details supported by the approved source and settled
-decisions; return material missing choices to the interview rather than
+decisions; return material missing choices to the chat interview rather than
 inventing a procedure.
 
 ## Exceptions and Unresolved Outcomes
@@ -81,5 +81,5 @@ Treat each check above as semantic coverage, not a wording template. If the text
 misses something recoverable from approved inputs, correct it before submission
 and review it again for consistency. If a deadline, source priority,
 condition, or disposition is not settled and could alter the result, return to
-the relevant interview decision before submitting. Submit only when all four
+the relevant chat interview decision before submitting. Submit only when all four
 content areas agree with each other and with the approved forecast specification.

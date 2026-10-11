@@ -19,11 +19,14 @@ Submission tools validate and store a pending stage. All six stages use one
 revision-bound MCP App workspace. Shared core tools remain model-visible, but
 hosts without MCP App support are unsupported for workflow reviews:
 `create_question_workspace` starts an incomplete draft; `execute_workspace_command`
-is used by the App to navigate to an editable stage and perform edits,
-proposals, Apply/Discard, approval, or Continue. Model workflows fetch current
-stage state with `get_forecast_stage_review`; this initializes untouched stages
-and, on MCP App clients, opens or updates the requested stage in the App. Use
-commands returned in `workspace.presentation.actions`; replace editable
+is the App-facing tool for navigating to an editable stage and performing edits,
+proposals, Apply/Discard, approval, or Continue. Model-driven approval and
+continuation use `advance_forecast_specification`, which returns structured
+handoff state without attaching or opening the MCP App UI. Model workflows
+fetch current stage state with `get_forecast_stage_review`; this initializes
+untouched stages and returns structured state without attaching or opening the
+MCP App UI. Use `execute_workspace_command` to navigate in the App. Use commands returned in
+`workspace.presentation.actions`; replace editable
 payloads as needed and use a fresh command ID for a new operation. Preserve the
 same command ID and payload when retrying a lost acknowledgement.
 
@@ -41,11 +44,13 @@ content.
 
 For stage submissions after Question, finish the analysis before submitting,
 prepare the complete payload, and use the exact revision and prerequisite
-bindings from the latest workspace response. If those bindings are unavailable,
-fetch only the target stage once with `get_forecast_stage_review`; this may open
-or update that stage in the App. Submit the prepared payload in the same turn;
-the submission result opens or updates the App with the populated stage for
-review.
+bindings from the latest workspace response. When approval or an MCP App
+handoff supplies `next_stage_bindings`, use them directly; do not fetch the
+target stage again. Otherwise, fetch only that target stage with
+`get_forecast_stage_review` when its bindings are unavailable. This tool
+returns structured state without attaching or opening the MCP App UI. Submit
+the prepared payload in the same turn; the submission result opens or updates
+the App with the populated stage for review.
 The first generated result fills an untouched stage. The generator may replace
 its own latest draft while no App edit has occurred since that generation. An
 App edit marks the draft as user-edited; later generated output is then a
@@ -54,13 +59,13 @@ to the same workspace commands; use the returned actions for edits, proposal
 decisions, approval, and continuation.
 
 Use one `get_forecast_stage_review` call when the target stage's current content
-or bindings are not already available. This call can open or update that stage
-in the App, so do not fetch a previously reviewed stage just to repeat an
-approval or Continue action. Read the complete response once, including its
-workspace snapshot and structured bindings. Do not submit again to retrieve
-fields or refresh the App. If acknowledgement is uncertain, fetch only the
-affected stage and retry only if the review shows that the submission was not
-saved.
+or bindings are not already available. It may initialize an untouched stage,
+but does not attach or open the MCP App UI. Do not fetch a previously reviewed
+stage just to repeat an approval or Continue action. Read the complete response
+once, including its workspace snapshot and structured bindings. Do not submit
+again to retrieve fields or refresh the App. If acknowledgement is uncertain,
+fetch only the affected stage and retry only if the review shows that the
+submission was not saved.
 
 For every approval, pass the exact `expected_revision` and
 `prerequisite_revisions` from the reviewed result. Missing or stale bindings
@@ -81,16 +86,18 @@ as acceptance of the current reviewed content when the referent is clear. Route
 the action by the current stage and the user's intent:
 
 - For an unapproved stage with an enabled next-stage action, normal acceptance
-  means approve and advance. Use `approve_and_continue` directly; Question has
-  one draft and needs no separate candidate-selection action. If the stage is
-  already approved, use its enabled `continue` action when the user wants to
+  means approve and advance. Pass the complete enabled `approve_and_continue`
+  action to `advance_forecast_specification`; Question has one draft and needs
+  no separate candidate-selection action. If the stage is already approved,
+  pass its enabled `continue` action to the same tool when the user wants to
   proceed.
 - Use `approve` only when the user explicitly asks to approve and stay at the
   current stage. Do not advance after that request.
 - If `approve_and_continue` is unavailable but both approval and continuation
   are available, approve the exact reviewed content, then use the enabled
-  `continue` action from the updated workspace. Do not fetch or reopen a stage
-  just to find that action.
+  `continue` action from the updated workspace with
+  `advance_forecast_specification`. Do not fetch or reopen a stage just to find
+  that action.
 - If validation, a conflict, or an unresolved proposal disables progression,
   resolve that issue or ask for the material choice before continuing. A pending
   proposal still requires a clear choice of the draft or suggestion; never
@@ -98,12 +105,15 @@ the action by the current stage and the user's intent:
 
 When approval implies progression, do not end the turn at approval. Pass the
 complete action object, including `stage`, revision bindings, and
-`next_stage` when present. Follow the returned next-stage instruction in the
-same turn without waiting for another message or button click. Use returned
-`next_stage_bindings` without reopening that stage; otherwise fetch the target
-stage only when its current bindings are unavailable. Content shown in the
-loaded App counts as reviewed, so the user can accept it in chat without
-repeating it. Optional News still requires explicit opt-in.
+`next_stage` when present, to `advance_forecast_specification`. Follow the
+returned next-stage instruction in the same turn without waiting for another
+message or button click. Use returned
+`next_stage_bindings` without reopening either the completed stage or the target
+stage. Do not call `get_forecast_stage_review` for content and bindings already
+present in the loaded App or the handoff response; the call is unnecessary and
+may initialize an untouched stage. Content shown in the loaded App counts as
+reviewed, so the user can accept it in chat without repeating it. Optional News
+still requires explicit opt-in.
 
 When generated output is a proposal against an App-edited draft, include a
 `rationale` with the material changes and why they improve the draft. Keep it
@@ -118,13 +128,15 @@ handoff. Follow the named skill and start that stage in the same turn; do not
 reply only that the stage is ready or ask the user to start it. Stop for user
 input only when the stage skill requires a substantive decision or approval.
 
-After background approval, open the News workspace to record the user's optional
-choice with `set_news_choice`. Save `opted_in` before researching or generating
-news. Save `declined` when the user skips news; after opted-in research, save
-`unavailable` when nothing qualifies or nothing is selected. These choices
-preserve a background-only record, without approving an empty timeline. Renew
-the choice against the current prerequisites after upstream changes. Timeline
-removal follows the News skill reference.
+After background approval, ask the user in chat whether to skip or research
+optional news. Save the choice with `set_forecast_news_choice`, which keeps the
+News App closed while research is underway. Save `opted_in` before researching
+or generating news; submit the populated timeline to open it for review. Save
+`declined` when the user skips news, and save `unavailable` after opted-in
+research when nothing qualifies or nothing is selected. These choices preserve
+a background-only record without approving an empty timeline. Renew the choice
+against current prerequisites after upstream changes. Timeline removal follows
+the News skill reference.
 
 When a concrete proposal exists, keep the user in the decision flow. In the
 MCP App, keep the normal draft editor above the read-only suggestion. The user
@@ -134,15 +146,16 @@ draft, discards the pending proposal, and follows the stage workflow without
 an additional Continue request. In chat, the user's acceptance of the exact
 displayed selection also authorizes continuation. If there is no
 proposal, report that no actionable improvement was found and keep the draft available.
-Execute the available `continue` command when the user requests progression,
-then follow its returned chat instruction. A Continue intent or successful message delivery does not
-establish that generation has started or finished. If app messaging is
-unavailable, present the equivalent chat request.
+Execute the available `continue` command with
+`advance_forecast_specification` when the user requests progression, then
+follow its returned chat instruction. A Continue intent or successful message
+delivery does not establish that generation has started or finished. If app
+messaging is unavailable, present the equivalent chat request.
 
 `approve_forecast_specification` approves without advancing. Use it only when
 the user explicitly asks to approve and stay at the current stage; ordinary
 acceptance and progression should use the workspace's enabled
-`approve_and_continue` action.
+`approve_and_continue` action through `advance_forecast_specification`.
 
 Pass the returned `forecast_specification_id` to every approval call; it is
 required even when continuing in the same chat. Carry the ID and immutable
@@ -221,13 +234,12 @@ response finishes.
 
 ## Completion and exports
 
-After background approval, open the `news_timeline` workspace and let the user
-choose whether to include optional news. Once that choice and any opted-in
-timeline are approved, call `execute_completion_command` with `kind: reopen` to
-load the App completion/export flow and current revision. The App presents the
-available export formats and previews the selected document. News research
-still requires explicit opt-in. Feedback remains available after prior
-submissions; invite additional feedback when selected again.
+Once the optional news choice and any opted-in timeline are approved, call
+`execute_completion_command` with `kind: reopen` to load the App
+completion/export flow and current revision. The App presents the available
+export formats and previews the selected document. News research still
+requires explicit opt-in. Feedback remains available after prior submissions;
+invite additional feedback when selected again.
 
 For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
 `kind: export`, the requested `formats`, and the reopened `expected_revision`.

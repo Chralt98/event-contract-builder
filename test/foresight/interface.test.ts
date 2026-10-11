@@ -325,6 +325,29 @@ describe("public forecast interface", () => {
     expect(foresightTools.execute_completion_command).toBeDefined();
   });
 
+  test("model advancement accepts only valid approve or continue actions", () => {
+    const action = {
+      contract_version: 1,
+      command_id: "00000000-0000-4000-8000-000000000001",
+      forecast_specification_id: "00000000-0000-4000-8000-000000000002",
+      expected_revision: "revision-1",
+      prerequisite_revisions: {},
+      stage: "selected_unit",
+      kind: "approve_and_continue",
+      next_stage: "defined_terms",
+    };
+    const schema = foresightTools.advance_forecast_specification.inputSchema;
+
+    expect(schema.safeParse(action).success).toBe(true);
+    expect(
+      schema.safeParse({ ...action, next_stage: "resolution_sources" }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({ ...action, kind: "reopen", next_stage: undefined })
+        .success,
+    ).toBe(false);
+  });
+
   test("approval outputs carry handoff metadata without a text review", () => {
     const schema = foresightTools.approve_forecast_specification.outputSchema;
     const finalSummary = {
@@ -424,6 +447,19 @@ describe("public forecast interface", () => {
       "immediately invoke the next stage",
     );
     expect(foresightServerInstructions).toContain(
+      "Do not call `get_forecast_stage_review` for content and bindings already",
+    );
+    expect(foresightServerInstructions).toContain(
+      "without reopening either the completed stage or the target",
+    );
+    expect(foresightServerInstructions).toContain(
+      "ask the user in chat whether to skip or research",
+    );
+    expect(foresightServerInstructions).toContain("`set_forecast_news_choice`");
+    expect(foresightServerInstructions).toContain(
+      "News App closed while research is underway",
+    );
+    expect(foresightServerInstructions).toContain(
       "present only its review in the App",
     );
     expect(foresightServerInstructions).toContain(
@@ -441,7 +477,7 @@ describe("public forecast interface", () => {
       "only when the user explicitly asks to",
     );
     expect(foresightServerInstructions).toMatch(
-      /If the stage is\s+already approved, use its enabled/,
+      /If the stage is\s+already approved,\s+pass its enabled/,
     );
     expect(foresightServerInstructions).not.toContain(
       "then an explicit Continue request",
@@ -450,7 +486,13 @@ describe("public forecast interface", () => {
       "After the user explicitly accepts each other App-rendered stage, call",
     );
     expect(foresightTools.execute_workspace_command.description).toContain(
-      "Use approve_and_continue for normal acceptance",
+      "For model-driven approval or continuation",
+    );
+    expect(foresightTools.advance_forecast_specification.description).toContain(
+      "without attaching or opening the App UI",
+    );
+    expect(foresightServerInstructions).toContain(
+      "advance_forecast_specification",
     );
     expect(foresightTools.approve_forecast_specification.description).toContain(
       "without advancing",
@@ -754,10 +796,11 @@ describe("public forecast interface", () => {
     );
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
     expect(criteriaReference).toContain("settled frontier");
-    expect(criteriaReference).toContain(
-      "three substantive lettered choices (A, B, and C)",
+    expect(criteriaReference).toContain("in one round");
+    expect(criteriaReference).toContain("grill-me");
+    expect(criteriaReference).toMatch(
+      /do not open or fetch the\s+Criteria workspace/,
     );
-    expect(criteriaReference).toContain("single-question screen");
     expect(criteriaReference).toContain("single editable");
     expect(criteriaReference).toContain(
       "outcome rules, approved resolution sources",
@@ -775,6 +818,9 @@ describe("public forecast interface", () => {
   });
 
   test("keeps tool descriptions concise and delegates procedure to skills", () => {
+    expect(foresightTools.get_forecast_stage_review.description).toContain(
+      "does not attach or open the MCP App UI",
+    );
     for (const tool of Object.values(foresightTools)) {
       expect(tool.description.length).toBeLessThanOrEqual(260);
       expect(tool.description).not.toContain("language_code");

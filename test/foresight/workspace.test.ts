@@ -5,6 +5,7 @@ import {
   ForecastCondition,
   QuestionWorkspaceSnapshot,
   WorkspaceCommand,
+  SetForecastNewsChoiceCommand,
   WorkspaceCommandResult,
   WorkspaceAvailableAction,
   WorkspacePresentationField,
@@ -19,7 +20,6 @@ import {
   contentDomainInput,
   workspaceActionLabel,
   CriteriaWorkingDraft,
-  CriteriaInterviewRound,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -255,61 +255,25 @@ test("every mutation requires its base revision and prerequisite bindings", () =
   expect(WorkspaceCommand.parse({ ...identity, kind: "reopen" })).toBeDefined();
 });
 
-test("criteria interview screens contain one question with three choices", () => {
-  const round = {
-    question_number: 1,
-    questions_remaining: { kind: "estimate", count: 2 },
-    question: {
-      decision_id: "price-cutoff",
-      title: "Price cutoff",
-      question: "Which BTC/USD measurement should control?",
-      options: [
-        {
-          letter: "A",
-          label: "The 23:59 UTC observation",
-          consequence: "Uses the final observation of the target day.",
-        },
-        {
-          letter: "B",
-          label: "The daily candle close",
-          consequence: "Uses the selected source's daily candle boundary.",
-        },
-        {
-          letter: "C",
-          label: "The volume-weighted daily average",
-          consequence:
-            "Uses the approved source's mean price over the target day.",
-        },
-      ],
-      recommendation: {
-        letter: "A",
-        reason: "It matches the forecast's stated UTC cutoff.",
-      },
-    },
-  } satisfies import("../../src/foresight").CriteriaInterviewRound;
-  expect(CriteriaInterviewRound.parse(round)).toEqual(round);
+test("chat-driven news choices are revision-bound workspace commands", () => {
+  const command = {
+    ...identity,
+    ...binding,
+    stage: "news_timeline" as const,
+    kind: "set_news_choice" as const,
+    choice: "opted_in" as const,
+  };
+  expect(SetForecastNewsChoiceCommand.parse(command)).toEqual(command);
   expect(
-    WorkspaceCommand.safeParse({
-      ...identity,
-      ...binding,
-      stage: "resolution_criteria",
-      kind: "set_criteria_interview_round",
-      round,
-    }).success,
-  ).toBe(true);
-  expect(
-    CriteriaInterviewRound.safeParse({
-      ...round,
-      questions_remaining: { kind: "exact", count: -1 },
+    SetForecastNewsChoiceCommand.safeParse({
+      ...command,
+      stage: "background_information",
     }).success,
   ).toBe(false);
   expect(
-    CriteriaInterviewRound.safeParse({
-      ...round,
-      question: {
-        ...round.question,
-        options: round.question.options.slice(0, 2),
-      },
+    SetForecastNewsChoiceCommand.safeParse({
+      ...command,
+      choice: "undecided",
     }).success,
   ).toBe(false);
 });

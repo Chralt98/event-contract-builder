@@ -107,7 +107,6 @@ def main():
     else:
         marketplace_root = marketplace.parent
     name = manifest["name"]
-    legacy_name = "event-contract-builder"
     if args.setup:
         # Use the supported scaffold helper's marketplace API without replacing
         # the existing plugin manifest with a blank scaffold.
@@ -123,55 +122,7 @@ def main():
         else:
             source.parent.mkdir(parents=True, exist_ok=True)
             source.symlink_to(root, target_is_directory=True)
-        # Clean up the source link created by older versions of this helper,
-        # which incorrectly nested it below `.agents/plugins/plugins/`.
-        misplaced_source = marketplace.parent / "plugins" / name
-        if misplaced_source != source and misplaced_source.is_symlink() and misplaced_source.resolve() == root:
-            misplaced_source.unlink()
         helper.update_marketplace_json(marketplace, None, name, "AVAILABLE", "ON_INSTALL", "Productivity", True)
-        # Rename the source entry created for the previous plugin identifier when it
-        # still points at this checkout. This keeps the personal marketplace free of
-        # an unresolvable legacy entry while leaving unrelated entries untouched.
-        payload = json.loads(marketplace.read_text())
-        removed_legacy = False
-        retained = []
-        for entry in payload["plugins"]:
-            if (
-                isinstance(entry, dict)
-                and entry.get("name") == legacy_name
-                and entry.get("source", {}).get("source") == "local"
-            ):
-                legacy_source = marketplace_root / entry["source"]["path"]
-                if legacy_source.resolve() == root:
-                    removed_legacy = True
-                    if legacy_source.is_symlink():
-                        legacy_source.unlink()
-                    continue
-            retained.append(entry)
-        if removed_legacy:
-            payload["plugins"] = retained
-            helper.write_json(marketplace, payload, force=True)
-            # Remove the old installed copy when present. An absent installation
-            # is harmless during a first-time migration.
-            subprocess.run(
-                [
-                    "codex",
-                    "plugin",
-                    "remove",
-                    f"{legacy_name}@{payload.get('name', 'personal')}",
-                    "--json",
-                ],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        # Also remove an orphaned legacy link left by an interrupted migration.
-        for orphan in (
-            marketplace_root / "plugins" / legacy_name,
-            marketplace.parent / "plugins" / legacy_name,
-        ):
-            if orphan != source and orphan.is_symlink() and orphan.resolve() == root:
-                orphan.unlink()
         if marketplace != Path.home() / ".agents/plugins/marketplace.json":
             subprocess.run(["codex", "plugin", "marketplace", "add", str(marketplace.parent)], check=True)
     marketplace_name = read_marketplace_name(marketplace, helpers)

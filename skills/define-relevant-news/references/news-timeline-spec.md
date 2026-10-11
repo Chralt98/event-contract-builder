@@ -26,14 +26,18 @@ selected subset.
 
 First submit all qualifying candidates and show the complete timeline and
 follow-up in the MCP App. Ask which item numbers are relevant or need changes;
-this is selection, not approval. If the user keeps all displayed items without
-changes (for example, “all keep”), the displayed proposal is already the exact
-selected timeline: treat that response as approval without resubmitting or
-asking for approval again. For a subset or edited timeline, resubmit only the
-selected items in their existing newest-first order, show the complete filtered
-timeline in the App, and ask for approval. After approval, follow the server-wide
+this is selection, not approval. Since the timeline is fully visible in the
+App, do not repeat item summaries, publishers, sources, or dates in chat. If
+the user keeps all displayed items without changes (for example, “all keep”),
+the displayed proposal is already the exact selected timeline: treat that
+response as approval without resubmitting or asking for approval again. For a
+subset or edited timeline, resubmit only the selected items in their existing
+newest-first order, show the complete filtered timeline in the App, and ask for
+approval without restating its details in chat. After approval, follow the server-wide
 [approval routing](../../../src/foresight/instructions.md#workflow-state) to
-approve and complete the workflow.
+approve and complete the workflow. Keep any chat response to useful context not
+already shown in the App and the next action; do not summarize the approved
+timeline there.
 
 If no item qualifies or the user selects none, do not submit or approve an
 empty timeline; retain the background-only specification. An empty `items`

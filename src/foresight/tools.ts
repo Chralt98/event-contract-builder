@@ -2,7 +2,10 @@ import { CompletionCommand, CompletionOutput } from "./completion";
 import { z } from "zod";
 import {
   WorkspaceCommand,
+  AdvanceForecastCommand,
   WorkspaceCommandResult,
+  SetForecastNewsChoiceCommand,
+  SetForecastNewsChoiceResult,
   QuestionWorkspaceSnapshot,
   WorkspaceSnapshot,
   ContentWorkspaceSnapshot,
@@ -332,7 +335,7 @@ const create_question_workspaceTool = {
 const execute_workspace_commandTool = {
   title: "Workspace Command",
   description:
-    "Run one revision-bound workspace command. Use approve_and_continue for normal acceptance; use approve only when the user asks to stay. Pass the complete action from the current workspace.",
+    "Run one revision-bound App workspace command for navigation and App actions. For model-driven approval or continuation, use advance_forecast_specification so the App opens with the submitted next-stage draft.",
   inputSchema: WorkspaceCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
@@ -345,10 +348,42 @@ const execute_workspace_commandTool = {
   },
 } as const;
 
+const advance_forecast_specificationTool = {
+  title: "Advance Forecast Specification",
+  description:
+    "Execute the enabled approve_and_continue or continue action from the current workspace. Returns the next-stage bindings without attaching or opening the App UI; submit the prepared next-stage content to open its populated review.",
+  inputSchema: AdvanceForecastCommand,
+  outputSchema: z.strictObject({
+    result: WorkspaceCommandResult,
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const set_forecast_news_choiceTool = {
+  title: "Set Forecast News Choice",
+  description:
+    "Save the user's Skip, Research, or no-qualifying-news choice without opening the News App. Submit researched news afterward to show its populated review.",
+  inputSchema: SetForecastNewsChoiceCommand,
+  outputSchema: z.strictObject({
+    result: SetForecastNewsChoiceResult,
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
 const get_forecast_stage_reviewTool = {
   title: "Get Forecast Stage Review",
   description:
-    "Fetch and open or update a saved workflow stage, returning its workspace, revision, and prerequisite bindings. Fetching an untouched stage initializes an incomplete draft without approval.",
+    "Fetch a saved workflow stage's structured workspace, revision, and prerequisite bindings. Initializes an untouched stage without approval; does not attach or open the MCP App UI.",
   inputSchema: {
     forecast_specification_id: ForecastSpecificationId,
     stage: approvalStageSchema,
@@ -370,7 +405,7 @@ const get_forecast_stage_reviewTool = {
 const approve_forecast_specificationTool = {
   title: "Approve Forecast Specification Stage",
   description:
-    "Approve a stage without advancing. Use only when the user explicitly asks to stay; otherwise use the enabled approve_and_continue action.",
+    "Approve a stage without advancing. Use only when the user explicitly asks to stay; otherwise use approve_and_continue through advance_forecast_specification.",
   inputSchema: approvalShape,
   outputSchema: approvalOutputSchema,
   annotations: {
@@ -552,6 +587,8 @@ const submit_selected_unitTool = {
 export const foresightTools: {
   readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly execute_workspace_command: typeof execute_workspace_commandTool;
+  readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
+  readonly set_forecast_news_choice: typeof set_forecast_news_choiceTool;
   readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
   readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
   readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
@@ -570,6 +607,8 @@ export const foresightTools: {
 } = {
   create_question_workspace: create_question_workspaceTool,
   execute_workspace_command: execute_workspace_commandTool,
+  advance_forecast_specification: advance_forecast_specificationTool,
+  set_forecast_news_choice: set_forecast_news_choiceTool,
   get_forecast_stage_review: get_forecast_stage_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,

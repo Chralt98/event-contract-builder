@@ -257,116 +257,6 @@ export const NewsChoice = z.enum([
   "declined",
   "unavailable",
 ]);
-const CriteriaInterviewOption = z.strictObject({
-  letter: z
-    .enum(["A", "B", "C"])
-    .describe("Consecutive option letter, starting with A."),
-  label: z
-    .string()
-    .trim()
-    .min(1)
-    .max(200)
-    .describe("Short, distinct outcome or behavior the user can choose."),
-  consequence: z
-    .string()
-    .trim()
-    .min(1)
-    .max(500)
-    .describe("Practical resolution consequence of choosing this option."),
-});
-const CriteriaInterviewQuestion = z
-  .strictObject({
-    decision_id: z
-      .string()
-      .trim()
-      .min(1)
-      .max(80)
-      .describe("Short stable key used to associate the user's answer."),
-    title: z
-      .string()
-      .trim()
-      .min(1)
-      .max(120)
-      .describe("Short heading for this separate decision."),
-    question: z
-      .string()
-      .trim()
-      .min(1)
-      .max(1000)
-      .describe("One clear question about a material user-dependent choice."),
-    options: z
-      .array(CriteriaInterviewOption)
-      .length(3)
-      .describe(
-        "Exactly three substantive alternatives; the app adds a custom answer.",
-      ),
-    recommendation: z.strictObject({
-      letter: z.enum(["A", "B", "C"]).describe("Letter of one listed option."),
-      reason: z
-        .string()
-        .trim()
-        .min(1)
-        .max(500)
-        .describe("Reason for recommending that listed option."),
-    }),
-  })
-  .superRefine((question, ctx) => {
-    const ids = question.options.map((option) => option.letter);
-    if (new Set(ids).size !== ids.length)
-      ctx.addIssue({
-        code: "custom",
-        path: ["options"],
-        message: "Option letters must be unique.",
-      });
-    if (!ids.includes(question.recommendation.letter))
-      ctx.addIssue({
-        code: "custom",
-        path: ["recommendation", "letter"],
-        message: "The recommendation must refer to a listed option.",
-      });
-  });
-/** One adaptive decision shown on a Resolution Criteria app screen. */
-export const CriteriaInterviewRound = boundedPayload(
-  z
-    .strictObject({
-      question_number: z
-        .number()
-        .int()
-        .min(1)
-        .max(100)
-        .describe("1-based position of this question in the interview."),
-      questions_remaining: z.strictObject({
-        kind: z
-          .enum(["exact", "estimate"])
-          .describe(
-            "Whether the count after this question is exact or estimated.",
-          ),
-        count: z
-          .number()
-          .int()
-          .min(0)
-          .max(99)
-          .describe(
-            "Exact or estimated number of questions expected after this one; update estimates when answers change branches.",
-          ),
-      }),
-      question: CriteriaInterviewQuestion,
-    })
-    .superRefine((screen, ctx) => {
-      const expectedLetters = ["A", "B", "C"];
-      if (
-        screen.question.options.some(
-          (option, index) => option.letter !== expectedLetters[index],
-        )
-      )
-        ctx.addIssue({
-          code: "custom",
-          path: ["question", "options"],
-          message: "Options must use A, B, and C in order.",
-        });
-    }),
-);
-export type CriteriaInterviewRound = z.infer<typeof CriteriaInterviewRound>;
 export const WorkspaceNextStage = z.enum([
   "defined_terms",
   "resolution_sources",
@@ -789,7 +679,6 @@ export const WorkspaceActionKind = z.enum([
   "approve_and_continue",
   "complete_review",
   "continue",
-  "set_criteria_interview_round",
 ]);
 export const workspaceActionLabels = {
   reopen: "Refresh",
@@ -804,7 +693,6 @@ export const workspaceActionLabels = {
   approve_and_continue: "Approve and continue",
   complete_review: "Complete AI review",
   continue: "Continue",
-  set_criteria_interview_round: "Update interview question",
 } satisfies Record<z.infer<typeof WorkspaceActionKind>, string>;
 export function workspaceActionLabel(command: WorkspaceCommand): string {
   if (command.kind === "set_news_choice") {
@@ -837,6 +725,82 @@ const mutation = {
   ...workspaceRevisionBindingShape,
   stage: editableWorkspaceStages,
 };
+const approveAndContinueCommand = z.strictObject({
+  ...mutation,
+  kind: z.literal("approve_and_continue"),
+  next_stage: WorkspaceNextStage,
+});
+const continueCommand = z.strictObject({
+  ...mutation,
+  kind: z.literal("continue"),
+  approved_revision: WorkspaceRevision,
+  next_stage: WorkspaceNextStage,
+});
+type AdvancingWorkspaceCommand = {
+  kind: "approve_and_continue" | "continue";
+  stage: z.infer<typeof editableWorkspaceStages>;
+  next_stage: z.infer<typeof WorkspaceNextStage>;
+};
+function validateNextStage(
+  command: AdvancingWorkspaceCommand,
+  ctx: z.RefinementCtx,
+) {
+  if (
+    command.next_stage !==
+    (command.stage === "selected_unit"
+      ? "defined_terms"
+      : contentStageDefinitions[command.stage].next_stage)
+  )
+    ctx.addIssue({
+      code: "custom",
+      path: ["next_stage"],
+      message: "Continue must request the next workflow stage.",
+    });
+}
+/** Model-facing revision-bound approval/continue actions without App coupling. */
+export const AdvanceForecastCommand = boundedPayload(
+  z
+    .discriminatedUnion("kind", [approveAndContinueCommand, continueCommand])
+    .superRefine(validateNextStage),
+);
+/** Model-facing optional-news choice without opening the MCP App. */
+export const SetForecastNewsChoiceCommand = boundedPayload(
+  z.strictObject({
+    ...commandIdentity,
+    ...workspaceRevisionBindingShape,
+    stage: z.literal("news_timeline"),
+    kind: z.literal("set_news_choice"),
+    choice: NewsChoice.exclude(["undecided"]),
+  }),
+);
+export const SetForecastNewsChoiceResult = z.discriminatedUnion("status", [
+  z.strictObject({
+    ...commandIdentity,
+    status: z.enum(["saved", "snapshot"]),
+    news_choice: NewsChoice,
+    expected_revision: WorkspaceRevision,
+    prerequisite_revisions: WorkspacePrerequisites,
+  }),
+  z.strictObject({
+    ...commandIdentity,
+    status: z.literal("conflict"),
+    expected_revision: WorkspaceRevision,
+    current_revision: WorkspaceRevision,
+    reason: z.enum(["stale_revision", "stale_prerequisite", "stale_proposal"]),
+    recovery: z.literal("reopen_and_reconcile"),
+  }),
+  z.strictObject({
+    ...commandIdentity,
+    status: z.literal("invalid"),
+    recovery: z.literal("edit_and_retry"),
+  }),
+  z.strictObject({
+    ...commandIdentity,
+    status: z.literal("failed"),
+    message: z.string().min(1).max(1000),
+    retryable: z.boolean(),
+  }),
+]);
 /** Reads need identity; writes require an exact base and prerequisite bindings. */
 export const WorkspaceCommand = boundedPayload(
   z
@@ -865,14 +829,6 @@ export const WorkspaceCommand = boundedPayload(
       }),
       z.strictObject({
         ...mutation,
-        stage: z.literal("resolution_criteria"),
-        kind: z.literal("set_criteria_interview_round"),
-        round: CriteriaInterviewRound.nullable().describe(
-          "The current single-question screen to show in the Resolution Criteria app. Use null to clear it.",
-        ),
-      }),
-      z.strictObject({
-        ...mutation,
         kind: z.literal("apply_proposal"),
         proposal_id: z.uuid(),
         draft: WorkspaceDraft.optional().describe(
@@ -896,19 +852,7 @@ export const WorkspaceCommand = boundedPayload(
         choice: NewsChoice.exclude(["undecided"]),
       }),
       z.strictObject({ ...mutation, kind: z.literal("approve") }),
-      z.strictObject({
-        ...mutation,
-        stage: z.enum([
-          "selected_unit",
-          "defined_terms",
-          "resolution_sources",
-          "resolution_criteria",
-          "background_information",
-          "news_timeline",
-        ]),
-        kind: z.literal("approve_and_continue"),
-        next_stage: WorkspaceNextStage,
-      }),
+      approveAndContinueCommand,
       z.strictObject({
         ...mutation,
         stage: z.enum(["selected_unit", "defined_terms"]),
@@ -916,12 +860,7 @@ export const WorkspaceCommand = boundedPayload(
         approved_revision: WorkspaceRevision,
         feedback: z.string().trim().min(1).max(4000),
       }),
-      z.strictObject({
-        ...mutation,
-        kind: z.literal("continue"),
-        approved_revision: WorkspaceRevision,
-        next_stage: WorkspaceNextStage,
-      }),
+      continueCommand,
     ])
     .superRefine((command, ctx) => {
       if (
@@ -936,18 +875,10 @@ export const WorkspaceCommand = boundedPayload(
           message: "Draft must match the command stage.",
         });
       if (
-        (command.kind === "continue" ||
-          command.kind === "approve_and_continue") &&
-        command.next_stage !==
-          (command.stage === "selected_unit"
-            ? "defined_terms"
-            : contentStageDefinitions[command.stage].next_stage)
+        command.kind === "continue" ||
+        command.kind === "approve_and_continue"
       )
-        ctx.addIssue({
-          code: "custom",
-          path: ["next_stage"],
-          message: "Continue must request the next workflow stage.",
-        });
+        validateNextStage(command, ctx);
     }),
 );
 export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
@@ -1163,9 +1094,6 @@ export const ContentWorkspaceSnapshot = boundedPayload(
         })
         .nullable()
         .default(null),
-      criteria_interview_round: CriteriaInterviewRound.optional().describe(
-        "Current Resolution Criteria interview question for the MCP App interface, when an interview is in progress.",
-      ),
       proposals: z
         .array(
           z.strictObject({
@@ -1190,18 +1118,6 @@ export const ContentWorkspaceSnapshot = boundedPayload(
         ctx.addIssue({
           code: "custom",
           message: "Snapshot drafts must match its stage.",
-        });
-      if (
-        snapshot.criteria_interview_round &&
-        (snapshot.stage !== "resolution_criteria" ||
-          snapshot.draft.stage !== "resolution_criteria" ||
-          snapshot.proposals.length > 0)
-      )
-        ctx.addIssue({
-          code: "custom",
-          path: ["criteria_interview_round"],
-          message:
-            "An interview round is available only in the Resolution Criteria stage without a pending proposal.",
         });
     }),
   workspaceReviewLimitBytes,

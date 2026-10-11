@@ -13,71 +13,30 @@ handling. For `resolve-50-50`, state that each binary outcome receives an equal
 reference value, and source. An unresolved condition must follow its stated
 unresolved treatment, not be assumed unmet.
 
-## Decision interview
+## Chat interview
 
-Before drafting criteria, map only material user-dependent decisions as a
-dependency tree. Resolve factual prerequisites yourself. Ask one decision from
-the settled frontier per App screen and recompute the frontier after each
-answer. Do not expose a downstream question while one of its prerequisites is
-unanswered.
+On first entry from approved Sources, ask material user-dependent decisions in
+chat before opening the Criteria workspace. Use the `grill-me` skill's design
+tree and rounds: resolve factual prerequisites yourself, ask every decision in
+the settled frontier in one round, and defer dependent questions until their
+prerequisites are answered. Number each question and give a recommended answer
+with its reason. Word each question so “yes” accepts the recommendation. Wait
+for the user's answers before recomputing the frontier and asking the next
+round. Continue until no material decision remains; do not open or fetch the
+Criteria workspace during these rounds.
 
-Track the question number and the exact or estimated number of questions
-expected after the current question. Update the estimate when answers change
-the dependency branches. Each decision is a separate question with exactly
-three substantive lettered choices (A, B, and C), a recommendation with its
-reason, and a free-form fallback. Do not pad choices, collapse decisions, or
-treat agreement with unshown choices as an answer.
-
-Continuing from Sources starts the interview automatically. Opening Criteria
-directly shows its editable criteria field and a **Start interview**
-action; starting that action opens the interview and prepares a draft. For
-existing criteria, the user can choose **Refresh interview**. Publish each
-single-question screen with `execute_workspace_command` using this complete
-revision-bound command shape (take current revision bindings from the latest
-workspace response):
-
-```ts
-{
-  contract_version: 1,
-  command_id: crypto.randomUUID(),
-  forecast_specification_id,
-  kind: "set_criteria_interview_round",
-  stage: "resolution_criteria",
-  expected_revision,
-  prerequisite_revisions,
-  round: {
-    question_number: 1,
-    questions_remaining: { kind: "exact", count: 0 },
-    question: {
-      decision_id: "stable-decision-key",
-      title: "Short decision title",
-      question: "One material user decision?",
-      options: [
-        { letter: "A", label: "Option A", consequence: "Effect of A." },
-        { letter: "B", label: "Option B", consequence: "Effect of B." },
-        { letter: "C", label: "Option C", consequence: "Effect of C." },
-      ],
-      recommendation: { letter: "A", reason: "Why A is recommended." },
-    },
-  },
-}
-```
-
-Use `questions_remaining.kind: "estimate"` when the remaining count is not
-known exactly. The App presents the choices, recommendation, and custom-answer
-field. If the decision frontier is empty, skip the interview round and submit
-the complete criteria immediately.
-The App sends the user's answer through normal host messaging with a reference
-to the question. Treat it as the answer to that question; do not ask it again
-in chat. Recompute the frontier and publish the next single-question screen.
-If no decisions remain, construct and submit the criteria immediately. Do not
-reproduce the interview questions, approved specification, or an interview
-transcript in chat. If the host cannot display the App, the criteria interview
-is unsupported; do not fall back to chat questions.
-
-After each answer, if the frontier is empty, immediately construct and submit
-the criteria in that same turn; do not end with a status message or another
-pre-submission response.
+When the interview is complete, construct and validate the criteria, then call
+`submit_resolution_criteria` once. Its response opens the Criteria workspace
+with one editable text field for review. Do not show a separate draft before
+submission. After the first approval, use the existing criteria field on later
+visits. If the user asks in chat to repeat the interview or revise existing
+criteria, fetch the latest saved criteria and revision first. Treat the saved
+text as the starting point: ask whether it captures the user's intent, identify
+needed clarifications, and invite additional information. Use the same decision
+tree and rounds when material choices remain. After the interview is complete,
+submit the complete revised criteria as a revision-bound proposal without
+overwriting or approving the saved draft. Do not start this workflow from an
+App suggestion action.
 
 ## Criteria
 
@@ -85,14 +44,14 @@ Write one complete user-facing Resolution Criteria text in the single editable
 field. It must cover the outcome rules, approved resolution sources, resolution
 method, and relevant exceptions or unresolved outcomes. Before submission,
 check that complete text against [criteria-validation.md](criteria-validation.md).
-The editor's Suggest action uses model judgment; do not use regular expressions
-or fixed-phrase checks for semantic requirements.
+Review criteria by meaning; do not use regular expressions or fixed-phrase
+checks for semantic requirements.
 
 Audit the complete criteria, including evidence and exception rules, for
 outcome-bearing terms introduced beyond the selected unit. Define any term
 whose ambiguity could change the resolution in the criteria itself, using an
 observable, source-grounded meaning. If materially different defensible
-meanings require the user's choice, resolve it in the decision interview
+meanings require the user's choice, resolve it in the chat interview
 before submission.
 
 Make the criteria as determinate as possible: state observable conditions and
@@ -111,7 +70,7 @@ against the approved sources while preserving the intended event and outcome;
 source methodology, evidence cutoffs and exception handling need not all appear
 in the question. Do not demand a wording change merely because the criteria are
 more detailed. Resolve a material change to the user's intended outcome in the
-decision interview rather than silently introducing it.
+chat interview rather than silently introducing it.
 
 Before submission, test the rule against plausible edge cases and borderline
 scenarios where a condition or evidence path may not apply cleanly. Clarify the
@@ -165,11 +124,11 @@ and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
-After all interview decisions are settled, call
+After all chat interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
 criteria review before approval. Do not show a separate draft. Render the
-question once, followed by its single complete outcome rule. The selected unit already
-displays its placeholders and allowed values; do not duplicate them as
+question once, followed by its single complete outcome rule. The selected unit
+already displays its placeholders and allowed values; do not duplicate them as
 per-value criteria. Do not append a second No complement or repeat the original
 unit question inside the criteria.
 

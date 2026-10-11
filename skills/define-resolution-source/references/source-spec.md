@@ -1,14 +1,13 @@
 # Resolution-source specification
 
-Given one exact unit and its approved definitions, cover every fact needed to
-resolve it with a fixed ranked hierarchy. Find sources suited to the selected
-display question and intent rather than routinely rewriting the question to
+Given a forecast question and its approved definitions, cover every fact needed to
+resolve it with a fixed ranked hierarchy. Find sources suited to the display question and intent rather than routinely rewriting the question to
 match a convenient dataset. Its short wording need not state the complete
 measurement rule; the criteria stage makes that rule precise against the
 approved sources. Report a genuine coverage gap when no suitable source exists,
 without silently substituting a different event or proxy.
 
-For a conditional unit, submit one hierarchy for the outcome and a separate
+For a conditional forecast question, submit one hierarchy for the outcome and a separate
 `condition_sources` hierarchy for determining whether the prerequisite held.
 Each hierarchy must cover its own facts and have an independent primary and,
 when available, fallback. Source coverage for the outcome does not establish
