@@ -418,8 +418,8 @@ export function validateContentWorkingDraft(
               ? "Enter a publication date (YYYY-MM-DD) or an ISO date-time with its offset."
               : issue.code === "invalid_format" && path.at(-1) === "url"
                 ? "Enter a valid source URL."
-                : issue.message.includes("criteria question must exactly match")
-                  ? "Use the exact approved question."
+                : issue.message.includes("separate question binding")
+                  ? "The separate question binding must match the approved question; the criteria text does not need to repeat it."
                   : issue.message;
         add(path.length ? path : [draft.stage], message);
       }
@@ -495,10 +495,10 @@ export const contentStageDefinitions = {
       },
       {
         path: ["resolution_criteria", "question"],
-        label: "Question",
+        label: "Question being resolved",
         control: "prose",
         validation: "ResolutionCriteria.question",
-        internal: true,
+        readOnly: true,
       },
       {
         path: ["resolution_criteria", "criteria"],
@@ -675,6 +675,7 @@ export const WorkspaceActionKind = z.enum([
   "apply_proposal",
   "discard_proposal",
   "accept_proposal",
+  "revalidate_unchanged",
   "approve",
   "approve_and_continue",
   "complete_review",
@@ -689,6 +690,7 @@ export const workspaceActionLabels = {
   apply_proposal: "Apply",
   discard_proposal: "Discard",
   accept_proposal: "Accept suggestion",
+  revalidate_unchanged: "Confirm unchanged content",
   approve: "Approve only (stay)",
   approve_and_continue: "Approve and continue",
   complete_review: "Complete AI review",
@@ -844,6 +846,18 @@ export const WorkspaceCommand = boundedPayload(
         ...mutation,
         kind: z.literal("accept_proposal"),
         proposal_id: z.uuid(),
+      }),
+      z.strictObject({
+        ...mutation,
+        stage: z.enum([
+          "defined_terms",
+          "resolution_sources",
+          "resolution_criteria",
+          "background_information",
+        ]),
+        kind: z.literal("revalidate_unchanged"),
+        approved_revision: WorkspaceRevision,
+        rationale: z.string().trim().min(1).max(1000),
       }),
       z.strictObject({
         ...mutation,

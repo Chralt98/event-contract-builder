@@ -9,7 +9,9 @@ Read [references/drafting-spec.md](references/drafting-spec.md) for the drafting
 template, numeric range, and App presentation rules.
 
 1. Distinguish a new event from an update to an existing draft. Ask for missing
-   event, outcome, or future time information rather than guessing.
+   event or outcome information rather than guessing. If only the horizon is
+   unspecified, preserve that intent with the cutoff-date variable workflow in
+   the reference and ask for values when needed; do not demand one fixed date.
 2. For a new event, draft one main question as defined in the reference and call
    `submit_drafted_question` directly once; it creates the record and workspace.
    Do not create an empty workspace or fetch a stage review first.

@@ -401,8 +401,8 @@ describe("public forecast interface", () => {
       approved_stage: "resolution_criteria" as const,
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
-    expect(foresightServerInstructions).toContain(
-      "Final approvals return this metadata in structured tool output",
+    expect(foresightServerInstructions).toMatch(
+      /Final approvals return this metadata in structured tool\s+output/,
     );
   });
 
@@ -433,81 +433,32 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow instructions require App reviews and advance after intermediate approval", () => {
+  test("workflow instructions keep App review, stale-stage review, and chat distinct", () => {
     expect(foresightServerInstructions).toContain(
       "The MCP App is the supported surface for complete workflow reviews",
     );
-    expect(foresightServerInstructions).toContain(
-      "a client without MCP App support has no text review fallback",
+    expect(foresightServerInstructions).toMatch(
+      /a client without MCP App support has\s+no text review fallback/,
     );
-    expect(foresightServerInstructions).toContain(
-      "Intermediate approval reviews after the question stage are not user-facing",
+    expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
+    expect(foresightServerInstructions).toMatch(
+      /The App uses `!` only when a\s+concrete proposal is available/,
     );
-    expect(foresightServerInstructions).toContain(
-      "immediately invoke the next stage",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Do not call `get_forecast_stage_review` for content and bindings already",
-    );
-    expect(foresightServerInstructions).toContain(
-      "without reopening either the completed stage or the target",
-    );
-    expect(foresightServerInstructions).toContain(
-      "ask the user in chat whether to skip or research",
-    );
-    expect(foresightServerInstructions).toContain("`set_forecast_news_choice`");
-    expect(foresightServerInstructions).toContain(
-      "News App closed while research is underway",
-    );
-    expect(foresightServerInstructions).toContain(
-      "present only its review in the App",
-    );
-    expect(foresightServerInstructions).toContain(
-      "the proposed question and its ranges for review.",
+    expect(foresightServerInstructions).toMatch(
+      /After\s+submitting generated content,\s+do not quote or summarize the submitted draft in\s+chat/,
     );
     expect(foresightServerInstructions).not.toContain("review_markdown");
-    expect(foresightServerInstructions).not.toContain("presentation surface");
-    expect(foresightServerInstructions).toContain(
-      "validation messages, or available actions in chat",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /normal acceptance\s+means approve and advance/,
-    );
-    expect(foresightServerInstructions).toContain(
-      "only when the user explicitly asks to",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /If the stage is\s+already approved,\s+pass its enabled/,
-    );
-    expect(foresightServerInstructions).not.toContain(
-      "then an explicit Continue request",
-    );
-    expect(foresightServerInstructions).not.toContain(
-      "After the user explicitly accepts each other App-rendered stage, call",
-    );
     expect(foresightTools.execute_workspace_command.description).toContain(
       "For model-driven approval or continuation",
     );
     expect(foresightTools.advance_forecast_specification.description).toContain(
       "without attaching or opening the App UI",
     );
-    expect(foresightServerInstructions).toContain(
-      "advance_forecast_specification",
-    );
     expect(foresightTools.approve_forecast_specification.description).toContain(
       "without advancing",
     );
     expect(foresightServerInstructions).toMatch(
-      /copying never changes the draft/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Continue confirms the editable\s+draft, discards the pending proposal/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Request AI suggestions only when/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Save `opted_in` before researching/,
+      /or repeat its reviews, draft fields,\s+validation messages, or available actions in chat/,
     );
   });
 
@@ -716,7 +667,7 @@ describe("public forecast interface", () => {
         categoryUnit,
       ),
     ).toThrow(
-      "The criteria question must exactly match selectedUnit.question.",
+      "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
     );
   });
 
@@ -742,7 +693,7 @@ describe("public forecast interface", () => {
         selectedUnit,
       ),
     ).toThrow(
-      "The criteria question must exactly match selectedUnit.question.",
+      "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
     );
   });
 

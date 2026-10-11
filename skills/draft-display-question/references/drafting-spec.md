@@ -28,6 +28,14 @@ Yes/No question for each candidate, and “Will the price be <range>?” asks on
 for each range. Do not draft a multi-outcome “Which X?” question or list values
 without using them in a placeholder.
 
+When the user asks when an event will happen but leaves the horizon open, keep
+the timing intent and parameterize the cutoff. For example, draft
+“Will AGI arrive by <cutoff_date>?” with a `cutoff_date` variable; each supplied
+date is its own Yes/No forecast. If the user has not supplied cutoff dates,
+show the question template and ask which finite set of dates to include. Do not
+reject the open horizon, turn it into “By what date?”, or invent dates. Submit
+the App draft once the variable has at least one user-supplied value.
+
 When the user's outcome depends on a separate event, draft that event as the
 unit's `condition` at this stage. State the prerequisite declaratively (for
 example, `A law is enacted on or before June 30, 2027, 23:59 UTC`); it does not

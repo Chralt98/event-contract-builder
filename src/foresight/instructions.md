@@ -85,25 +85,20 @@ workspace `reopen`), reconciliation, and retry; never infer the bindings from
 conversation memory. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
 Keep the approved snapshot distinct from pending edits; outdated dependent work
-requires renewed review before export.
-
-After a user accepts a proposal or approves a materially changed stage, audit
-already reviewed stages for changes that materially affect their meaning or
-consistency, including upstream stages when later-stage decisions expose a
-problem. Use current stage reviews and the corresponding stage skills; propose
-changes only for affected stages, and submit each as a revision-bound proposal.
-This sets the stage's existing `!` review marker. Leave proposals unapproved,
-tell the user in chat which marked stages need review, and pause normal stage
-progression until the user resolves them. Tell the user to select each `!`
-stage in the stepper to review its changes. If the approval already returned a
-next-stage handoff, complete that named stage in the same turn before surfacing
-the proposals and pausing. Do not change unrelated stages.
+must be reviewed before export. The App marks outdated approvals with `↻` and,
+when the user opens an eligible stage, automatically compares its retained
+draft with its approved version and current prerequisites. If the approved
+content is still valid and unchanged, use `revalidate_unchanged`; do not ask the
+user to approve it again. If material content must change, submit a
+revision-bound proposal and leave it unapproved. The App uses `!` only when a
+concrete proposal is available. Resolve earlier stale prerequisites first;
+optional News requires a fresh explicit choice and is not researched by this
+automatic review.
 
 Request discretionary AI suggestions only when the user asks for changes or
-review. The dependency audit above is required after accepted changes and may
-create targeted proposals without a separate request for each stage. Keep
-stage-specific research and post-approval procedures in the corresponding
-skill reference.
+review. When an outdated stage is opened, follow the App's automatic review
+request without repeating field values in chat. Keep stage-specific research
+and post-approval procedures in the corresponding skill reference.
 
 Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
 as acceptance of the current reviewed content when the referent is clear. Route
@@ -189,10 +184,14 @@ acceptance and progression should use the workspace's enabled
 `approve_and_continue` action through `advance_forecast_specification`.
 
 Pass the returned `forecast_specification_id` to every approval call; it is
-required even when continuing in the same chat. Carry the ID and immutable
-`language_code` into subsequent workflow calls and any requested export call.
-Final approvals return this metadata in structured tool output; use it only for
-subsequent workflow calls and keep it out of user-facing content. A new language or selected
+required even when continuing in the same chat. The latest Bleavit Foresight
+MCP App model-context packet also carries the active ID and may be used when a
+prior tool result is no longer in the conversation context. Check that packet
+before claiming the ID is unavailable; never invent a placeholder ID. Carry
+the ID and immutable `language_code` into subsequent workflow calls and any
+requested export call. Final approvals return this metadata in structured tool
+output; use it only for subsequent workflow calls and keep it out of
+user-facing content. A new language or selected
 alternative is a new record: set `start_new_specification: true`, omit the old
 ID, and obtain new approvals. An omitted ID resolves only within a stateful MCP
 session, when one exists; stateless HTTP requests require the explicit ID to
@@ -242,9 +241,11 @@ stage review and ask for approval in chat; a client without MCP App support has
 no text review fallback.
 If an App fails to open or render, ask the user to reopen or retry it rather than
 reconstructing the review in chat. Keep chat guidance to material information
-that is absent from the App and to the approval and progression question.
-Submitting generated content opens its review; wait for the user's chat
-approval before invoking the next stage.
+that is absent from the App and to the approval and progression question. After
+submitting generated content, do not quote or summarize the submitted draft in
+chat; this includes background information. The App displays the complete draft,
+so ask only whether the user approves it or wants changes, and wait for the
+user's chat approval before invoking the next stage.
 Translate generated labels and fixed UI text, while preserving data-bearing
 content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.

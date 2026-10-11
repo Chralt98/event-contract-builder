@@ -53,7 +53,7 @@ const ResolutionCriteriaForUnit = z
         code: "custom",
         path: ["resolutionCriteria", "question"],
         message:
-          "The criteria question must exactly match selectedUnit.question.",
+          "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
       });
     }
   });

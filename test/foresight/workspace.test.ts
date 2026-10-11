@@ -232,6 +232,12 @@ test("every mutation requires its base revision and prerequisite bindings", () =
     },
     { kind: "discard_proposal", proposal_id: id() },
     { kind: "accept_proposal", proposal_id: id() },
+    {
+      kind: "revalidate_unchanged",
+      stage: "defined_terms",
+      approved_revision: "approved-r1",
+      rationale: "Terms still match the updated question.",
+    },
     { kind: "approve" },
     {
       kind: "continue",
@@ -867,7 +873,7 @@ test("Criteria and Background text fields allow 32,000 characters", () => {
   ).toBe(false);
 });
 
-test("Criteria exposes one editable field and retains the question internally", () => {
+test("Criteria exposes its question binding read-only and one editable criteria field", () => {
   expect(contentStageDefinitions.resolution_criteria.label).toBe(
     "Resolution Criteria",
   );
@@ -876,18 +882,17 @@ test("Criteria exposes one editable field and retains the question internally", 
   );
   const fields = contentStageDefinitions.resolution_criteria.fields.filter(
     (field) =>
-      field.control === "prose" && !("internal" in field && field.internal),
+      field.control === "prose" && !("readOnly" in field && field.readOnly),
   );
   expect(fields.map((field) => field.label)).toEqual(["Resolution Criteria"]);
-  expect(
-    contentStageDefinitions.resolution_criteria.fields.filter(
-      (field) =>
-        field.control === "prose" && "internal" in field && field.internal,
-    ),
-  ).toHaveLength(1);
-  expect(
-    fields.every((field) => !("readOnly" in field) || !field.readOnly),
-  ).toBe(true);
+  const questionBinding =
+    contentStageDefinitions.resolution_criteria.fields.find(
+      (field) => field.path.at(-1) === "question",
+    );
+  expect(questionBinding).toMatchObject({
+    label: "Question being resolved",
+    readOnly: true,
+  });
 });
 
 test("News timeline fields use title case for Publication Date", () => {
