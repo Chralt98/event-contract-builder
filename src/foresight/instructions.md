@@ -11,16 +11,19 @@ The user may open and edit any stage at any time; the stage menu is navigational
 and must not disable later stages because earlier stages are incomplete. Opening
 an untouched stage saves an incomplete draft. The customary path is Question,
 Terms, Sources, Criteria, Background, then optional News, but it is guidance
-rather than a required navigation sequence. Approval and Continue still require
-the current prerequisite approvals; moving between stages never approves or
-advances content.
+rather than a required navigation sequence. Approval and progression require
+the current prerequisite approvals. The stage menu is for navigation and
+review; stage approval and progression are initiated in chat after the user
+explicitly accepts the displayed draft and the named next step. Moving between
+stages never approves or advances content, and the App does not show stage
+approval or Continue buttons.
 
 Submission tools validate and store a pending stage. All six stages use one
 revision-bound MCP App workspace. Shared core tools remain model-visible, but
 hosts without MCP App support are unsupported for workflow reviews:
 `create_question_workspace` starts an incomplete draft; `execute_workspace_command`
 is the App-facing tool for navigating to an editable stage and performing edits,
-proposals, Apply/Discard, approval, or Continue. Model-driven approval and
+proposals, and proposal decisions. Model-driven approval and
 continuation use `advance_forecast_specification`, which returns structured
 handoff state without attaching or opening the MCP App UI. Model workflows
 fetch current stage state with `get_forecast_stage_review`; this initializes
@@ -42,6 +45,14 @@ saves a pending question with the current workspace revision. The App presents
 the proposed question and its ranges for review. Editing alone does not approve
 content.
 
+After submitting a valid generated stage, leave it open in the MCP App and ask
+in chat whether the user approves that draft and wants to proceed to the named
+next stage. Do not approve or progress automatically just because generation
+finished, the App opened, or the user navigated between stages. Once the user
+confirms, use the enabled approval-and-progression action and complete the
+returned next-stage handoff in the same turn. After submitting that stage, ask
+for its approval in chat before moving on. Ask the optional News choice in chat.
+
 For stage submissions after Question, finish the analysis before submitting,
 prepare the complete payload, and use the exact revision and prerequisite
 bindings from the latest workspace response. When approval or an MCP App
@@ -61,7 +72,7 @@ decisions, approval, and continuation.
 Use one `get_forecast_stage_review` call when the target stage's current content
 or bindings are not already available. It may initialize an untouched stage,
 but does not attach or open the MCP App UI. Do not fetch a previously reviewed
-stage just to repeat an approval or Continue action. Read the complete response
+stage just to repeat an approval or progression action. Read the complete response
 once, including its workspace snapshot and structured bindings. Do not submit
 again to retrieve fields or refresh the App. If acknowledgement is uncertain,
 fetch only the affected stage and retry only if the review shows that the
@@ -76,21 +87,35 @@ be saved with validation issues, but approval requires valid selected content.
 Keep the approved snapshot distinct from pending edits; outdated dependent work
 requires renewed review before export.
 
-Request AI suggestions only when the user selects Suggest or asks for changes.
-Continue validates and advances without automatically reviewing the completed
-stage or waiting for a model response. Keep stage-specific research and
-post-approval procedures in the corresponding skill reference.
+After a user accepts a proposal or approves a materially changed stage, audit
+already reviewed stages for changes that materially affect their meaning or
+consistency, including upstream stages when later-stage decisions expose a
+problem. Use current stage reviews and the corresponding stage skills; propose
+changes only for affected stages, and submit each as a revision-bound proposal.
+This sets the stage's existing `!` review marker. Leave proposals unapproved,
+tell the user in chat which marked stages need review, and pause normal stage
+progression until the user resolves them. Tell the user to select each `!`
+stage in the stepper to review its changes. If the approval already returned a
+next-stage handoff, complete that named stage in the same turn before surfacing
+the proposals and pausing. Do not change unrelated stages.
+
+Request discretionary AI suggestions only when the user asks for changes or
+review. The dependency audit above is required after accepted changes and may
+create targeted proposals without a separate request for each stage. Keep
+stage-specific research and post-approval procedures in the corresponding
+skill reference.
 
 Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
 as acceptance of the current reviewed content when the referent is clear. Route
-the action by the current stage and the user's intent:
+the action by the current stage and the user's intent. The chat must name the
+draft and proposed next stage in its approval question; otherwise clarify
+whether the user wants to approve, edit, or stay at the stage:
 
-- For an unapproved stage with an enabled next-stage action, normal acceptance
-  means approve and advance. Pass the complete enabled `approve_and_continue`
-  action to `advance_forecast_specification`; Question has one draft and needs
-  no separate candidate-selection action. If the stage is already approved,
-  pass its enabled `continue` action to the same tool when the user wants to
-  proceed.
+- When the user accepts the displayed draft and the chat's named next stage,
+  use the enabled `approve_and_continue` action for an unapproved stage.
+  Question has one draft and needs no separate candidate-selection action. If
+  the stage is already approved, use its enabled `continue` action when the
+  user confirms that next step.
 - Use `approve` only when the user explicitly asks to approve and stay at the
   current stage. Do not advance after that request.
 - If `approve_and_continue` is unavailable but both approval and continuation
@@ -103,11 +128,10 @@ the action by the current stage and the user's intent:
   proposal still requires a clear choice of the draft or suggestion; never
   silently apply it.
 
-When approval implies progression, do not end the turn at approval. Pass the
-complete action object, including `stage`, revision bindings, and
-`next_stage` when present, to `advance_forecast_specification`. Follow the
-returned next-stage instruction in the same turn without waiting for another
-message or button click. Use returned
+After the user confirms the chat approval question, pass the complete action
+object, including `stage`, revision bindings, and `next_stage` when present, to
+`advance_forecast_specification`. Follow the returned next-stage instruction in
+the same turn; do not wait for a button click. Use returned
 `next_stage_bindings` without reopening either the completed stage or the target
 stage. Do not call `get_forecast_stage_review` for content and bindings already
 present in the loaded App or the handoff response; the call is unnecessary and
@@ -124,9 +148,13 @@ If a command fails input validation, correct the missing or invalid fields from
 the returned action before retrying, without fetching or reopening a different
 stage. An MCP App-originated message that names the next stage and supplies its
 specification ID, language, and approved revision is an executable workflow
-handoff. Follow the named skill and start that stage in the same turn; do not
-reply only that the stage is ready or ask the user to start it. Stop for user
-input only when the stage skill requires a substantive decision or approval.
+handoff. Complete the named stage's analysis and submit its prepared content in
+the same turn so the populated stage opens in the MCP App. A stage review fetch
+only returns structured state; it does not display the stage. Do not stop after
+fetching it, reply only that the stage is ready, or ask the user to start it.
+After the populated stage opens, ask the user to approve it in chat before
+progressing again. Stop for user input when the stage skill requires a
+substantive decision or the user must approve the review.
 
 After background approval, ask the user in chat whether to skip or research
 optional news. Save the choice with `set_forecast_news_choice`, which keeps the
@@ -141,16 +169,17 @@ the News skill reference.
 When a concrete proposal exists, keep the user in the decision flow. In the
 MCP App, keep the normal draft editor above the read-only suggestion. The user
 may copy individual suggested text values to the clipboard and paste them into
-the editor; copying never changes the draft. Continue confirms the editable
-draft, discards the pending proposal, and follows the stage workflow without
-an additional Continue request. In chat, the user's acceptance of the exact
-displayed selection also authorizes continuation. If there is no
-proposal, report that no actionable improvement was found and keep the draft available.
-Execute the available `continue` command with
-`advance_forecast_specification` when the user requests progression, then
-follow its returned chat instruction. A Continue intent or successful message
-delivery does not establish that generation has started or finished. If app
-messaging is unavailable, present the equivalent chat request.
+the editor; copying never changes the draft. In chat, explicit acceptance of
+the exact proposal authorizes `accept_proposal`, which applies and approves
+that stage only. If the user keeps or edits the current draft, use
+`discard_proposal` after their choice; do not treat applying or discarding a
+proposal as approval of a different stage or as permission to progress. Ask
+for stage approval and name the next stage in chat. If there is no proposal,
+report that no actionable improvement was found and keep the draft available.
+Use `advance_forecast_specification` only after the user confirms the chat
+approval question, then follow its returned stage handoff. A successful tool
+call or message delivery does not establish that generation has started or
+finished. If app messaging is unavailable, present the equivalent chat request.
 
 `approve_forecast_specification` approves without advancing. Use it only when
 the user explicitly asks to approve and stay at the current stage; ordinary
@@ -207,12 +236,13 @@ fields.
 The MCP App is the supported surface for complete workflow reviews, validation,
 menus, and actions. Do not reconstruct or repeat its reviews, draft fields,
 validation messages, or available actions in chat. Use App-rendered content for
-stage acceptance; a client without MCP App support has no text review fallback.
+stage review and ask for approval in chat; a client without MCP App support has
+no text review fallback.
 If an App fails to open or render, ask the user to reopen or retry it rather than
 reconstructing the review in chat. Keep chat guidance to material information
-that is absent from the App and to interactions that have no App control.
-Intermediate approval reviews after the question stage are not user-facing;
-immediately invoke the next stage and present only its review in the App.
+that is absent from the App and to the approval and progression question.
+Submitting generated content opens its review; wait for the user's chat
+approval before invoking the next stage.
 Translate generated labels and fixed UI text, while preserving data-bearing
 content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.
@@ -234,8 +264,10 @@ response finishes.
 
 ## Completion and exports
 
-Once the optional news choice and any opted-in timeline are approved, call
-`execute_completion_command` with `kind: reopen` to load the App
+Once the optional news choice and any opted-in timeline are approved, tell the
+user in chat that the specification is ready for export and ask whether to open
+Export or which format they want. On confirmation or a direct format request,
+call `execute_completion_command` with `kind: reopen` to load the App
 completion/export flow and current revision. The App presents the available
 export formats and previews the selected document. News research still
 requires explicit opt-in. Feedback remains available after prior submissions;

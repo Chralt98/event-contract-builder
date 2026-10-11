@@ -134,16 +134,16 @@ unit question inside the criteria.
 
 After explicit approval, follow the server-wide
 [approval routing](../../../src/foresight/instructions.md#workflow-state), then
-compare the display question with the approved criteria. Ask whether to adapt
-the display question only if a reasonable reader would infer a materially
-different event, subject, threshold, outcome or time frame. If they substantially
-agree, continue without an extra confirmation; the user can review the complete
-specification at the end. Technical precision or omitted resolution details
-alone are not a mismatch. For a material mismatch, explain the difference and
-offer a concise revised display question. Do not alter approved content
-automatically; use the server's revision and approval routing if the user
-requests the change. Otherwise continue to background information; do not
-present the complete specification yet. If a validation error occurs, correct
-only the reported field and retry the full unchanged remainder. Show only the
-corrected field and value, explaining that the failed submission changed
-nothing.
+compare the display question with the approved criteria. A reasonable reader
+must not infer a materially different event, subject, threshold, outcome, or
+time frame; technical precision or omitted resolution details alone are not a
+mismatch. If the question and criteria substantially agree, do not propose a
+question change. For a material mismatch, prepare a concise revised display
+question as a revision-bound proposal for the Question stage, using current
+workspace bindings. Do not change or approve the question automatically. Tell
+the user to review the Question stage's `!` marker and follow the server-wide
+proposal review and progression rules. If no proposal is needed, follow the
+user's chat-confirmed progression to Background; do not present the complete
+specification yet. If a validation error occurs, correct only the reported
+field and retry the full unchanged remainder. Show only the corrected field
+and value, explaining that the failed submission changed nothing.

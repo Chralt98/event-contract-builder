@@ -30,9 +30,9 @@ single complete Resolution Criteria text.
 5. Use the submission response according to the server-wide
    [MCP App rendering rule](../../src/foresight/instructions.md#language-and-rendering).
    After initial explicit approval, follow the server-wide
-   [approval routing](../../src/foresight/instructions.md#workflow-state),
-   apply the reference's post-approval question alignment check, and continue
-   with `define-background-information`.
+   [approval routing](../../src/foresight/instructions.md#workflow-state) and
+   apply the reference's post-approval question alignment check before
+   progressing.
 
 Do not modify the selected unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.
