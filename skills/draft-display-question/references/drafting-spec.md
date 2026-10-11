@@ -1,6 +1,6 @@
 # Drafting specification
 
-Use this reference for a new event or selection of an existing draft.
+Use this reference for a new event or an existing draft.
 
 ## New-event draft
 
@@ -15,13 +15,12 @@ itself is unclear; leave ambiguous terms for
 Use active voice and a question that makes sense on its own. Questions must be
 10–200 characters and end with `?`.
 
-Submit one main draft question for App review. Keep the main intent intact and
-do not replace it with a proxy. Check source feasibility internally without
-treating a display question's lack of technical detail as a defect. Offer
-nearby forecast ideas conversationally when they add useful context; they are
-not additional App candidates.
+Submit one main draft question for App review. Keep the main intent intact.
+Check source feasibility internally without treating a display question's
+lack of technical detail as a defect. Offer
+nearby forecast question ideas in chat when they add useful context.
 
-Every unit is one Yes/No forecast question. A finite variable supplies values
+Every draft is a Yes/No forecast question. A finite variable supplies values
 for a same-named angle-bracket placeholder in the question or condition; every
 substitution creates an individual Yes/No question. This also supports
 categorical choices and numeric ranges: “Will <candidate> win?” asks a separate
@@ -69,12 +68,12 @@ example, use “Will the price be <range>?” with values such as “below $80,0
 and “$200,000 or more”, not “Which <range> applies?”. Check every substitution
 for grammar and faithful meaning. Every variable value is substituted into its
 matching placeholder; it does not become an answer choice within one question.
-For conditional units, check substitutions in both the outcome question and
+For a conditional forecast question, check substitutions in both the outcome question and
 condition statement.
 
 ## Variable invariance
 
-Use variables for finite values that belong to one unit. Every variable must
+Use variables for finite values that belong to one forecast question. Every variable must
 parameterize wording through a same-named placeholder in the question or
 condition. Every value and meaningful combination must retain the same
 qualifying predicate, condition,
@@ -82,7 +81,7 @@ unmet disposition, interpretation, jurisdiction, legal/compliance treatment,
 authoritative source hierarchy, source identity, formula, settlement procedure,
 and methodology. If
 any value needs a different rule, source, settlement method, or interpretation,
-split the unit. Never use a broad wildcard or add values merely to create a
+rather offer nearby forecast questions in chat. Never use a broad wildcard or add values merely to create a
 variable. Selection preserves the complete unit and does not instantiate one
 variable value.
 

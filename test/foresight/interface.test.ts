@@ -208,9 +208,7 @@ describe("public forecast interface", () => {
   });
 
   test("first drafts submit one App question and keep nearby ideas in chat", () => {
-    const schema = z.object(
-      foresightTools.submit_drafted_question.inputSchema,
-    );
+    const schema = z.object(foresightTools.submit_drafted_question.inputSchema);
     const unit = (question: string) => ({
       question,
     });
@@ -436,11 +434,26 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "validation messages, or available actions in chat",
     );
+    expect(foresightServerInstructions).toMatch(
+      /normal acceptance\s+means approve and advance/,
+    );
     expect(foresightServerInstructions).toContain(
-      "Do not require a button click or a separate Continue request",
+      "only when the user explicitly asks to",
+    );
+    expect(foresightServerInstructions).toMatch(
+      /If the stage is\s+already approved, use its enabled/,
     );
     expect(foresightServerInstructions).not.toContain(
       "then an explicit Continue request",
+    );
+    expect(foresightServerInstructions).not.toContain(
+      "After the user explicitly accepts each other App-rendered stage, call",
+    );
+    expect(foresightTools.execute_workspace_command.description).toContain(
+      "Use approve_and_continue for normal acceptance",
+    );
+    expect(foresightTools.approve_forecast_specification.description).toContain(
+      "without advancing",
     );
     expect(foresightServerInstructions).toMatch(
       /copying never changes the draft/,
@@ -756,8 +769,8 @@ describe("public forecast interface", () => {
       "State the approved deadline as a concrete date",
     );
     expect(criteriaValidation).toContain("Name every approved fallback");
-    expect(criteriaReference).toContain(
-      "the failed submission changed nothing",
+    expect(criteriaReference).toMatch(
+      /the failed submission changed\s+nothing/,
     );
   });
 

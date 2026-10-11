@@ -1,9 +1,9 @@
 ---
 name: draft-display-question
-description: Draft short forecast specification display questions from a new free-form event, forecast, or outcome; do not use for selecting questions that already exist.
+description: Draft a forecast specification display question from a new free-form event, forecast, or outcome.
 ---
 
-# Draft display questions
+# Draft display question
 
 Read [references/drafting-spec.md](references/drafting-spec.md) for the drafting,
 template, numeric range, and App presentation rules.
@@ -17,10 +17,9 @@ template, numeric range, and App presentation rules.
    with `get_forecast_stage_review` before generation or editing. Use its
    available commands through `execute_workspace_command`, following the
    server's shared workspace routing.
-4. Save user edits with `submit_selected_unit`. Approval remains a separate
-   explicit action. Follow the server's approval and Continue routing before
-   `define-terms`.
+4. Submit the proposed question with `submit_drafted_question`. Approval
+   remains a separate explicit action. Follow the server's approval and
+   Continue routing before `define-terms`.
 
 Follow the server-wide rules for language, internal metadata, rendering,
-separate records, and approvals. A selected alternative or translated unit is
-an explicit new record; do not reuse the original definitions or sources.
+separate records, and approvals.

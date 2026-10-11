@@ -785,8 +785,8 @@ export const WorkspaceActionKind = z.enum([
   "apply_proposal",
   "discard_proposal",
   "accept_proposal",
-  "select_and_approve",
   "approve",
+  "approve_and_continue",
   "complete_review",
   "continue",
   "set_criteria_interview_round",
@@ -800,8 +800,8 @@ export const workspaceActionLabels = {
   apply_proposal: "Apply",
   discard_proposal: "Discard",
   accept_proposal: "Accept suggestion",
-  select_and_approve: "Approve",
-  approve: "Approve",
+  approve: "Approve only (stay)",
+  approve_and_continue: "Approve and continue",
   complete_review: "Complete AI review",
   continue: "Continue",
   set_criteria_interview_round: "Update interview question",
@@ -891,17 +891,24 @@ export const WorkspaceCommand = boundedPayload(
       }),
       z.strictObject({
         ...mutation,
-        stage: z.literal("selected_unit"),
-        kind: z.literal("select_and_approve"),
-        candidate_id: WorkspaceRowId,
-      }),
-      z.strictObject({
-        ...mutation,
         stage: z.literal("news_timeline"),
         kind: z.literal("set_news_choice"),
         choice: NewsChoice.exclude(["undecided"]),
       }),
       z.strictObject({ ...mutation, kind: z.literal("approve") }),
+      z.strictObject({
+        ...mutation,
+        stage: z.enum([
+          "selected_unit",
+          "defined_terms",
+          "resolution_sources",
+          "resolution_criteria",
+          "background_information",
+          "news_timeline",
+        ]),
+        kind: z.literal("approve_and_continue"),
+        next_stage: WorkspaceNextStage,
+      }),
       z.strictObject({
         ...mutation,
         stage: z.enum(["selected_unit", "defined_terms"]),
@@ -929,7 +936,8 @@ export const WorkspaceCommand = boundedPayload(
           message: "Draft must match the command stage.",
         });
       if (
-        command.kind === "continue" &&
+        (command.kind === "continue" ||
+          command.kind === "approve_and_continue") &&
         command.next_stage !==
           (command.stage === "selected_unit"
             ? "defined_terms"

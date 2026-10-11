@@ -7,18 +7,12 @@ unclear. Do not define obvious words, sources, resolution authorities,
 reporting entities, deadlines, or observation periods that belong to later
 stages.
 
-Keep the entire selected unit unchanged. When variables are present, analyze
-the common wording and full value set without choosing or instantiating a
+When variables are present, analyze the common wording and full value set without choosing or instantiating a
 value. For a conditional unit, analyze both the condition statement and outcome
-question; do not redefine the unmet disposition. For an alternative selected
-from a draft, use its exact unit and number and start with no inherited
-definitions.
+question; do not redefine the unmet disposition.
 
 Each definition is neutral, dispute-resistant, and at most two sentences.
 Cite an authoritative methodology only when needed to fix meaning. Never guess
 missing facts. When the user must choose among materially different defensible
 definitions, ask two or three choices using `1.A`, `1.B`, and so on. Return a
 term-to-definition map; an empty map is valid.
-
-Ask which unit is intended when selection is ambiguous; never reconstruct a
-missing unit or number from memory.

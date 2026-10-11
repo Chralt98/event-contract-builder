@@ -332,7 +332,7 @@ const create_question_workspaceTool = {
 const execute_workspace_commandTool = {
   title: "Workspace Command",
   description:
-    "Run one revision-bound workspace command for edits, approval, continuation, or Criteria interview updates. Use the complete action object from the latest workspace, including its stage and revision bindings.",
+    "Run one revision-bound workspace command. Use approve_and_continue for normal acceptance; use approve only when the user asks to stay. Pass the complete action from the current workspace.",
   inputSchema: WorkspaceCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
@@ -370,7 +370,7 @@ const get_forecast_stage_reviewTool = {
 const approve_forecast_specificationTool = {
   title: "Approve Forecast Specification Stage",
   description:
-    "Approve one pending workflow stage after the user explicitly accepts its App-rendered review. Requires the exact revision and prerequisite bindings from that workspace.",
+    "Approve a stage without advancing. Use only when the user explicitly asks to stay; otherwise use the enabled approve_and_continue action.",
   inputSchema: approvalShape,
   outputSchema: approvalOutputSchema,
   annotations: {

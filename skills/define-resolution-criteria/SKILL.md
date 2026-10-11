@@ -27,9 +27,10 @@ single complete Resolution Criteria text.
    in the interview first. Do not show a pre-submission draft.
 4. Use the submission response according to the server-wide
    [MCP App rendering rule](../../src/foresight/instructions.md#language-and-rendering).
-   After explicit approval, approve `resolution_criteria`, apply the
-   reference's post-approval question alignment check, and continue with
-   `define-background-information`.
+   After explicit approval, follow the server-wide
+   [approval routing](../../src/foresight/instructions.md#workflow-state),
+   apply the reference's post-approval question alignment check, and continue
+   with `define-background-information`.
 
 Do not modify the selected unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.

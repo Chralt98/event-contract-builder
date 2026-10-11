@@ -66,13 +66,12 @@ const snapshot = {
     validation_issues: [],
     actions: [
       {
-        label: "Approve",
+        label: "Approve only (stay)",
         enabled: true,
         command: {
           ...identity,
           ...binding,
-          kind: "select_and_approve" as const,
-          candidate_id: candidate.id,
+          kind: "approve" as const,
         },
       },
     ],
@@ -233,7 +232,6 @@ test("every mutation requires its base revision and prerequisite bindings", () =
     },
     { kind: "discard_proposal", proposal_id: id() },
     { kind: "accept_proposal", proposal_id: id() },
-    { kind: "select_and_approve", candidate_id: candidate.id },
     { kind: "approve" },
     {
       kind: "continue",
@@ -314,6 +312,66 @@ test("criteria interview screens contain one question with three choices", () =>
       },
     }).success,
   ).toBe(false);
+});
+
+test("approve-and-continue validates stage-specific fields", () => {
+  const common = {
+    ...identity,
+    ...binding,
+    kind: "approve_and_continue",
+  } as const;
+
+  expect(
+    WorkspaceCommand.safeParse({
+      ...common,
+      stage: "selected_unit",
+      next_stage: "defined_terms",
+    }).success,
+  ).toBe(true);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...common,
+      stage: "defined_terms",
+      next_stage: "resolution_sources",
+    }).success,
+  ).toBe(true);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...common,
+      stage: "selected_unit",
+      next_stage: "resolution_sources",
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...common,
+      stage: "defined_terms",
+      candidate_id: candidate.id,
+      next_stage: "resolution_sources",
+    }).success,
+  ).toBe(false);
+  expect(
+    WorkspaceCommand.safeParse({
+      ...common,
+      stage: "selected_unit",
+      kind: "select_and_approve",
+      candidate_id: candidate.id,
+    }).success,
+  ).toBe(false);
+});
+
+test("approval labels distinguish staying from advancing", () => {
+  expect(
+    workspaceActionLabel({ ...identity, ...binding, kind: "approve" }),
+  ).toBe("Approve only (stay)");
+  expect(
+    workspaceActionLabel({
+      ...identity,
+      ...binding,
+      kind: "approve_and_continue",
+      next_stage: "defined_terms",
+    }),
+  ).toBe("Approve and continue");
 });
 
 test("News choice labels stay JSON-Schema-compatible with the action shape", () => {

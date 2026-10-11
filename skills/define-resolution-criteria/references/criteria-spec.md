@@ -173,16 +173,18 @@ displays its placeholders and allowed values; do not duplicate them as
 per-value criteria. Do not append a second No complement or repeat the original
 unit question inside the criteria.
 
-After explicit approval, approve `resolution_criteria`, then compare the display
-question with the approved criteria. Ask whether to adapt the display question
-only if a reasonable reader would infer a materially different event, subject,
-threshold, outcome or time frame. If they substantially agree, continue without
-an extra confirmation; the user can review the complete specification at the
-end. Technical precision or omitted resolution details alone are not a mismatch.
-For a material mismatch, explain the difference and offer a concise revised
-display question. Do not alter approved content automatically; use the server's
-revision and approval routing if the user requests the change. Otherwise continue
-to background information; do not present the complete specification yet. If a
-validation error occurs, correct only the reported field and retry the full
-unchanged remainder. Show only the corrected field and value, explaining that
-the failed submission changed nothing.
+After explicit approval, follow the server-wide
+[approval routing](../../../src/foresight/instructions.md#workflow-state), then
+compare the display question with the approved criteria. Ask whether to adapt
+the display question only if a reasonable reader would infer a materially
+different event, subject, threshold, outcome or time frame. If they substantially
+agree, continue without an extra confirmation; the user can review the complete
+specification at the end. Technical precision or omitted resolution details
+alone are not a mismatch. For a material mismatch, explain the difference and
+offer a concise revised display question. Do not alter approved content
+automatically; use the server's revision and approval routing if the user
+requests the change. Otherwise continue to background information; do not
+present the complete specification yet. If a validation error occurs, correct
+only the reported field and retry the full unchanged remainder. Show only the
+corrected field and value, explaining that the failed submission changed
+nothing.
