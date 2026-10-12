@@ -5,10 +5,10 @@ import {
 } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
-import type { DraftUnitT } from "./display-question";
+import type { ForecastQuestionUnitT } from "./display-question";
 import { MAX_SOURCE_HIERARCHY_ENTRIES, SourceHierarchy } from "./resolution";
 import {
-  DraftUnit,
+  ForecastQuestionUnit,
   ForecastCondition,
   MAX_TEMPLATE_VARIABLES,
   MAX_VARIABLE_VALUES,
@@ -64,7 +64,7 @@ const uniqueRows = <T extends z.ZodType<{ id: string }>>(
         ctx.addIssue({ code: "custom", message: "Row IDs must be unique." });
     });
 
-/** Incomplete values are saveable; approval must also pass DraftUnit. */
+/** Incomplete values are saveable; approval must also pass ForecastQuestionUnit. */
 export const QuestionWorkingUnit = z.strictObject({
   question: text,
   variables: uniqueRows(
@@ -144,7 +144,9 @@ function questionDomainInput(unit: QuestionWorkingUnit) {
 }
 
 export function parseQuestionWorkingUnit(unit: QuestionWorkingUnit) {
-  return DraftUnit.parse(questionDomainInput(QuestionWorkingUnit.parse(unit)));
+  return ForecastQuestionUnit.parse(
+    questionDomainInput(QuestionWorkingUnit.parse(unit)),
+  );
 }
 
 /** Bounded field diagnostics; revalidate after corrections to reveal remaining errors. */
@@ -154,7 +156,9 @@ export function validateQuestionWorkingDraft(
   const draft = QuestionWorkingDraft.parse(input);
   const issues: WorkspaceValidationIssue[] = [];
   for (const candidate of draft.candidates) {
-    const result = DraftUnit.safeParse(questionDomainInput(candidate.unit));
+    const result = ForecastQuestionUnit.safeParse(
+      questionDomainInput(candidate.unit),
+    );
     if (result.success) continue;
     for (const issue of result.error.issues) {
       const path = issue.path.map((part, index, parts) => {
@@ -279,7 +283,7 @@ export const WorkspaceDraft = z.union([
 ]);
 export type WorkspaceDraft = z.infer<typeof WorkspaceDraft>;
 export const editableWorkspaceStages = z.enum([
-  "selected_unit",
+  "forecast_question_unit",
   "defined_terms",
   "resolution_sources",
   "resolution_criteria",
@@ -324,7 +328,7 @@ export function contentDomainInput(draft: ContentWorkingDraft) {
 export function validateContentWorkingDraft(
   draft: ContentWorkingDraft,
   conditional = false,
-  selectedUnit?: DraftUnitT,
+  forecastQuestionUnit?: ForecastQuestionUnitT,
 ): WorkspaceValidationIssue[] {
   const issues: WorkspaceValidationIssue[] = [];
   const add = (path: string[], message: string) =>
@@ -374,7 +378,7 @@ export function validateContentWorkingDraft(
         ["condition_sources"],
         conditional
           ? "A conditional unit requires condition sources."
-          : "Condition sources require a conditional selected unit.",
+          : "Condition sources require a conditional forecast question unit.",
       );
   }
   if (
@@ -387,7 +391,7 @@ export function validateContentWorkingDraft(
         const criteria = ResolutionCriteria.parse(
           (domain as { resolution_criteria: unknown }).resolution_criteria,
         );
-        parseConnectorResolutionCriteria(criteria, selectedUnit);
+        parseConnectorResolutionCriteria(criteria, forecastQuestionUnit);
       } else if (draft.stage === "background_information")
         ForecastBackgroundInformation.parse(draft.background_information);
       else
@@ -592,7 +596,7 @@ export const WorkspaceFieldDefinition = z.strictObject({
     .optional(),
 });
 export const questionStageDefinition = {
-  stage: "selected_unit",
+  stage: "forecast_question_unit",
   label: "Question",
   fields: [
     {
@@ -637,13 +641,13 @@ export const questionStageDefinition = {
       path: ["question"],
       label: "Question",
       control: "prose",
-      validation: "DraftUnit.question",
+      validation: "ForecastQuestionUnit.question",
     },
     {
       path: ["variables"],
       label: "Variables",
       control: "rows",
-      validation: "DraftUnit.variables",
+      validation: "ForecastQuestionUnit.variables",
     },
     {
       path: ["variables", "*", "name"],
@@ -749,7 +753,7 @@ function validateNextStage(
 ) {
   if (
     command.next_stage !==
-    (command.stage === "selected_unit"
+    (command.stage === "forecast_question_unit"
       ? "defined_terms"
       : contentStageDefinitions[command.stage].next_stage)
   )
@@ -869,7 +873,7 @@ export const WorkspaceCommand = boundedPayload(
       approveAndContinueCommand,
       z.strictObject({
         ...mutation,
-        stage: z.enum(["selected_unit", "defined_terms"]),
+        stage: z.enum(["forecast_question_unit", "defined_terms"]),
         kind: z.literal("complete_review"),
         approved_revision: WorkspaceRevision,
         feedback: z.string().trim().min(1).max(4000),
@@ -880,8 +884,9 @@ export const WorkspaceCommand = boundedPayload(
       if (
         "draft" in command &&
         command.draft &&
-        ("stage" in command.draft ? command.draft.stage : "selected_unit") !==
-          command.stage
+        ("stage" in command.draft
+          ? command.draft.stage
+          : "forecast_question_unit") !== command.stage
       )
         ctx.addIssue({
           code: "custom",
@@ -988,7 +993,7 @@ export const WorkspaceAvailableAction = z
       });
   });
 export const workspaceStageLabels = {
-  selected_unit: "Question",
+  forecast_question_unit: "Question",
   defined_terms: "Terms",
   resolution_sources: "Sources",
   resolution_criteria: "Criteria",
@@ -1001,14 +1006,14 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
     forecast_specification_id: ForecastSpecificationId,
     language_code: ForecastSpecificationLanguageCode,
     revision: WorkspaceRevision,
-    stage: z.literal("selected_unit"),
+    stage: z.literal("forecast_question_unit"),
     draft: QuestionWorkingDraft,
     approved: z
       .strictObject({
         revision: WorkspaceRevision,
         prerequisite_revisions: WorkspacePrerequisites,
         candidate_id: WorkspaceRowId,
-        unit: DraftUnit,
+        unit: ForecastQuestionUnit,
         outdated: z.boolean(),
       })
       .nullable(),
@@ -1077,7 +1082,7 @@ export const ContentWorkspaceSnapshot = boundedPayload(
       forecast_specification_id: ForecastSpecificationId,
       language_code: ForecastSpecificationLanguageCode,
       stage: ContentStage,
-      selected_unit: DraftUnit.optional(),
+      forecast_question_unit: ForecastQuestionUnit.optional(),
       revision: WorkspaceRevision,
       prerequisite_revisions: WorkspacePrerequisites,
       news_choice: NewsChoice.optional(),

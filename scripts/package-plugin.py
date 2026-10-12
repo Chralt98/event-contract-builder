@@ -64,6 +64,7 @@ for name in (
     "NOTICE",
     "THIRD_PARTY_LICENSES.md",
     "DISCLAIMER.md",
+    "GLOSSARY.md",
 ):
     shutil.copyfile(root / name, output / name)
 (output / ".mcp.json").write_text(json.dumps(legacy_mcp_config, indent=2) + "\n")

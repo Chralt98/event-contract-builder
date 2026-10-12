@@ -25,4 +25,4 @@ blockquote. Keep background and resolution criteria separate:
 include no resolution details in the background; the criteria must contain
 everything needed to resolve the question. Do not advocate, offer trading
 advice, claim an outcome, or include transient status/news updates. Keep the
-exact selected unit and every approved upstream stage unchanged.
+exact forecast question unit and every approved upstream stage unchanged.

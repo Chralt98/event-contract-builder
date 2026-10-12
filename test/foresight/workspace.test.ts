@@ -40,7 +40,7 @@ const identity = {
   forecast_specification_id: id(),
 };
 const binding = {
-  stage: "selected_unit" as const,
+  stage: "forecast_question_unit" as const,
   expected_revision: "r1",
   prerequisite_revisions: {},
 };
@@ -48,7 +48,7 @@ const snapshot = {
   forecast_specification_id: identity.forecast_specification_id,
   language_code: "en",
   revision: "r1",
-  stage: "selected_unit" as const,
+  stage: "forecast_question_unit" as const,
   draft,
   approved: null,
   question_review: null,
@@ -294,7 +294,7 @@ test("approve-and-continue validates stage-specific fields", () => {
   expect(
     WorkspaceCommand.safeParse({
       ...common,
-      stage: "selected_unit",
+      stage: "forecast_question_unit",
       next_stage: "defined_terms",
     }).success,
   ).toBe(true);
@@ -308,7 +308,7 @@ test("approve-and-continue validates stage-specific fields", () => {
   expect(
     WorkspaceCommand.safeParse({
       ...common,
-      stage: "selected_unit",
+      stage: "forecast_question_unit",
       next_stage: "resolution_sources",
     }).success,
   ).toBe(false);
@@ -323,7 +323,7 @@ test("approve-and-continue validates stage-specific fields", () => {
   expect(
     WorkspaceCommand.safeParse({
       ...common,
-      stage: "selected_unit",
+      stage: "forecast_question_unit",
       kind: "select_and_approve",
       candidate_id: candidate.id,
     }).success,
@@ -444,7 +444,7 @@ test("versioned review wraps strict output and rejects obsolete envelopes", () =
     forecast_specification_id: identity.forecast_specification_id,
     language_code: "en",
     unit_number: 1,
-    selected_unit: parseQuestionWorkingUnit(candidate.unit),
+    forecast_question_unit: parseQuestionWorkingUnit(candidate.unit),
   };
   const envelope = {
     contract_version: 1 as const,

@@ -10,7 +10,7 @@ import {
   ForecastSpecificationLanguageCode,
   foresightTools,
   parseConnectorResolutionCriteria,
-  parseConnectorDraftUnit,
+  parseConnectorForecastQuestionUnit,
   foresightServerInstructions,
 } from "../../src/foresight";
 
@@ -24,7 +24,7 @@ const input = {
   expected_revision: "generation-base",
   prerequisite_revisions: {},
   unit_number: 1,
-  selected_unit: {
+  forecast_question_unit: {
     question: "Will it rain tomorrow?",
   },
   sources: [source],
@@ -32,7 +32,7 @@ const input = {
 };
 
 const criteria = {
-  question: input.selected_unit.question,
+  question: input.forecast_question_unit.question,
   criteria:
     "The approved source reports measurable rainfall for the target date by the deadline. Otherwise it resolves No; use the approved source hierarchy and document unresolved evidence.",
 };
@@ -117,7 +117,7 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({
         ...input,
-        selected_unit: {
+        forecast_question_unit: {
           question: "Will Alice win the election?",
           condition: {
             statement: "Alice appears on the final ballot",
@@ -152,14 +152,14 @@ describe("public forecast interface", () => {
     expect(
       schema.safeParse({
         ...input,
-        selected_unit: conditionalUnit,
+        forecast_question_unit: conditionalUnit,
         condition_sources: [source],
       }).success,
     ).toBe(true);
     expect(
       schema.safeParse({
         ...input,
-        selected_unit: conditionalUnit,
+        forecast_question_unit: conditionalUnit,
         condition_sources: [{ ...source, rank: 2 }],
       }).success,
     ).toBe(false);
@@ -183,12 +183,12 @@ describe("public forecast interface", () => {
 
   test("connector shape stays flat while runtime validates domain invariants", () => {
     const schema = z.toJSONSchema(
-      z.object(foresightTools.submit_selected_unit.inputSchema),
+      z.object(foresightTools.submit_forecast_question_unit.inputSchema),
     );
     const draftSchema = z.toJSONSchema(
       z.object(foresightTools.submit_drafted_question.inputSchema),
     );
-    const unit = schema.properties!.selected_unit!;
+    const unit = schema.properties!.forecast_question_unit!;
     expect(unit).not.toHaveProperty("oneOf");
     expect(draftSchema.properties!.language_code).not.toHaveProperty("pattern");
     expect(draftSchema.required).toEqual(
@@ -196,12 +196,12 @@ describe("public forecast interface", () => {
     );
     expect(draftSchema.properties).not.toHaveProperty("draft_units");
     expect(
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         question: "Will it rain tomorrow?",
       }),
     ).toEqual({ question: "Will it rain tomorrow?" });
     expect(() =>
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         question: "No question mark here",
       }),
     ).toThrow();
@@ -257,7 +257,7 @@ describe("public forecast interface", () => {
           forecast_specification_id: "00000000-0000-4000-8000-000000000001",
           language_code: "de",
           revision: "r1",
-          stage: "selected_unit",
+          stage: "forecast_question_unit",
           draft: { candidates: [], selected_candidate_id: null },
           approved: null,
           proposals: [],
@@ -282,7 +282,7 @@ describe("public forecast interface", () => {
           forecast_specification_id: "00000000-0000-4000-8000-000000000001",
           language_code: "de",
           revision: "r1",
-          stage: "selected_unit",
+          stage: "forecast_question_unit",
           draft: { candidates: [], selected_candidate_id: null },
           approved: null,
           proposals: [],
@@ -315,7 +315,7 @@ describe("public forecast interface", () => {
 
   test("forecast approval stages put optional news after historical background", () => {
     expect(approvalStageSchema.options).toEqual([
-      "selected_unit",
+      "forecast_question_unit",
       "defined_terms",
       "resolution_sources",
       "resolution_criteria",
@@ -332,7 +332,7 @@ describe("public forecast interface", () => {
       forecast_specification_id: "00000000-0000-4000-8000-000000000002",
       expected_revision: "revision-1",
       prerequisite_revisions: {},
-      stage: "selected_unit",
+      stage: "forecast_question_unit",
       kind: "approve_and_continue",
       next_stage: "defined_terms",
     };
@@ -356,7 +356,7 @@ describe("public forecast interface", () => {
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
       language_code: "en",
       unit_number: 1,
-      selected_unit: input.selected_unit,
+      forecast_question_unit: input.forecast_question_unit,
       approved_stage: "background_information" as const,
     };
 
@@ -397,7 +397,7 @@ describe("public forecast interface", () => {
       forecast_specification_id: "00000000-0000-4000-8000-000000000001",
       language_code: "de",
       unit_number: 1,
-      selected_unit: input.selected_unit,
+      forecast_question_unit: input.forecast_question_unit,
       approved_stage: "resolution_criteria" as const,
     };
     expect(schema.safeParse(criteriaApproval).success).toBe(true);
@@ -468,7 +468,7 @@ describe("public forecast interface", () => {
     );
     const payload = {
       unit_number: 1,
-      selected_unit: input.selected_unit,
+      forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
       prerequisite_revisions: {},
       background_information: backgroundInformation,
@@ -528,7 +528,7 @@ describe("public forecast interface", () => {
     const schema = z.object(foresightTools.submit_news_timeline.inputSchema);
     const payload = {
       unit_number: 1,
-      selected_unit: input.selected_unit,
+      forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
       prerequisite_revisions: {},
       news_timeline: timeline,
@@ -597,7 +597,7 @@ describe("public forecast interface", () => {
     );
     const payload = {
       unit_number: 1,
-      selected_unit: input.selected_unit,
+      forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
       prerequisite_revisions: {},
       resolution_criteria: criteria,
@@ -606,13 +606,13 @@ describe("public forecast interface", () => {
 
     expect(schema.safeParse(payload).success).toBe(true);
     expect(
-      parseConnectorResolutionCriteria(criteria, input.selected_unit),
+      parseConnectorResolutionCriteria(criteria, input.forecast_question_unit),
     ).toEqual(criteria);
     expect(
       schema.safeParse({
         ...payload,
         resolution_criteria: {
-          questionRule: { question: input.selected_unit.question },
+          questionRule: { question: input.forecast_question_unit.question },
           evidenceAndSourceRules: "Old structured criteria",
         },
       }).success,
@@ -621,7 +621,7 @@ describe("public forecast interface", () => {
       schema.safeParse({
         ...payload,
         resolution_criteria: {
-          question: input.selected_unit.question,
+          question: input.forecast_question_unit.question,
           criteria: "",
         },
       }).success,
@@ -671,8 +671,8 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("conditional criteria retain the selected unit's exact question", () => {
-    const selectedUnit = {
+  test("conditional criteria retain the forecast question unit's exact question", () => {
+    const forecastQuestionUnit = {
       question: "Will Alice win the election?",
       condition: {
         statement: "Alice appears on the final ballot",
@@ -680,17 +680,20 @@ describe("public forecast interface", () => {
       },
     };
     const conditionalCriteria = {
-      question: selectedUnit.question,
+      question: forecastQuestionUnit.question,
       criteria:
         "Resolve Yes if Alice appears on the final ballot and wins, according to the election authority. Otherwise resolve No; if she is absent from the final ballot, annul.",
     };
     expect(
-      parseConnectorResolutionCriteria(conditionalCriteria, selectedUnit),
+      parseConnectorResolutionCriteria(
+        conditionalCriteria,
+        forecastQuestionUnit,
+      ),
     ).toEqual(conditionalCriteria);
     expect(() =>
       parseConnectorResolutionCriteria(
         { ...conditionalCriteria, question: "Will Bob win the election?" },
-        selectedUnit,
+        forecastQuestionUnit,
       ),
     ).toThrow(
       "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
@@ -699,7 +702,7 @@ describe("public forecast interface", () => {
 
   test("criteria text accepts concise or multi-sentence question-specific logic", () => {
     const candidate = {
-      question: input.selected_unit.question,
+      question: input.forecast_question_unit.question,
       criteria:
         "Otherwise resolve No. A tie uses the source's published tie-break. A cancellation follows the approved disposition.",
     };

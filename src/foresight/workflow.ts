@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Definitions } from "./display-question";
 import { DataSource } from "./resolution";
-import { ConnectorDraftUnit } from "./connector-draft-unit";
+import { ConnectorForecastQuestionUnit } from "./connector-forecast-question-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
@@ -47,7 +47,7 @@ export const optionalForecastSpecificationId =
   );
 
 export const approvalStageSchema = z.enum([
-  "selected_unit",
+  "forecast_question_unit",
   "defined_terms",
   "resolution_sources",
   "resolution_criteria",
@@ -62,7 +62,7 @@ export const approvedForecastSpecificationRecallSchema = z.object({
   forecast_specification_id: ForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode,
   unit_number: z.number().int(),
-  selected_unit: ConnectorDraftUnit,
+  forecast_question_unit: ConnectorForecastQuestionUnit,
   definitions: Definitions.optional(),
   resolution_sources: z
     .object({

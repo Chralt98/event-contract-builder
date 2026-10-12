@@ -48,7 +48,7 @@ Review criteria by meaning; do not use regular expressions or fixed-phrase
 checks for semantic requirements.
 
 Audit the complete criteria, including evidence and exception rules, for
-outcome-bearing terms introduced beyond the selected unit. Define any term
+outcome-bearing terms introduced beyond the forecast question unit. Define any term
 whose ambiguity could change the resolution in the criteria itself, using an
 observable, source-grounded meaning. If materially different defensible
 meanings require the user's choice, resolve it in the chat interview
@@ -80,14 +80,14 @@ occurring, a report being issued, or a data series remaining comparable, and
 specify how plausible failures affect resolution, including any fallback or
 unresolved treatment.
 
-Create one criteria object whose `question` exactly matches the selected unit
+Create one criteria object whose `question` exactly matches the forecast question unit
 question, including its placeholders, and whose `criteria` contains the
 complete open-text rule and all required content areas. Do not create separate
-criteria for each placeholder value or range. Use the selected unit's declared
+criteria for each placeholder value or range. Use the forecast question unit's declared
 values as the complete set of possible substitutions, and state one rule that
 applies uniformly to every allowed value and meaningful combination. Refer to
 placeholders by their declared names where needed. If a single complete rule
-cannot cover the selected unit uniformly, report that the unit needs revision
+cannot cover the forecast question unit uniformly, report that the unit needs revision
 instead of expanding the criteria by value.
 
 The No complement should say that the outcome resolves No otherwise (or an
@@ -127,7 +127,7 @@ and exception rules consistently to every allowed value.
 After all chat interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
 criteria review before approval. Do not show a separate draft. Render the
-question once, followed by its single complete outcome rule. The selected unit
+question once, followed by its single complete outcome rule. The forecast question unit
 already displays its placeholders and allowed values; do not duplicate them as
 per-value criteria. Do not append a second No complement or repeat the original
 unit question inside the criteria.

@@ -14,7 +14,7 @@ import {
 } from "./workspace";
 import { Definitions } from "./display-question";
 import { SourceHierarchy } from "./resolution";
-import { ConnectorDraftUnit } from "./connector-draft-unit";
+import { ConnectorForecastQuestionUnit } from "./connector-forecast-question-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
@@ -41,7 +41,7 @@ export const approvalOutputSchema = z
     forecast_specification_id: ForecastSpecificationId,
     language_code: ForecastSpecificationLanguageCode,
     unit_number: z.number().int(),
-    selected_unit: ConnectorDraftUnit,
+    forecast_question_unit: ConnectorForecastQuestionUnit,
     workspace: WorkspaceSnapshot.optional(),
     approved_stage: approvalStageSchema,
     ...workspaceRevisionBindingShape,
@@ -120,9 +120,9 @@ export const definedTermsShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected unit's 1-based draft number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact approved unit being defined.",
+    .describe("The forecast question unit's 1-based draft number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The exact approved forecast question unit being defined.",
   ),
   definitions: Definitions.describe(
     "Map from each ambiguous term to its precise, unambiguous definition.",
@@ -142,7 +142,7 @@ export const draftedQuestionsShape = {
     "Immutable canonical BCP 47 language for this new record.",
   ),
   units: z
-    .array(ConnectorDraftUnit)
+    .array(ConnectorForecastQuestionUnit)
     .min(1)
     .max(1)
     .describe(
@@ -162,15 +162,15 @@ export const resolutionSourceShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected unit's 1-based draft number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact approved unit being sourced.",
+    .describe("The forecast question unit's 1-based draft number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The exact approved forecast question unit being sourced.",
   ),
   sources: SourceHierarchy.describe(
     "Ranked hierarchy for the forecast outcome; prefer an independent primary and fallback.",
   ),
   condition_sources: SourceHierarchy.optional().describe(
-    "Separate ranked hierarchy for the selected unit's condition.",
+    "Separate ranked hierarchy for the forecast question unit's condition.",
   ),
   ...proposalRationaleShape,
   followUp: z
@@ -184,12 +184,12 @@ export const resolutionCriteriaShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected unit's 1-based draft number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact approved unit receiving criteria.",
+    .describe("The forecast question unit's 1-based draft number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The exact approved forecast question unit receiving criteria.",
   ),
   resolution_criteria: ResolutionCriteria.describe(
-    "One complete source-grounded Resolution Criteria text covering outcome rules, all approved resolution sources, the resolution method, and relevant exceptions or unresolved outcomes for the exact selected unit.",
+    "One complete source-grounded Resolution Criteria text covering outcome rules, all approved resolution sources, the resolution method, and relevant exceptions or unresolved outcomes for the exact forecast question unit.",
   ),
   ...proposalRationaleShape,
   followUp: z
@@ -203,9 +203,9 @@ export const backgroundInformationShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected unit's 1-based draft number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact approved unit receiving background information.",
+    .describe("The forecast question unit's 1-based draft number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The exact approved forecast question unit receiving background information.",
   ),
   ...proposalRationaleShape,
   background_information: ForecastBackgroundInformation,
@@ -220,9 +220,9 @@ export const newsTimelineShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected forecast unit number, not a news-item number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact approved unit receiving optional news.",
+    .describe("The forecast question unit number, not a news-item number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The exact approved forecast question unit receiving optional news.",
   ),
   ...proposalRationaleShape,
   news_timeline: ForecastNewsTimeline.describe(
@@ -233,9 +233,9 @@ export const newsTimelineShape = {
     .describe("Ask which news-item numbers to keep or revise."),
 };
 
-export const selectedUnitShape = {
+export const forecastQuestionUnitShape = {
   expected_revision: WorkspaceRevision.optional().describe(
-    "Required when selecting or editing an existing workspace; submission does not approve.",
+    "Required when editing an existing workspace; submission does not approve.",
   ),
   forecast_specification_id: optionalForecastSpecificationId,
   language_code: ForecastSpecificationLanguageCode.describe(
@@ -250,9 +250,9 @@ export const selectedUnitShape = {
   unit_number: z
     .number()
     .int()
-    .describe("The selected unit's 1-based draft number."),
-  selected_unit: ConnectorDraftUnit.describe(
-    "The exact unit selected from a draft or alternative handoff.",
+    .describe("The forecast question unit's 1-based draft number."),
+  forecast_question_unit: ConnectorForecastQuestionUnit.describe(
+    "The forecast question unit being submitted for review.",
   ),
 };
 
@@ -290,14 +290,14 @@ export const newsTimelineOutputSchema = workflowOutput({
   ...newsTimelineShape,
   workspace: ContentWorkspaceSnapshot,
 });
-export const selectedUnitOutputSchema = z
+export const forecastQuestionUnitOutputSchema = z
   .object({
     forecast_specification_id: ForecastSpecificationId,
     language_code: ForecastSpecificationLanguageCode,
     ...workspaceRevisionBindingShape,
     workspace: QuestionWorkspaceSnapshot,
-    unit_number: selectedUnitShape.unit_number,
-    selected_unit: selectedUnitShape.selected_unit,
+    unit_number: forecastQuestionUnitShape.unit_number,
+    forecast_question_unit: forecastQuestionUnitShape.forecast_question_unit,
   })
   .strict();
 
@@ -570,12 +570,12 @@ const submit_news_timelineTool = {
   },
 } as const;
 
-const submit_selected_unitTool = {
-  title: "Submit Selected Unit",
+const submit_forecast_question_unitTool = {
+  title: "Submit Forecast Question Unit",
   description:
-    "Save a selected unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
-  inputSchema: selectedUnitShape,
-  outputSchema: selectedUnitOutputSchema,
+    "Save a forecast question unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
+  inputSchema: forecastQuestionUnitShape,
+  outputSchema: forecastQuestionUnitOutputSchema,
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
@@ -603,7 +603,7 @@ export const foresightTools: {
   readonly submit_resolution_criteria: typeof submit_resolution_criteriaTool;
   readonly submit_background_information: typeof submit_background_informationTool;
   readonly submit_news_timeline: typeof submit_news_timelineTool;
-  readonly submit_selected_unit: typeof submit_selected_unitTool;
+  readonly submit_forecast_question_unit: typeof submit_forecast_question_unitTool;
 } = {
   create_question_workspace: create_question_workspaceTool,
   execute_workspace_command: execute_workspace_commandTool,
@@ -623,7 +623,7 @@ export const foresightTools: {
   submit_resolution_criteria: submit_resolution_criteriaTool,
   submit_background_information: submit_background_informationTool,
   submit_news_timeline: submit_news_timelineTool,
-  submit_selected_unit: submit_selected_unitTool,
+  submit_forecast_question_unit: submit_forecast_question_unitTool,
 };
 
 export type ForesightToolName = keyof typeof foresightTools;

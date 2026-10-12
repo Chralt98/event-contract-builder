@@ -1,14 +1,14 @@
 import { z } from "zod";
 import {
   ConditionStatement,
-  DraftUnit,
+  ForecastQuestionUnit,
   MAX_TEMPLATE_VARIABLES,
   MAX_VARIABLE_VALUES,
-  type DraftUnitT,
+  type ForecastQuestionUnitT,
 } from "./display-question";
 
 /**
- * Connector-safe representation of a draft unit.
+ * Connector-safe representation of a forecast question unit.
  *
  * Keep the wire schema flat and restore the domain invariants in the tool
  * handler. Each variable supplies finite substitutions for a named question
@@ -38,7 +38,7 @@ const ConnectorTemplateVariable = z.object({
     ),
 });
 
-export const ConnectorDraftUnit = z
+export const ConnectorForecastQuestionUnit = z
   .object({
     question: ConnectorDisplayQuestion.describe(
       "A forecast question answerable Yes or No for each placeholder substitution. Every placeholder in the question or condition must have a same-named variable, and every variable must be used as a placeholder.",
@@ -79,9 +79,13 @@ export const ConnectorDraftUnit = z
     "A forecast question with optional finite variables and prerequisite condition.",
   );
 
-export type ConnectorDraftUnitT = z.infer<typeof ConnectorDraftUnit>;
+export type ConnectorForecastQuestionUnitT = z.infer<
+  typeof ConnectorForecastQuestionUnit
+>;
 
 /** Parse connector input through the complete domain schema. */
-export function parseConnectorDraftUnit(unit: ConnectorDraftUnitT): DraftUnitT {
-  return DraftUnit.parse(unit);
+export function parseConnectorForecastQuestionUnit(
+  unit: ConnectorForecastQuestionUnitT,
+): ForecastQuestionUnitT {
+  return ForecastQuestionUnit.parse(unit);
 }

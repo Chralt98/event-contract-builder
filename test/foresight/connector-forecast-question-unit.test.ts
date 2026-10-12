@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { parseConnectorDraftUnit } from "../../src/foresight/connector-draft-unit";
+import { parseConnectorForecastQuestionUnit } from "../../src/foresight/connector-forecast-question-unit";
 
-describe("parseConnectorDraftUnit", () => {
+describe("parseConnectorForecastQuestionUnit", () => {
   test("accepts variable-backed and standalone questions without a type tag", () => {
     const valid = {
       question:
         "Will the museum's dinosaur exhibition remain open through <date>?",
       variables: [{ name: "date", values: ["August 25", "September 30"] }],
     };
-    expect(parseConnectorDraftUnit(valid)).toEqual(valid);
+    expect(parseConnectorForecastQuestionUnit(valid)).toEqual(valid);
 
     expect(
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         question: "Will the observatory report rain tomorrow?",
         variables: [],
       }),
@@ -23,7 +23,7 @@ describe("parseConnectorDraftUnit", () => {
 
   test("rejects duplicate template variable names", () => {
     expect(() =>
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         question: "Will <range> apply in <region>?",
         variables: [
           { name: "range", values: ["low", "high"] },
@@ -34,7 +34,7 @@ describe("parseConnectorDraftUnit", () => {
     ).toThrow("Variable names must be unique");
   });
 
-  test("keeps the condition and its unmet disposition in one selectable unit", () => {
+  test("keeps the condition and its unmet disposition in one forecast question unit", () => {
     const unit = {
       question: "Will <candidate> win the election?",
       variables: [{ name: "candidate", values: ["Alice", "Bob"] }],
@@ -43,7 +43,7 @@ describe("parseConnectorDraftUnit", () => {
         ifUnmet: "annulled" as const,
       },
     };
-    expect(parseConnectorDraftUnit(unit)).toEqual(unit);
+    expect(parseConnectorForecastQuestionUnit(unit)).toEqual(unit);
     const custom = {
       ...unit,
       condition: {
@@ -53,9 +53,9 @@ describe("parseConnectorDraftUnit", () => {
           "Resolve to the last traded price at 23:59 UTC on October 5, 2026",
       },
     };
-    expect(parseConnectorDraftUnit(custom)).toEqual(custom);
+    expect(parseConnectorForecastQuestionUnit(custom)).toEqual(custom);
     expect(() =>
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         ...unit,
         condition: {
           ...unit.condition,
@@ -64,13 +64,13 @@ describe("parseConnectorDraftUnit", () => {
       }),
     ).toThrow("Every question placeholder must have a same-named variable");
     expect(() =>
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         ...unit,
         condition: { ...unit.condition, ifUnmet: "unknown" as "annulled" },
       }),
     ).toThrow();
     expect(
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         ...unit,
         condition: {
           ...unit.condition,
@@ -89,10 +89,10 @@ describe("parseConnectorDraftUnit", () => {
         ifUnmet: "resolve-no" as const,
       },
     };
-    expect(parseConnectorDraftUnit(unit)).toEqual(unit);
+    expect(parseConnectorForecastQuestionUnit(unit)).toEqual(unit);
 
     expect(() =>
-      parseConnectorDraftUnit({
+      parseConnectorForecastQuestionUnit({
         ...unit,
         question: "Which candidate will win the election?",
         variables: [{ name: "candidate", values: ["Alice", "Bob", "Carol"] }],

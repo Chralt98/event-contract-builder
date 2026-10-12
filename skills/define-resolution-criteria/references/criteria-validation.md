@@ -2,7 +2,7 @@
 
 Run this semantic review on the single complete Resolution Criteria text after
 the chat interview and before `submit_resolution_criteria`. Compare it with the
-exact selected question, approved condition and `ifUnmet` disposition,
+complete approved forecast question unit,
 definitions, resolution deadline, and approved source hierarchy. Review meaning
 and coverage; wording may vary, so do not require exact phrases, case, or regex
 matches. The four headings below describe required content, not separate input

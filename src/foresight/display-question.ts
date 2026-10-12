@@ -112,8 +112,8 @@ export const ForecastCondition = z
     }
   });
 
-/** Every selectable forecast uses one question with optional values and condition. */
-export const DraftUnit = z
+/** A forecast question unit contains one question with optional variables and condition. */
+export const ForecastQuestionUnit = z
   .object({
     question: DisplayQuestion.describe(
       "A forecast question answerable Yes or No for each placeholder substitution, ending in '?'. Every angle-bracket placeholder in the question or condition must have a same-named variable, and every variable must be used as a placeholder.",
@@ -159,7 +159,7 @@ export const DraftUnit = z
     }
   });
 
-export type DraftUnitT = z.infer<typeof DraftUnit>;
+export type ForecastQuestionUnitT = z.infer<typeof ForecastQuestionUnit>;
 export type ConditionStatementT = z.infer<typeof ConditionStatement>;
 export type ForecastConditionT = z.infer<typeof ForecastCondition>;
 

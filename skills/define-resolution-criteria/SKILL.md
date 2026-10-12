@@ -1,6 +1,6 @@
 ---
 name: define-resolution-criteria
-description: Define source-grounded resolution criteria for the question represented by a selected forecast specification after its resolution sources are approved.
+description: Define source-grounded resolution criteria for the question represented by a forecast specification after its resolution sources are approved.
 ---
 
 # Define resolution criteria
@@ -13,7 +13,7 @@ Before submission, read and apply
 [references/criteria-validation.md](references/criteria-validation.md) to the
 single complete Resolution Criteria text.
 
-1. Require one exact selected unit with approved definitions and sources.
+1. Require one exact forecast question unit with approved definitions and sources.
 2. On first entry from Sources, keep the Criteria App closed while conducting
    the chat interview. Follow the [criteria interview](references/criteria-spec.md#chat-interview)
    and use the Grill Me skill for each round. Do not fetch or open the Criteria
@@ -34,5 +34,5 @@ single complete Resolution Criteria text.
    apply the reference's post-approval question alignment check before
    progressing.
 
-Do not modify the selected unit, definitions, or source hierarchy. Follow the
+Do not modify the forecast question unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.

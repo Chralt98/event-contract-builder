@@ -40,7 +40,7 @@ workspace for manual entry. On an existing record, pass the revision fetched
 before generation. The generator may replace its own latest draft while no
 App edit has occurred since that generation. An App edit marks the draft as
 user-edited; later generated output is then a revision-bound proposal.
-Applying a proposal changes the draft without approving it. `submit_selected_unit`
+Applying a proposal changes the draft without approving it. `submit_forecast_question_unit`
 saves a pending question with the current workspace revision. The App presents
 the proposed question and its ranges for review. Editing alone does not approve
 content.
@@ -108,7 +108,7 @@ whether the user wants to approve, edit, or stay at the stage:
 
 - When the user accepts the displayed draft and the chat's named next stage,
   use the enabled `approve_and_continue` action for an unapproved stage.
-  Question has one draft and needs no separate candidate-selection action. If
+  Question has one draft, so the user approves that forecast question unit directly. If
   the stage is already approved, use its enabled `continue` action when the
   user confirms that next step.
 - Use `approve` only when the user explicitly asks to approve and stay at the
@@ -251,7 +251,7 @@ content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.
 
 For conditional units, keep the condition and unmet disposition with the unit
-in the App review and in every export; they are part of the selected unit, not
+in the App review and in every export; they are part of the forecast question unit, not
 an additional approval stage.
 
 Decision interviews within a stage use numbered questions and lettered options

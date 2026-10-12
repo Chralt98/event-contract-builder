@@ -1,6 +1,6 @@
 ---
 name: define-background-information
-description: Research and draft neutral context and background information for a selected forecast specification after its resolution criteria are approved.
+description: Research and draft neutral context and background information for a forecast specification after its resolution criteria are approved.
 ---
 
 # Define background information
@@ -9,7 +9,7 @@ Read
 [references/background-information-spec.md](references/background-information-spec.md)
 for the content and source standard.
 
-1. Require one exact unit with approved resolution criteria.
+1. Require one exact forecast question unit with approved resolution criteria.
 2. Research durable explanatory context and draft the complete background
    payload without changing any approved stage.
 3. Call `submit_background_information` once and follow the server-wide

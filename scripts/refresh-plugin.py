@@ -172,6 +172,7 @@ def main():
         "THIRD_PARTY_LICENSES.md",
         "DISCLAIMER.md",
         "README.md",
+        "GLOSSARY.md",
     }
     for path in cache.iterdir():
         if path.name not in allowed:

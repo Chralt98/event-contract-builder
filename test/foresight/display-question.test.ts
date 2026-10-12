@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DraftUnit } from "../../src/foresight/display-question";
+import { ForecastQuestionUnit } from "../../src/foresight/display-question";
 
 const museumTemplate = {
   question: "Will the museum's dinosaur exhibition remain open through <date>?",
@@ -11,19 +11,19 @@ const museumTemplate = {
   ],
 };
 
-describe("DraftUnit schema", () => {
+describe("ForecastQuestionUnit schema", () => {
   test("accepts a variable-backed question with finite values", () => {
-    expect(DraftUnit.parse(museumTemplate)).toEqual(museumTemplate);
+    expect(ForecastQuestionUnit.parse(museumTemplate)).toEqual(museumTemplate);
   });
 
   test("accepts a binary question with no variables", () => {
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will the museum's dinosaur exhibition remain open?",
       }).success,
     ).toBe(true);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will the museum's dinosaur exhibition remain open?",
         variables: [],
       }).success,
@@ -32,7 +32,7 @@ describe("DraftUnit schema", () => {
 
   test("requires every variable value to substitute into a placeholder", () => {
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question:
           "Which party will control the U.S. Senate after the 2026 election?",
         variables: [
@@ -54,7 +54,7 @@ describe("DraftUnit schema", () => {
       },
     });
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         ...museumTemplate,
         question: museumTemplate.question.slice(0, -1),
       }).success,
@@ -69,7 +69,7 @@ describe("DraftUnit schema", () => {
     const question = (count: number) =>
       `Will ${Array.from({ length: count }, (_, index) => `<outcome${index}>`).join(", ")} occur by October 5, 2026?`;
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: question(5),
         variables: Array.from({ length: 5 }, (_, index) =>
           variable(`outcome${index}`),
@@ -77,7 +77,7 @@ describe("DraftUnit schema", () => {
       }).success,
     ).toBe(true);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: question(6),
         variables: Array.from({ length: 6 }, (_, index) =>
           variable(`outcome${index}`),
@@ -85,7 +85,7 @@ describe("DraftUnit schema", () => {
       }).success,
     ).toBe(false);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will <outcome> occur by October 5, 2026?",
         variables: [
           {
@@ -98,7 +98,7 @@ describe("DraftUnit schema", () => {
   });
 
   test("requires every question placeholder to have a declared variable", () => {
-    const result = DraftUnit.safeParse({
+    const result = ForecastQuestionUnit.safeParse({
       question: "Which range applies: <range>?",
       variables: [{ name: "price", values: ["low", "high"] }],
     });
@@ -112,7 +112,7 @@ describe("DraftUnit schema", () => {
 
   test("allows a grammatical range slot with concrete range values", () => {
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question:
           "Will Bitcoin's BTC/USD price be <range> on January 19, 2027?",
         variables: [
@@ -127,7 +127,7 @@ describe("DraftUnit schema", () => {
 
   test("keeps multi-value placeholders as individual binary questions", () => {
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will the price be <range>?",
         condition: {
           statement: "The exchange is open on <date>",
@@ -152,7 +152,7 @@ describe("DraftUnit schema", () => {
         ifUnmet: "custom",
       },
     };
-    const missingAction = DraftUnit.safeParse(conditional);
+    const missingAction = ForecastQuestionUnit.safeParse(conditional);
     expect(missingAction.success).toBe(false);
     if (!missingAction.success) {
       expect(missingAction.error.issues).toHaveLength(1);
@@ -164,7 +164,7 @@ describe("DraftUnit schema", () => {
       ]);
     }
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         ...conditional,
         condition: {
           ...conditional.condition,
@@ -174,7 +174,7 @@ describe("DraftUnit schema", () => {
       }).success,
     ).toBe(true);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         ...conditional,
         condition: {
           statement: conditional.condition.statement,
@@ -184,7 +184,7 @@ describe("DraftUnit schema", () => {
       }).success,
     ).toBe(false);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will the observatory report rain tomorrow?",
         condition: {
           statement: "The observatory is open by noon",
@@ -193,7 +193,7 @@ describe("DraftUnit schema", () => {
       }).success,
     ).toBe(true);
     expect(
-      DraftUnit.safeParse({
+      ForecastQuestionUnit.safeParse({
         question: "Will <party> control the Senate?",
         variables: [{ name: "party", values: ["A", "B"] }],
         condition: {

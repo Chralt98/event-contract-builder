@@ -5,7 +5,7 @@ Event Contract Builder is the open-source npm package and plugin interface for
 The package name remains `event-contract-builder`; its public schemas and
 client-visible interface are the ones used by Foresight.
 
-The plugin drafts selectable forecast questions, precise definitions,
+The plugin drafts forecast question units, precise definitions,
 independent resolution sources, resolution criteria, historical context, and
 optional recent news. Each stage remains pending until the user explicitly
 approves it. Probability monitoring is planned; it is not part of the current
@@ -28,16 +28,16 @@ available from the `event-contract-builder/foresight` subpath.
 
 ```ts
 import {
-  DraftUnit,
+  ForecastQuestionUnit,
   foresightTools,
-  type DraftUnitT,
+  type ForecastQuestionUnitT,
 } from "event-contract-builder";
 
-const draft: DraftUnitT = {
+const draft: ForecastQuestionUnitT = {
   question: "Will CPI year-over-year inflation exceed 3 percent in June 2027?",
 };
 
-const validatedDraft = DraftUnit.parse(draft);
+const validatedDraft = ForecastQuestionUnit.parse(draft);
 const submitQuestionTool = foresightTools.submit_drafted_question;
 
 console.log(validatedDraft.question);
@@ -50,9 +50,9 @@ specifications are retrieved through the public MCP interface.
 
 ## Forecast workflow
 
-The workflow is: draft questions, select a unit, define terms, choose resolution
-sources, define resolution criteria, add background information, and optionally
-add recent news. `reduce-semantic-risk` supports focused interpretation audits.
+The workflow is: draft and approve one forecast question unit, define terms,
+choose resolution sources, define resolution criteria, add background
+information, and optionally add recent news. `reduce-semantic-risk` supports focused interpretation audits.
 
 Question drafting in Bleavit Foresight is informed by Metaculus’s
 [question-writing guidance](https://www.metaculus.com/faq/).

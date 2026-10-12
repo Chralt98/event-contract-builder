@@ -1,6 +1,6 @@
 export * from "./display-question";
 export * from "./resolution";
-export * from "./connector-draft-unit";
+export * from "./connector-forecast-question-unit";
 export * from "./source-validation";
 export * from "./resolution-criteria";
 export * from "./background-information";

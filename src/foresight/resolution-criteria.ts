@@ -1,8 +1,8 @@
 import { z } from "zod";
 import {
   DisplayQuestion,
-  DraftUnit,
-  type DraftUnitT,
+  ForecastQuestionUnit,
+  type ForecastQuestionUnitT,
 } from "./display-question";
 
 /**
@@ -44,11 +44,11 @@ export type ConnectorResolutionCriteriaT = ResolutionCriteriaT;
 
 const ResolutionCriteriaForUnit = z
   .object({
-    selectedUnit: DraftUnit,
+    forecastQuestionUnit: ForecastQuestionUnit,
     resolutionCriteria: ResolutionCriteria,
   })
-  .superRefine(({ selectedUnit, resolutionCriteria }, ctx) => {
-    if (resolutionCriteria.question !== selectedUnit.question) {
+  .superRefine(({ forecastQuestionUnit, resolutionCriteria }, ctx) => {
+    if (resolutionCriteria.question !== forecastQuestionUnit.question) {
       ctx.addIssue({
         code: "custom",
         path: ["resolutionCriteria", "question"],
@@ -61,12 +61,12 @@ const ResolutionCriteriaForUnit = z
 /** Parse connector input and verify it matches the selected outcome and condition. */
 export function parseConnectorResolutionCriteria(
   criteria: ConnectorResolutionCriteriaT,
-  selectedUnit?: DraftUnitT,
+  forecastQuestionUnit?: ForecastQuestionUnitT,
 ): ResolutionCriteriaT {
-  if (!selectedUnit) return ResolutionCriteria.parse(criteria);
+  if (!forecastQuestionUnit) return ResolutionCriteria.parse(criteria);
 
   return ResolutionCriteriaForUnit.parse({
-    selectedUnit,
+    forecastQuestionUnit,
     resolutionCriteria: criteria,
   }).resolutionCriteria;
 }
