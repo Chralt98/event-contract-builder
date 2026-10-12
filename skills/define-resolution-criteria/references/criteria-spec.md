@@ -15,15 +15,16 @@ unresolved treatment, not be assumed unmet.
 
 ## Chat interview
 
-On first entry from approved Sources, ask material user-dependent decisions in
-chat before opening the Criteria workspace. Use the `grill-me` skill's design
-tree and rounds: resolve factual prerequisites yourself, ask every decision in
-the settled frontier in one round, and defer dependent questions until their
-prerequisites are answered. Number each question and give a recommended answer
-with its reason. Word each question so “yes” accepts the recommendation. Wait
-for the user's answers before recomputing the frontier and asking the next
-round. Continue until no material decision remains; do not open or fetch the
-Criteria workspace during these rounds.
+On first entry from approved Sources, ask material user-dependent decisions
+before opening the Criteria workspace. Resolve factual prerequisites yourself,
+then use `request_user_input_async` to ask every decision in the settled
+frontier. The interface presents questions sequentially. Put the recommended
+choice first and give its reason; the interface supplies a free-form response
+option. Defer dependent questions until their prerequisites are answered. After
+the user's responses, recompute the frontier and ask another round if material
+decisions remain. There is no fixed question or round limit. Continue until no
+material decision remains; do not open or fetch the Criteria workspace during
+these rounds.
 
 When the interview is complete, construct and validate the criteria, then call
 `submit_resolution_criteria` once. Its response opens the Criteria workspace
@@ -32,8 +33,8 @@ submission. After the first approval, use the existing criteria field on later
 visits. If the user asks in chat to repeat the interview or revise existing
 criteria, fetch the latest saved criteria and revision first. Treat the saved
 text as the starting point: ask whether it captures the user's intent, identify
-needed clarifications, and invite additional information. Use the same decision
-tree and rounds when material choices remain. After the interview is complete,
+needed clarifications, and invite additional information. Use the same
+iterative in-chat interview when material choices remain. After the interview is complete,
 submit the complete revised criteria as a revision-bound proposal without
 overwriting or approving the saved draft. Do not start this workflow from an
 App suggestion action.

@@ -254,16 +254,14 @@ For conditional units, keep the condition and unmet disposition with the unit
 in the App review and in every export; they are part of the forecast question unit, not
 an additional approval stage.
 
-Decision interviews within a stage use numbered questions and lettered options
-(`1.A`, `1.B`), never dotted numeric choices. Ask two or three substantive
-options plus a separate free-form fallback and a recommendation. Stage-specific
-interview logic and formats live in the relevant skill reference.
-
-Present interviews that have no App control in chat. Use App controls when they
-exist; keep chat-only choices in the conversation transcript and wait for the
-user's plain-text selection. Do not use a host-native input dialog or
-`request_user_input` for these choices; the dialog can disappear when the
-response finishes.
+For decisions without an App control, use `request_user_input_async` to present
+all material questions whose prerequisites are settled. The interface presents
+the questions sequentially; give each two or three mutually exclusive choices,
+put the recommended choice first, and briefly say why. The interface provides a
+free-form response. After the user answers, recompute the settled frontier and
+ask another round if material decisions remain; there is no fixed question or
+round limit. Use App controls when they exist. Do not use the Plan-mode-only
+`request_user_input` dialog for these choices.
 
 ## Completion and exports
 

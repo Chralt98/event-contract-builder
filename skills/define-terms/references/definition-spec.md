@@ -14,5 +14,6 @@ question; do not redefine the unmet disposition.
 Each definition is neutral, dispute-resistant, and at most two sentences.
 Cite an authoritative methodology only when needed to fix meaning. Never guess
 missing facts. When the user must choose among materially different defensible
-definitions, ask two or three choices using `1.A`, `1.B`, and so on. Return a
-term-to-definition map; an empty map is valid.
+definitions, present the alternatives with `request_user_input_async`,
+recommend one with a brief reason, and leave room for a free-form answer. Return
+a term-to-definition map after the choice; an empty map is valid.
