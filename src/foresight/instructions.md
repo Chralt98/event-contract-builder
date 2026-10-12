@@ -14,7 +14,7 @@ Terms, Sources, Criteria, Background, then optional News, but it is guidance
 rather than a required navigation sequence. Approval and progression require
 the current prerequisite approvals. The stage menu is for navigation and
 review; stage approval and progression are initiated in chat after the user
-explicitly accepts the displayed draft and the named next step. Moving between
+accepts the displayed draft and the next step. Infer the user intent. Moving between
 stages never approves or advances content, and the App does not show stage
 approval or Continue buttons.
 
