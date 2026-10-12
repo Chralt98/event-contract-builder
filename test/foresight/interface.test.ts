@@ -21,6 +21,7 @@ const source = {
   url: "https://one.example/results",
 };
 const input = {
+  preparation_receipt: "00000000-0000-4000-8000-000000000001",
   expected_revision: "generation-base",
   prerequisite_revisions: {},
   unit_number: 1,
@@ -216,6 +217,7 @@ describe("public forecast interface", () => {
     const second = unit("Will the event be confirmed by the deadline?");
     const third = unit("Will a reliable proxy indicate the event by then?");
     const payload = {
+      preparation_receipt: input.preparation_receipt,
       language_code: "de",
       units: [first],
       followUp: "Does this question look right?",
@@ -467,6 +469,7 @@ describe("public forecast interface", () => {
       foresightTools.submit_background_information.inputSchema,
     );
     const payload = {
+      preparation_receipt: input.preparation_receipt,
       unit_number: 1,
       forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
@@ -527,6 +530,7 @@ describe("public forecast interface", () => {
     const timeline = { items: [item, olderItem] };
     const schema = z.object(foresightTools.submit_news_timeline.inputSchema);
     const payload = {
+      preparation_receipt: input.preparation_receipt,
       unit_number: 1,
       forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
@@ -596,6 +600,7 @@ describe("public forecast interface", () => {
       foresightTools.submit_resolution_criteria.inputSchema,
     );
     const payload = {
+      preparation_receipt: input.preparation_receipt,
       unit_number: 1,
       forecast_question_unit: input.forecast_question_unit,
       expected_revision: "reviewed-revision",
@@ -749,9 +754,7 @@ describe("public forecast interface", () => {
       "[references/criteria-validation.md](references/criteria-validation.md)",
     );
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
-    expect(criteriaReference).toContain("settled frontier");
-    expect(criteriaReference).toContain("in one round");
-    expect(criteriaReference).toContain("grill-me");
+    expect(criteriaReference).toContain("request_user_input_async");
     expect(criteriaReference).toMatch(
       /do not open or fetch the\s+Criteria workspace/,
     );

@@ -1,3 +1,4 @@
+import { PreparationReceipt, StagePreparation } from "./stage-preparation";
 import { CompletionCommand, CompletionOutput } from "./completion";
 import { z } from "zod";
 import {
@@ -115,6 +116,7 @@ const proposalRationaleShape = {
 };
 
 export const definedTermsShape = {
+  preparation_receipt: PreparationReceipt,
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -134,6 +136,7 @@ export const definedTermsShape = {
 };
 
 export const draftedQuestionsShape = {
+  preparation_receipt: PreparationReceipt,
   expected_revision: WorkspaceRevision.optional().describe(
     "Required when proposing changes to an existing workspace; reopen before generating.",
   ),
@@ -157,6 +160,7 @@ export const draftedQuestionsShape = {
 };
 
 export const resolutionSourceShape = {
+  preparation_receipt: PreparationReceipt,
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -179,6 +183,7 @@ export const resolutionSourceShape = {
 };
 
 export const resolutionCriteriaShape = {
+  preparation_receipt: PreparationReceipt,
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -198,6 +203,7 @@ export const resolutionCriteriaShape = {
 };
 
 export const backgroundInformationShape = {
+  preparation_receipt: PreparationReceipt,
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -215,6 +221,7 @@ export const backgroundInformationShape = {
 };
 
 export const newsTimelineShape = {
+  preparation_receipt: PreparationReceipt,
   ...workspaceRevisionBindingShape,
   forecast_specification_id: optionalForecastSpecificationId,
   unit_number: z
@@ -234,6 +241,7 @@ export const newsTimelineShape = {
 };
 
 export const forecastQuestionUnitShape = {
+  preparation_receipt: PreparationReceipt,
   expected_revision: WorkspaceRevision.optional().describe(
     "Required when editing an existing workspace; submission does not approve.",
   ),
@@ -301,6 +309,23 @@ export const forecastQuestionUnitOutputSchema = z
   })
   .strict();
 
+const prepare_stageTool = {
+  title: "Prepare Forecast Stage",
+  description:
+    "Deliver the canonical shared instructions, active skill, and required references before stage analysis or drafting. Issues a reusable receipt without creating a record or opening the App.",
+  inputSchema: {
+    stage: approvalStageSchema,
+    preparation_receipt: PreparationReceipt.optional(),
+  },
+  outputSchema: StagePreparation,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
 const execute_completion_commandTool = {
   title: "Forecast Completion",
   description:
@@ -355,6 +380,7 @@ const advance_forecast_specificationTool = {
   inputSchema: AdvanceForecastCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
+    preparation: StagePreparation.optional(),
   }),
   annotations: {
     readOnlyHint: false,
@@ -387,11 +413,13 @@ const get_forecast_stage_reviewTool = {
   inputSchema: {
     forecast_specification_id: ForecastSpecificationId,
     stage: approvalStageSchema,
+    preparation_receipt: PreparationReceipt.optional(),
   },
   outputSchema: z.strictObject({
     forecast_specification_id: ForecastSpecificationId,
     stage: approvalStageSchema,
     workspace: WorkspaceSnapshot.optional(),
+    preparation: StagePreparation.optional(),
     ...workspaceRevisionBindingShape,
   }),
   annotations: {
@@ -489,7 +517,7 @@ const delete_plugin_feedbackTool = {
 const submit_defined_termsTool = {
   title: "Submit Defined Terms",
   description:
-    "Submit the approved unit's definitions. Fills an untouched stage or updates the generator's unedited draft; output after an App edit becomes a proposal.",
+    "Save generated definitions for the approved unit with a current stage preparation receipt. After an App edit, saves a proposal instead of replacing the draft.",
   inputSchema: definedTermsShape,
   outputSchema: definedTermsOutputSchema,
   annotations: {
@@ -503,7 +531,7 @@ const submit_defined_termsTool = {
 const submit_drafted_questionTool = {
   title: "Submit Drafted Question",
   description:
-    "Submit a forecast question and its optional condition. Starts a record, fills an empty workspace, updates the generator's unedited draft, or proposes output after an App edit.",
+    "Save a generated question with a current stage preparation receipt. Creates a record or updates its generated draft; after an App edit, saves a proposal.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {
@@ -517,7 +545,7 @@ const submit_drafted_questionTool = {
 const submit_resolution_sourceTool = {
   title: "Resolution Source Hierarchy",
   description:
-    "Submit source hierarchies after definitions are approved. Fills an untouched stage or updates the generator's unedited draft; output after an App edit becomes a proposal.",
+    "Save generated source hierarchies after definitions approval, with a current stage preparation receipt. After an App edit, saves a proposal instead of replacing the draft.",
   inputSchema: resolutionSourceShape,
   outputSchema: resolutionSourceOutputSchema,
   annotations: {
@@ -531,7 +559,7 @@ const submit_resolution_sourceTool = {
 const submit_resolution_criteriaTool = {
   title: "Resolution Criteria",
   description:
-    "Validate and store one complete source-grounded Resolution Criteria text after source approval.",
+    "Validate and store one complete source-grounded Resolution Criteria text after source approval. Requires the current stage preparation receipt.",
   inputSchema: resolutionCriteriaShape,
   outputSchema: resolutionCriteriaOutputSchema,
   annotations: {
@@ -545,7 +573,7 @@ const submit_resolution_criteriaTool = {
 const submit_background_informationTool = {
   title: "Context and Background Information",
   description:
-    "Validate, store, and render pending neutral background information after criteria approval.",
+    "Validate, store, and render pending neutral background information after criteria approval. Requires the current stage preparation receipt.",
   inputSchema: backgroundInformationShape,
   outputSchema: backgroundInformationOutputSchema,
   annotations: {
@@ -559,7 +587,7 @@ const submit_background_informationTool = {
 const submit_news_timelineTool = {
   title: "Submit Relevant News Timeline",
   description:
-    "Validate, store, and render an optional newest-first news timeline after explicit opt-in and background approval. Use an empty timeline only to review removal of previously approved news.",
+    "Save optional news after explicit opt-in and background approval, with a current stage preparation receipt. An empty timeline is only for requested removal of approved news.",
   inputSchema: newsTimelineShape,
   outputSchema: newsTimelineOutputSchema,
   annotations: {
@@ -573,7 +601,7 @@ const submit_news_timelineTool = {
 const submit_forecast_question_unitTool = {
   title: "Submit Forecast Question Unit",
   description:
-    "Save a forecast question unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command.",
+    "Save a forecast question unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command. Requires the current stage preparation receipt.",
   inputSchema: forecastQuestionUnitShape,
   outputSchema: forecastQuestionUnitOutputSchema,
   annotations: {
@@ -585,6 +613,7 @@ const submit_forecast_question_unitTool = {
 } as const;
 
 export const foresightTools: {
+  readonly prepare_stage: typeof prepare_stageTool;
   readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly execute_workspace_command: typeof execute_workspace_commandTool;
   readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
@@ -605,6 +634,7 @@ export const foresightTools: {
   readonly submit_news_timeline: typeof submit_news_timelineTool;
   readonly submit_forecast_question_unit: typeof submit_forecast_question_unitTool;
 } = {
+  prepare_stage: prepare_stageTool,
   create_question_workspace: create_question_workspaceTool,
   execute_workspace_command: execute_workspace_commandTool,
   advance_forecast_specification: advance_forecast_specificationTool,

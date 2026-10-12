@@ -12,3 +12,5 @@ export * from "./instructions";
 export * from "./workspace";
 
 export * from "./completion";
+
+export * from "./stage-preparation";

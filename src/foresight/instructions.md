@@ -5,6 +5,24 @@ validation, rendering, workflow state, and approvals. Follow the active skill's
 reference for stage-specific rules; do not reproduce those rules from this
 file or from tool descriptions.
 
+Before analysis, research, or drafting, read the shared server instructions,
+the active stage skill, and its required references. Use the `preparation`
+bundle from an approval handoff or stage review when supplied; otherwise call
+`prepare_stage` for that stage. Read its complete bundle before generating
+content. The bundle contains canonical file contents, so do not reread those
+files separately unless the skill calls for an additional conditional reference.
+Tool descriptions do not replace this preparation.
+
+Pass the returned `preparation_receipt` to stage submissions and generated
+workspace commands (`submit_generated_draft` or `submit_proposal`). Reuse it
+for edits and retries while its stage and instruction versions remain current.
+When fetching a stage review or advancing, also pass the previous receipt: the
+server reuses current preparation on review and delivers the next stage skill
+in the existing handoff without repeating shared instructions already delivered.
+A missing, expired, wrong-stage, or outdated receipt blocks generated submissions
+before any save or App review; refresh preparation and reassess the draft.
+Preparation is internal metadata, not user approval or proof of comprehension.
+
 ## Workflow state
 
 The user may open and edit any stage at any time; the stage menu is navigational
@@ -33,7 +51,7 @@ MCP App UI. Use `execute_workspace_command` to navigate in the App. Use commands
 payloads as needed and use a fresh command ID for a new operation. Preserve the
 same command ID and payload when retrying a lost acknowledgement.
 
-For a new model-generated question, call `submit_drafted_question` directly;
+After stage preparation, for a new model-generated question call `submit_drafted_question` directly;
 it creates the record and workspace. Do not call `create_question_workspace`
 first. Use `create_question_workspace` only when the user wants an empty
 workspace for manual entry. On an existing record, pass the revision fetched

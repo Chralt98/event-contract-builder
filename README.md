@@ -23,7 +23,8 @@ npm install event-contract-builder
 ```
 
 The package root exports Foresight schemas, types, structural validation,
-client-visible tool descriptors, and server instructions. The same API is also
+client-visible tool descriptors, server instructions, and canonical stage preparation
+materials. The same API is also
 available from the `event-contract-builder/foresight` subpath.
 
 ```ts
@@ -63,6 +64,9 @@ Instruction ownership is deliberately split to avoid duplicate maintenance:
   approval, and export conventions.
 - Each `skills/*/SKILL.md` is a short workflow entry point.
 - Each skill reference owns that stage's semantic rules and detailed format.
+- [Stage preparation](src/foresight/stage-preparation.ts) bundles canonical skill
+  materials for the server prerequisite; [shared instructions](src/foresight/instructions.md)
+  own preparation routing.
 - `src/foresight/tools.ts` exposes concise tool intent and machine-enforced
   schemas; it does not restate skill procedures.
 

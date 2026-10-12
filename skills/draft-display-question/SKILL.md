@@ -13,7 +13,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    event or outcome information rather than guessing. If only the horizon is
    unspecified, preserve that intent with the cutoff-date variable workflow in
    the reference and ask for values when needed; do not demand one fixed date.
-2. For a new event, draft one forecast question unit as defined in the
+2. After the server-wide stage preparation, for a new event draft one forecast question unit as defined in the
    reference and call
    `submit_drafted_question` directly once; it creates the record and workspace.
    Do not create an empty workspace or fetch a stage review first.

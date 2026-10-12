@@ -1,3 +1,4 @@
+import { OptionalPreparationReceipt } from "./stage-preparation";
 import { z } from "zod";
 import {
   ResolutionCriteria,
@@ -734,11 +735,13 @@ const mutation = {
 const approveAndContinueCommand = z.strictObject({
   ...mutation,
   kind: z.literal("approve_and_continue"),
+  preparation_receipt: OptionalPreparationReceipt,
   next_stage: WorkspaceNextStage,
 });
 const continueCommand = z.strictObject({
   ...mutation,
   kind: z.literal("continue"),
+  preparation_receipt: OptionalPreparationReceipt,
   approved_revision: WorkspaceRevision,
   next_stage: WorkspaceNextStage,
 });
@@ -824,11 +827,13 @@ export const WorkspaceCommand = boundedPayload(
       z.strictObject({
         ...mutation,
         kind: z.literal("submit_generated_draft"),
+        preparation_receipt: OptionalPreparationReceipt,
         draft: WorkspaceDraft,
       }),
       z.strictObject({
         ...mutation,
         kind: z.literal("submit_proposal"),
+        preparation_receipt: OptionalPreparationReceipt,
         proposal_id: z.uuid(),
         draft: WorkspaceDraft,
         rationale: z.string().trim().min(1).max(1000).optional(),
