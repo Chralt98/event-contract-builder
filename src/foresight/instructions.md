@@ -114,9 +114,13 @@ optional News requires a fresh explicit choice and is not researched by this
 automatic review.
 
 Request discretionary AI suggestions only when the user asks for changes or
-review. When an outdated stage is opened, follow the App's automatic review
-request without repeating field values in chat. Keep stage-specific research
-and post-approval procedures in the corresponding skill reference.
+review. The App automatically reviews outdated stages and shows material
+proposals there for the user to review; unchanged valid content is revalidated
+without asking for approval. Hosts that support private model requests run the
+review without a chat message. Other hosts use a short, clearly App-labeled
+chat request to start the review; do not include internal workflow instructions
+or repeat draft field values in that request. Keep stage-specific research and
+post-approval procedures in the corresponding skill reference.
 
 Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
 as acceptance of the current reviewed content when the referent is clear. Route
@@ -283,14 +287,14 @@ round limit. Use App controls when they exist. Do not use the Plan-mode-only
 
 ## Completion and exports
 
-Once the optional news choice and any opted-in timeline are approved, tell the
-user in chat that the specification is ready for export and ask whether to open
-Export or which format they want. On confirmation or a direct format request,
-call `execute_completion_command` with `kind: reopen` to load the App
-completion/export flow and current revision. The App presents the available
-export formats and previews the selected document. News research still
-requires explicit opt-in. Feedback remains available after prior submissions;
-invite additional feedback when selected again.
+Once the optional news choice and any opted-in timeline are approved, the App
+opens Export automatically. Tell the user it is ready and let them choose an
+output format there; do not ask whether to open Export. For a format requested
+in chat, call `execute_completion_command` with `kind: reopen` to load the
+completion/export flow and current revision, then export the requested format.
+The App presents the available formats and previews the selected document.
+News research still requires explicit opt-in. Feedback remains available after
+prior submissions; invite additional feedback when selected again.
 
 For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
 `kind: export`, the requested `formats`, and the reopened `expected_revision`.
@@ -325,9 +329,12 @@ for private submission.
 
 Do not attach conversation history, forecast content, a forecast specification
 ID, account details, or a contact address. Call `submit_plugin_feedback` only
-after the user chooses the private channel and provides the text. Show the
-returned receipt ID so the user can request deletion with
-`delete_plugin_feedback`; call deletion only on an explicit request.
+after the user chooses the private channel and provides the text. The App shows
+the returned feedback reference and explains its 180-day retention and earlier
+deletion. Confirm submission in chat without repeating the reference; tell the
+user it is available in the App if they want to request deletion. Call
+`delete_plugin_feedback` only after an explicit request and when the user
+provides the feedback reference.
 
 For email, use `support@bleavit.com` as the recipient without asking the user
 for an address. Draft a concise subject from the user's feedback and put both

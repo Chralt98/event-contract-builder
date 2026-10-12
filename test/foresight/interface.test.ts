@@ -444,6 +444,9 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
     expect(foresightServerInstructions).toMatch(
+      /Hosts that support private model requests run the\s+review without a chat message/,
+    );
+    expect(foresightServerInstructions).toMatch(
       /The App uses `!` only when a\s+concrete proposal is available/,
     );
     expect(foresightServerInstructions).toMatch(
