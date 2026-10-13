@@ -779,7 +779,7 @@ export const SetForecastNewsChoiceCommand = boundedPayload(
   z.strictObject({
     ...commandIdentity,
     ...workspaceRevisionBindingShape,
-    stage: z.literal("news_timeline"),
+    stage: z.literal("news_timeline").default("news_timeline"),
     kind: z.literal("set_news_choice"),
     choice: NewsChoice.exclude(["undecided"]),
   }),

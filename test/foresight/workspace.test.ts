@@ -270,6 +270,10 @@ test("chat-driven news choices are revision-bound workspace commands", () => {
     choice: "opted_in" as const,
   };
   expect(SetForecastNewsChoiceCommand.parse(command)).toEqual(command);
+  const { stage, ...withoutFixedStage } = command;
+  expect(SetForecastNewsChoiceCommand.parse(withoutFixedStage)).toEqual(
+    command,
+  );
   expect(
     SetForecastNewsChoiceCommand.safeParse({
       ...command,

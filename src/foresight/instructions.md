@@ -268,6 +268,17 @@ submitting generated content, do not quote or summarize the submitted draft in
 chat; this includes background information. The App displays the complete draft,
 so ask only whether the user approves it or wants changes, and wait for the
 user's chat approval before invoking the next stage.
+
+If creating a new question is blocked because the caller already has an active
+draft, call `open_active_forecast_draft` to open that draft in Bleavit Foresight
+for review. Do not ask the user for its ID or IP address. After it opens, ask in
+chat whether they want to keep the draft or delete it to replace it with their
+new idea; the App is for reviewing the draft, and deletion is offered in chat.
+Wait for an explicit chat choice before deleting. If the user chooses
+replacement, call `delete_forecast_draft` with the ID returned by the open tool,
+then retry the new question as a new specification, omitting the old ID, only
+after deletion succeeds. If the user wants to keep the draft, leave it unchanged
+and do not submit the replacement question.
 Translate generated labels and fixed UI text, while preserving data-bearing
 content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.
@@ -287,11 +298,13 @@ round limit. Use App controls when they exist. Do not use the Plan-mode-only
 
 ## Completion and exports
 
-Once the optional news choice and any opted-in timeline are approved, the App
-opens Export automatically. Tell the user it is ready and let them choose an
-output format there; do not ask whether to open Export. For a format requested
-in chat, call `execute_completion_command` with `kind: reopen` to load the
-completion/export flow and current revision, then export the requested format.
+Once the optional news choice and any opted-in timeline are approved, call
+`execute_completion_command` with `kind: reopen` to open Export in the same
+turn. Handoff and news-choice tools do not open the App. Tell the user Export
+is ready only after that call succeeds, and let them choose an output format
+there; do not ask whether to open it. For a format requested in chat, reopen
+the completion/export flow to load its current revision, then export the
+requested format.
 The App presents the available formats and previews the selected document.
 News research still requires explicit opt-in. Feedback remains available after
 prior submissions; invite additional feedback when selected again.
