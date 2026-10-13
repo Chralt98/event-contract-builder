@@ -1,7 +1,8 @@
 # Resolution-source specification
 
 Given a forecast question and its approved definitions, cover every fact needed to
-resolve it with a fixed ranked hierarchy. Find sources suited to the display question and intent rather than routinely rewriting the question to
+resolve it with a fixed ranked hierarchy. Find sources suited to the display question 
+and intent rather than routinely rewriting the question to
 match a convenient dataset. Its short wording need not state the complete
 measurement rule; the criteria stage makes that rule precise against the
 approved sources. Report a genuine coverage gap when no suitable source exists,
@@ -25,8 +26,8 @@ agency is not an independent fallback.
 
 When variables are present, each required hierarchy must cover every allowed
 value and meaningful combination. Never create value-specific source mappings.
-If the shared hierarchy fails, record the gap and return to drafting to split
-the unit.
+If the shared hierarchy fails, record the gap and return to drafting to 
+find a forecast question unit that fits the source.
 
 ## Source identity and locator policy
 
