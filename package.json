@@ -1,6 +1,6 @@
 {
   "name": "event-contract-builder",
-  "version": "0.4.0",
+  "version": "0.14.0",
   "description": "Open-source TypeScript package and plugin interface for Bleavit Foresight.",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +13,9 @@
     "./foresight": {
       "types": "./dist/src/foresight/index.d.ts",
       "default": "./dist/src/foresight/index.js"
-    }
+    },
+    "./appearance/tokens.css": "./dist/appearance/tokens.css",
+    "./appearance/foresight-icon.png": "./dist/appearance/foresight-icon.png"
   },
   "license": "Apache-2.0",
   "files": [
@@ -26,6 +28,7 @@
   ],
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "pack": "bun run build && bun pm pack",
     "test": "bun run build && bun test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
@@ -51,6 +54,6 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   }
 }

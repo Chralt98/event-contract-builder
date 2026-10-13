@@ -1,6 +1,6 @@
 ---
 name: define-relevant-news
-description: Research and review an optional, succinct timeline of recent news relevant to an approved forecast specification, only after the user explicitly opts in.
+description: Research and review an optional, succinct timeline of recent news relevant to a forecast specification, only after the user explicitly opts in.
 ---
 
 # Define relevant news
@@ -13,8 +13,11 @@ selection, removal, and approval rules.
 2. Research original sources, build the qualified timeline, and call
    `submit_news_timeline` with the candidates.
 3. For keep-all with no changes, treat the already visible proposal as
-   approved and approve `news_timeline` directly. For a subset or edits,
-   resubmit the exact selection, show it in full, and wait for approval.
+   accepted. For a subset or edits, resubmit the exact selection, present it in
+   the MCP App, and wait for approval without repeating its item details in
+   chat. Then follow the server-wide
+   [approval routing](../../src/foresight/instructions.md#workflow-state) to
+   approve and complete the workflow.
 4. If nothing qualifies or nothing is selected, keep the background-only
    record and show the server-defined export menu.
 

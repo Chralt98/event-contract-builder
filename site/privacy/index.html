@@ -37,12 +37,21 @@
         <h2>Information processed</h2>
         <p>
           The service receives the content in your explicit tool calls, which
-          may include forecast questions, selected units, definitions,
-          resolution sources and criteria, background information, and news. It
-          also processes the record ID and timestamps needed to continue and
-          expire a workflow. The MCP service does not request the full chat
-          transcript. Your ChatGPT or Codex client may process conversation
-          content under its own privacy terms.
+          may include forecast questions, conditions, variable values,
+          definitions, resolution sources and criteria, background information,
+          and news. It also processes the record ID and timestamps needed to
+          continue and expire a workflow. The MCP service does not request the
+          full chat transcript. Your ChatGPT or Codex client may process
+          conversation content under its own privacy terms.
+        </p>
+        <p>
+          To limit abuse, the hosted Worker uses the source IP provided by
+          Cloudflare to enforce per-IP request and write limits. For storage
+          quota accounting, it derives a keyed HMAC identifier from that address
+          and stores the identifier with records in D1; the application does not
+          store the raw IP address in D1. Cloudflare separately processes
+          network and request metadata as the infrastructure provider, as
+          described below.
         </p>
         <p>
           If you choose the private feedback option, the feedback tool accepts
@@ -83,8 +92,9 @@
           Submitted information is used to validate, render, and continue your
           forecast specification. The hosted service stores records in a
           Cloudflare Worker and D1 database. It does not require a user account;
-          the record ID acts as a bearer reference, so anyone who obtains it can
-          access or update that record until it expires or is deleted.
+          the record ID itself grants access: anyone who obtains it can access
+          or update that record until it expires or is deleted. Treat the ID as
+          private and share it only with people who should have that access.
         </p>
         <p>
           Private feedback is stored separately from Forecast Specifications in

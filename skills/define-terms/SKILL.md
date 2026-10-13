@@ -1,6 +1,6 @@
 ---
 name: define-terms
-description: Identify genuinely ambiguous terms in a selected forecast specification unit and propose precise definitions; use only after a user selects or confirms an existing unit.
+description: Identify genuinely ambiguous terms in a forecast specification and propose precise definitions.
 ---
 
 # Define terms
@@ -8,14 +8,19 @@ description: Identify genuinely ambiguous terms in a selected forecast specifica
 Read [references/definition-spec.md](references/definition-spec.md) before
 analysis. It is the sole source for ambiguity and definition rules.
 
-1. Require one exact, already approved selected unit and its unit number.
-2. Analyze the complete unit without rewriting it. Ask the user only when
+1. Analyze the complete forecast specification without rewriting it. Ask the user only when
    materially different defensible definitions require their choice.
-3. Call `submit_defined_terms` once, including an empty map when nothing needs
-   definition, and present the complete rendered review.
-4. After explicit approval, approve `defined_terms` and continue with
-   `define-resolution-source`.
+2. For an existing specification, use `next_stage_bindings` from the approval
+   or stage handoff when supplied; do not reopen the prior stage or fetch Terms
+   again. If bindings are unavailable, fetch `defined_terms` once after
+   completing the analysis. Then call `submit_defined_terms` once, including an
+   empty map when nothing needs definition. The submission opens Terms with the
+   completed draft. Use its response as the updated review; do not resubmit to
+   inspect it.
+3. After explicit approval, follow the server-wide
+   [approval routing](../../src/foresight/instructions.md#workflow-state). Run
+   any required post-approval review against the exact approved revision before
+   continuing with `define-resolution-source`.
 
-For an alternative selected from a draft, use its exact unit and start
-definitions from scratch. Follow the server-wide language, metadata, rendering,
+Follow the server-wide language, metadata, rendering,
 record, and approval rules.

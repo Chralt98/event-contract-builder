@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { rm, mkdir, copyFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,4 +30,15 @@ for (const command of [
   });
   const code = await child.exited;
   if (code !== 0) process.exit(code);
+}
+
+await mkdir(resolve(root, "dist/appearance"), { recursive: true });
+for (const [source, target] of [
+  ["site/tokens.css", "tokens.css"],
+  ["site/assets/foresight-icon.png", "foresight-icon.png"],
+]) {
+  await copyFile(
+    resolve(root, source!),
+    resolve(root, "dist/appearance", target!),
+  );
 }

@@ -1,29 +1,29 @@
 ---
 name: draft-display-question
-description: Draft short forecast specification display questions from a new free-form event, forecast, or outcome; do not use for selecting questions that already exist.
+description: Draft a forecast specification display question from a new free-form event, forecast, or outcome.
 ---
 
-# Draft display questions
+# Draft display question
 
 Read [references/drafting-spec.md](references/drafting-spec.md) for the drafting,
-template, alternative-question, and selection rules.
+template, numeric range, and App presentation rules.
+For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
 
-1. Distinguish a new event from a selection of an existing draft. Ask for
-   missing event, outcome, or future time information rather than guessing.
-2. For a new event, draft the units defined in the reference and call
-   `submit_drafted_questions` once.
-3. For a selection, preserve the exact complete unit and its 1-based draft
-   number. Call `submit_selected_unit` with the active record's ID and language;
-   use the returned ID and language for the next step. For a selected alternative
-   or translated unit, start a new record as described below.
-4. When the exact unit and number match the active record's stored draft, the
-   user's choice is approval: `submit_selected_unit` saves and approves it
-   together. Do not call `approve_forecast_specification` for this selection;
-   keep its transition review internal and continue directly with
-   `define-terms`. A selection outside that draft remains pending; show its
-   review, call `approve_forecast_specification` after user acceptance, then
-   continue with definitions.
+1. Distinguish a new event from an update to an existing draft. Ask for missing
+   event or outcome information rather than guessing. If only the horizon is
+   unspecified, preserve that intent with the cutoff-date variable workflow in
+   the reference and ask for values when needed; do not demand one fixed date.
+2. After the server-wide stage preparation, for a new event draft one forecast question unit as defined in the
+   reference and call
+   `submit_drafted_question` directly once; it creates the record and workspace.
+   Do not create an empty workspace or fetch a stage review first.
+3. For an update to an existing record, fetch its current question and revision
+   with `get_forecast_stage_review` before generation or editing. Use its
+   available commands through `execute_workspace_command`, following the
+   server's shared workspace routing.
+4. Submit the proposed forecast question with `submit_drafted_question`. Approval
+   remains a separate explicit action. Follow the server's approval and
+   Continue routing before `define-terms`.
 
 Follow the server-wide rules for language, internal metadata, rendering,
-separate records, and approvals. A selected alternative or translated unit is
-a new record; do not reuse the original unit's definitions or sources.
+separate records, and approvals.

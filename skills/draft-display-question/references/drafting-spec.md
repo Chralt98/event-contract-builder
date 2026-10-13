@@ -1,46 +1,45 @@
 # Drafting specification
 
-Use this reference for a new event or selection of an existing draft.
+Use this reference for a new event or an existing draft.
 
 ## New-event draft
 
-Write concise, conversational binary or categorical questions about a specific
-future event within a defined time frame. Each question must be clear, definite,
-and unambiguous: from the wording and its variables, a reader should identify
-the subject or event, the qualifying outcome, the observation period, and what
-fact makes each answer apply. Ask directly about the outcome; keep its rationale
-outside the question. Each question should make sense without neighboring text
-and remain clear if its position changes. Write display questions in active
-voice (e.g.,
-“Will Congress pass the bill?” rather than “Will the bill be passed?”); do not
-invent an actor the context does not identify. State material thresholds,
-units, jurisdictions, dates, and answer options explicitly. If supplied context
-leaves materially different readings of the target, outcome, or time frame, ask
-for clarification instead of guessing. Use `before [date]` for an exclusive
-deadline and `on or before [date]` when the stated date counts; avoid `by [date]`.
-If the target intent is clear but a term still has multiple defensible meanings,
-leave that for [define-terms](../../define-terms/references/definition-spec.md)
-after selection.
-Preserve supplied events, thresholds, options, and dates; never
-invent a missing one. Questions must be 10–200 characters and end with `?`.
+Write a short, conversational, attention-catching display question for the
+user's intended future event. It is a simplified public summary, not the full
+resolution rule. Preserve the intended subject, outcome and time frame without
+packing source methodology, evidence rules or exceptions into the question;
+those belong in the resolution criteria. Material supplied thresholds, units,
+options and dates must not be contradicted or invented. Ask when the intent
+itself is unclear; leave ambiguous terms for
+[define-terms](../../define-terms/references/definition-spec.md) after the
+forecast question unit is approved.
+Use active voice and a question that makes sense on its own. Questions must be
+10–200 characters and end with `?`.
 
-Before presenting candidates, internally check whether a resolver could
-determine each outcome from observable evidence. If not, replace abstract
-candidates with narrower, measurable propositions or proxies that preserve the
-user's intent. Do not show this check in the user-facing draft.
+Submit one main draft question for App review. Keep the main intent intact.
+Check source feasibility internally without treating a display question's
+lack of technical detail as a defect. Offer
+nearby forecast question ideas in chat when they add useful context.
 
-Produce at least three distinct selectable units: one direct interpretation
-and at least two close reformulations, measurable proxies, or better-specified
-interpretations that preserve the user's intent. A binary unit is one Yes/No
-question. A categorical unit asks for an outcome and includes one finite
-outcome variable whose values are the allowed answers; the values may be listed
-without appearing as placeholders in the question. A binary question may also
-use variables for finite parameters, with matching angle-bracket placeholders.
-Values may be non-overlapping ranges on one numeric measure or mutually
-exclusive categorical outcomes.
+Every forecast question unit is a Yes/No forecast question. A finite variable
+supplies values for a same-named angle-bracket placeholder in the question or
+condition; every
+substitution creates an individual Yes/No question. This also supports
+categorical choices and numeric ranges: “Will <candidate> win?” asks a separate
+Yes/No question for each candidate, and “Will the price be <range>?” asks one
+for each range. Do not draft a multi-outcome “Which X?” question or list values
+without using them in a placeholder.
+
+When the user asks when an event will happen but leaves the horizon open, keep
+the timing intent and parameterize the cutoff. For example, draft
+“Will AGI arrive by <cutoff_date>?” with a `cutoff_date` variable; each supplied
+date is its own Yes/No forecast. If the user has not supplied cutoff dates,
+show the question template and ask which finite set of dates to include. Do not
+reject the open horizon, turn it into “By what date?”, or invent dates. Submit
+the App draft once the variable has at least one user-supplied value.
 
 When the user's outcome depends on a separate event, draft that event as the
-unit's `condition` at this stage. State the prerequisite declaratively (for
+forecast question unit's `condition` at this stage. State the prerequisite declaratively (for
 example, `A law is enacted on or before June 30, 2027, 23:59 UTC`); it does not
 need to be a question. State its cutoff explicitly and distinguish it from the
 forecast's resolution deadline. If a unit intentionally allows multiple cutoff
@@ -50,21 +49,26 @@ example, `A law is enacted on or before <condition_date>` could allow
 only one cutoff, write that date directly in the condition. Every allowed
 condition date must be on or before the forecast's resolution deadline; ask if
 either date or their ordering is unclear. Avoid saying only "the deadline"
-without naming the condition cutoff. Each candidate must show the outcome
-question, the observable condition, and the disposition if the condition is
-established as unmet (`annulled` or `resolve-no`). The pair must express the
-user's intended forecast together; do not fold a prerequisite into ordinary
-outcome wording or silently choose its unmet disposition. Do not treat lack of
-evidence that the condition held as proof it was unmet. An unconditional
-candidate is acceptable only when it preserves the user's intent. Use
-`resolve-no` only for a binary Yes/No outcome.
+without naming the condition cutoff. A conditional forecast question unit
+must include its outcome question, observable condition, and the disposition
+if the condition is established as unmet (`annulled`, `resolve-no`, `resolve-yes`,
+`resolve-50-50`, or `custom`).
+The pair must express the user's intended forecast together; do not fold a
+prerequisite into ordinary outcome wording or silently choose its unmet
+disposition. A `custom` disposition must state the action and any needed cutoff
+or reference value. Do not treat lack of evidence that the condition held as
+proof it was unmet. An unconditional forecast question unit is acceptable only
+when it preserves the user's intent. Use `resolve-no`, `resolve-yes`, and
+`resolve-50-50` for the individual Yes/No question, including when its
+placeholder values describe categories or ranges. A multi-value variable does
+not make an expanded question multi-outcome.
 
 For every numeric question, specify the unit used (e.g., “Will Berlin’s average
-temperature exceed 20 degrees Celsius in July 2027?”). For numeric or date-range
-outcomes, use non-overlapping ranges with explicit boundary inclusion and set
-bounds so the chance of falling outside all listed outcomes is roughly 5–10%. If
-plausible values can fall beyond finite bounds, use open-ended ranges or specify
-an outside-range outcome.
+temperature exceed 20 degrees Celsius in July 2027?”). When the user wants
+forecasts for numeric or date ranges, use non-overlapping range values with
+explicit boundary inclusion. Use open-ended bounds when plausible values could
+otherwise fall outside every range. Each range is substituted into its own
+Yes/No question.
 
 Every angle-bracket placeholder must have a same-named variable. When a value
 is used as a placeholder, place it in a grammatical slot that works with every
@@ -72,30 +76,28 @@ allowed value after substitution. Values must be complete phrases for that
 slot, not labels that only make sense when the placeholder name is read; for
 example, use “Will the price be <range>?” with values such as “below $80,000”
 and “$200,000 or more”, not “Which <range> applies?”. Check every substitution
-for grammar and faithful meaning. For categorical units, values are outcome
-labels and do not need to appear in the question text.
-For conditional units, check substitutions in both the outcome question and
+for grammar and faithful meaning. Every variable value is substituted into its
+matching placeholder; it does not become an answer choice within one question.
+For a conditional forecast question, check substitutions in both the outcome question and
 condition statement.
 
 ## Variable invariance
 
-Use variables for finite values that belong to one unit. A variable may
-parameterize wording through a same-named placeholder, or it may list the
-categorical outcomes without a placeholder. A categorical unit uses one
-unreferenced outcome variable with at least two allowed values. Every value and
-meaningful combination must retain the same qualifying predicate, condition,
+Use variables for finite values that belong to one forecast question unit. Every variable must
+parameterize wording through a same-named placeholder in the question or
+condition. Every value and meaningful combination must retain the same
+qualifying predicate, condition,
 unmet disposition, interpretation, jurisdiction, legal/compliance treatment,
 authoritative source hierarchy, source identity, formula, settlement procedure,
 and methodology. If
 any value needs a different rule, source, settlement method, or interpretation,
-split the unit. Never use a broad wildcard or add values merely to create a
-variable. Selection preserves the complete unit and does not instantiate one
-variable value.
+rather offer nearby forecast questions in chat. Never use a broad wildcard or add values merely to create a
+variable. Approval preserves the complete forecast question unit and does not instantiate
+one variable value.
 
 ## Output detail
 
-Keep units in drafting order. The follow-up asks which unit number to use or
-revise and identifies term definition as the next stage. Use the same plain
-1-based unit numbers shown in the rendered draft (`1`, `2`, `3`); do not
-convert them to lettered choices. Never summarize or renumber the rendered
-draft.
+The App workspace presents the proposed question and ranges for review. In chat,
+ask whether the proposal looks right and add only context the App does not show,
+such as how the horizon or ranges were chosen. Nearby ideas may be mentioned in
+chat when useful. Do not describe App review as choosing between alternative forecast questions.

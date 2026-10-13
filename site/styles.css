@@ -1,22 +1,4 @@
-:root {
-  color-scheme: light;
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  color: #0a0a0a;
-  background: #fafaf9;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  --gold: #c99a45;
-  --gold-ink: #8a682c;
-  --ink: #0a0a0a;
-  --muted: #525252;
-  --line: rgb(10 10 10 / 9%);
-}
+@import url("./tokens.css");
 
 * {
   box-sizing: border-box;

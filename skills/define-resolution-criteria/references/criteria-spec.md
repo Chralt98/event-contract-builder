@@ -3,82 +3,56 @@
 Convert one exact unit, its approved definitions, and its approved source
 hierarchy into deterministic Yes/No rules for its question.
 
-For a conditional unit, first determine whether the declarative condition
-statement holds using its approved condition sources. Submit `conditionCriteria`
-with the exact selected statement, criteria for when it is met and established
-as unmet, and evidence and exception rules for ambiguous or unavailable
-condition evidence. Apply the outcome rule only when the condition is met. When
-it is established as unmet, apply the selected unit's `ifUnmet` disposition; an
-unresolved condition must follow its stated unresolved treatment, not be
-assumed unmet. Keep both rules within this criteria stage and its single approval.
+Write one complete user-facing Resolution Criteria text. Include the outcome
+rule, approved resolution sources and their priority, the method for looking up
+and applying source evidence, and relevant exceptions or unresolved outcomes.
+For a conditional unit, include its exact approved condition and selected
+`ifUnmet` disposition, using approved condition sources and relevant exception
+handling. For `resolve-50-50`, state that each binary outcome receives an equal
+50% share. Make a custom action operational by specifying any required cutoff,
+reference value, and source. An unresolved condition must follow its stated
+unresolved treatment, not be assumed unmet.
 
-## Decision interview
+## Chat interview
 
-Before drafting criteria, map only material user-dependent decisions as a
-dependency tree. Resolve factual prerequisites yourself. In each round, ask the
-entire current frontier: decisions whose prerequisites are settled. Never ask a
-downstream question with an unanswered prerequisite.
+On first entry from approved Sources, ask material user-dependent decisions
+before opening the Criteria workspace. Resolve factual prerequisites yourself,
+then use `request_user_input_async` to ask every decision in the settled
+frontier. The interface presents questions sequentially. Put the recommended
+choice first and give its reason; the interface supplies a free-form response
+option. Defer dependent questions until their prerequisites are answered. After
+the user's responses, recompute the frontier and ask another round if material
+decisions remain. There is no fixed question or round limit. Continue until no
+material decision remains; do not open or fetch the Criteria workspace during
+these rounds.
 
-Track the round number and an exact maximum when knowable, otherwise a
-conservative estimate that is updated when branches change. For an estimate,
-immediately suggest answering every question in the round, accepting or
-rejecting each recommendation, supplying custom fallbacks, and stating logical
-consequences in one response.
-
-Each decision is a separate numbered question with two or three substantive
-lettered choices, a recommendation, and an unnumbered free-form fallback. Do
-not pad choices, collapse decisions, or treat agreement with unshown choices as
-an answer. Use this localized structure:
-
-```text
-# Forecast Specification
-
-## Stage: Resolution Criteria
-
-**Selected Unit <unit_number>: <label>**
-- <exact complete unit>
-
----
-
-🧭 **Question round <current> of <total> (exact)**
-
-❓ **1 · <short title>**
-<one question>
-
-**1.A** — **<option>** — <consequence>
-**1.B** — **<option>** — <consequence>
-
-➡️ **Recommendation:** Option 1.<letter> — <reason>
-↪️ If none fits, state the result or behavior you want.
-
----
-```
-
-For an estimate, use “of about <estimate> (estimate)” and place the round-
-reduction suggestion before question 1. Separate multiple questions with
-`---`, and keep the final separator. Make the complete round the final
-user-visible response for that turn, then wait. Record partial and free-form
-answers, recompute the frontier, and continue until no decision remains.
-After each answer, if the frontier is empty, immediately construct and submit
-the criteria in that same turn; do not end with a status message or another
-pre-submission response.
+When the interview is complete, construct and validate the criteria, then call
+`submit_resolution_criteria` once. Its response opens the Criteria workspace
+with one editable text field for review. Do not show a separate draft before
+submission. After the first approval, use the existing criteria field on later
+visits. If the user asks in chat to repeat the interview or revise existing
+criteria, fetch the latest saved criteria and revision first. Treat the saved
+text as the starting point: ask whether it captures the user's intent, identify
+needed clarifications, and invite additional information. Use the same
+iterative in-chat interview when material choices remain. After the interview is complete,
+submit the complete revised criteria as a revision-bound proposal without
+overwriting or approving the saved draft. Do not start this workflow from an
+App suggestion action.
 
 ## Criteria
 
-Write `resolvesYesWhen` as the bare, necessary-and-sufficient Yes condition.
-The renderer supplies the standard “This question will resolve as Yes if …”
-sentence and its No complement, so do not repeat that wrapper or another
-“resolve Yes if” phrase in this field. Keep specific source links in
-`evidenceAndSourceRules`. Before submission, check that the wrapper will appear
-only once in the rendered review and correct the payload before submitting if
-needed; submit only the finished criteria rather than announcing a later
-wording correction.
+Write one complete user-facing Resolution Criteria text in the single editable
+field. It must cover the outcome rules, approved resolution sources, resolution
+method, and relevant exceptions or unresolved outcomes. Before submission,
+check that complete text against [criteria-validation.md](criteria-validation.md).
+Review criteria by meaning; do not use regular expressions or fixed-phrase
+checks for semantic requirements.
 
 Audit the complete criteria, including evidence and exception rules, for
-outcome-bearing terms introduced beyond the selected unit. Define any term
+outcome-bearing terms introduced beyond the forecast question unit. Define any term
 whose ambiguity could change the resolution in the criteria itself, using an
 observable, source-grounded meaning. If materially different defensible
-meanings require the user's choice, resolve it in the decision interview
+meanings require the user's choice, resolve it in the chat interview
 before submission.
 
 Make the criteria as determinate as possible: state observable conditions and
@@ -92,13 +66,12 @@ application. For source-derived values, specify settings that can materially
 change the result, such as query terms, geographic scope, date window, or
 aggregation.
 
-Cross-check the selected question against the resolution conditions: its event,
-subject, scope, thresholds, outcomes, and time frame must match, without implying
-a different trigger or resolution date. If they materially diverge, do not
-submit criteria; report that the unit needs revision. Once the user selects a
-revised unit, start it as a separate record and follow the shared approval
-order, including new approvals for definitions and sources before drafting
-criteria.
+Treat the display question as a short public summary. Make the criteria precise
+against the approved sources while preserving the intended event and outcome;
+source methodology, evidence cutoffs and exception handling need not all appear
+in the question. Do not demand a wording change merely because the criteria are
+more detailed. Resolve a material change to the user's intended outcome in the
+chat interview rather than silently introducing it.
 
 Before submission, test the rule against plausible edge cases and borderline
 scenarios where a condition or evidence path may not apply cleanly. Clarify the
@@ -108,60 +81,74 @@ occurring, a report being issued, or a data series remaining comparable, and
 specify how plausible failures affect resolution, including any fallback or
 unresolved treatment.
 
-Create one `questionRule` object whose `question` exactly matches the selected
-unit question, including its placeholders. Give it one `resolvesYesWhen` and
-one `resolvesNoWhen`; do not create separate questions or rules for categorical
-outcomes, scalar ranges, or placeholder values. Use the selected unit's declared
-values as the complete set of possible substitutions or outcomes, and state
-one Yes/No rule that applies uniformly to every allowed value and meaningful
-combination. Refer to placeholders by their declared names where needed. If a
-single complete rule cannot cover the selected unit uniformly, report that the
-unit needs revision instead of expanding the criteria by value.
+Create one criteria object whose `question` exactly matches the forecast question unit
+question, including its placeholders, and whose `criteria` contains the
+complete open-text rule and all required content areas. Do not create separate
+criteria for each placeholder value or range. Use the forecast question unit's declared
+values as the complete set of possible substitutions, and state one rule that
+applies uniformly to every allowed value and meaningful combination. Refer to
+placeholders by their declared names where needed. If a single complete rule
+cannot cover the forecast question unit uniformly, report that the unit needs revision
+instead of expanding the criteria by value.
 
-`resolvesYesWhen` states every necessary and sufficient condition, including
-the deadline, for all allowed values. `resolvesNoWhen` is only the concise
-complement: No when the complete Yes condition is not met by the deadline. Do
-not repeat negative versions of every Yes element or force a closed criterion
-taxonomy.
+The No complement should say that the outcome resolves No otherwise (or an
+equivalent concise phrase). Do not enumerate additional negative conditions;
+explain material exceptions and unresolved outcomes within the same complete
+criteria text.
 
 Use plain language for an informed non-specialist, avoiding jargon and
 preferring words to symbols when precision is unchanged. Use LaTeX math
 delimiters for equations when they improve precision: inline `\( ... \)` or
 display `\[ ... \]`. Define variables and units in ordinary text as well.
 
-`evidenceAndSourceRules` identifies controlling public evidence and applies the
-approved hierarchy. Address corrections, revisions, conflicts, fallback,
-non-publication, or methodology changes only when relevant. For estimates that
-may be revised, name the controlling release (such as preliminary or final) or
-the date from which the latest available value counts. For finite numeric or
-date ranges, state what happens if the value falls outside all listed outcomes.
-When a methodology change affects an estimate, specify the controlling method,
-how material changes are handled, and what comparable fallback or unresolved
+Name only the previously approved public sources that control the outcome and
+state their priority. Explain how to locate and evaluate the evidence in those
+sources and apply the outcome rule. Address corrections, revisions, conflicts,
+fallback, non-publication, or methodology changes only when relevant. For
+estimates that may be revised,
+name the controlling release (such as preliminary or final) or the date from
+which the latest available value counts. For finite numeric or date ranges,
+state what happens if the value falls outside all listed outcomes. When a
+methodology change affects an estimate, specify the controlling method, how
+material changes are handled, and what comparable fallback or unresolved
 treatment applies. After relevant sources and fallbacks are exhausted,
 distinguish insufficient or conflicting evidence from evidence that the Yes
-condition failed. In
-`exceptionAndUnresolvedRules`, distinguish
+condition failed. Distinguish
 **Ambiguous** cases, where available evidence cannot establish the outcome,
 from **Annulled** cases, where reality is clear but the question or criteria
 cannot fairly map it to an outcome. State the disposition for each; do not
 assume platform-specific scoring or refund behavior, and never treat missing
-proof as No. Use this field only for material boundaries, ties, multiple or
-absent matches, postponement, cancellation, invalidated assumptions,
-underspecified criteria, or unresolved outcomes. Apply the evidence, source,
+proof as No. Address only material boundaries, ties, multiple or absent
+matches, postponement, cancellation, invalidated assumptions, underspecified
+criteria, or unresolved outcomes. Apply the evidence, source,
 and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
-After all interview decisions are settled, call
+After all chat interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
 criteria review before approval. Do not show a separate draft. Render the
-question once, followed by its single Yes/No rule. The selected unit already
-displays its placeholders and allowed values; do not duplicate them as
-per-value criteria. Do not append the internal No complement or repeat the
-original unit question inside the criteria.
+question once, followed by its single complete outcome rule. The forecast question unit
+already displays its placeholders and allowed values; do not duplicate them as
+per-value criteria. Do not append a second No complement or repeat the original
+unit question inside the criteria.
 
-After explicit approval, approve `resolution_criteria` and continue to
-background information; do not present the complete specification yet. If a
-validation error occurs, correct only the reported field and retry the full
-unchanged remainder. Show only the corrected field and value, explaining that
-the failed submission changed nothing.
+For the initial criteria review, ask whether the user approves the criteria
+and wants to continue to Background, or wants changes. On assent, follow the
+server-wide [approval routing](../../../src/foresight/instructions.md#workflow-state)
+to approve and continue, then follow the returned handoff to draft Background
+in the same turn. Approve and stay only when the user explicitly asks to stay
+at Criteria. After approval, compare the display question with the approved
+criteria. A reasonable reader
+must not infer a materially different event, subject, threshold, outcome, or
+time frame; technical precision or omitted resolution details alone are not a
+mismatch. If the question and criteria substantially agree, do not propose a
+question change. For a material mismatch, prepare a concise revised display
+question as a revision-bound proposal for the Question stage, using current
+workspace bindings. Do not change or approve the question automatically. Tell
+the user to review the Question stage's `!` marker and follow the server-wide
+proposal review and progression rules. If no proposal is needed, follow the
+user's chat-confirmed progression to Background; do not present the complete
+specification yet. If a validation error occurs, correct only the reported
+field and retry the full unchanged remainder. Show only the corrected field
+and value, explaining that the failed submission changed nothing.

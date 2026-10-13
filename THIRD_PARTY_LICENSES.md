@@ -1,8 +1,8 @@
 # Third-Party Licenses
 
-This repository contains an adapted decision-interview workflow in
-`skills/define-resolution-criteria/SKILL.md`, based on the following
-third-party skill:
+The iterative decision-tree interview pattern in
+`skills/define-resolution-criteria/references/criteria-spec.md` is inspired by
+the following third-party skill:
 
 - **Project:** `mattpocock/skills`
 - **File:** `skills/productivity/grilling/SKILL.md`

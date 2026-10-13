@@ -5,7 +5,7 @@ Event Contract Builder is the open-source npm package and plugin interface for
 The package name remains `event-contract-builder`; its public schemas and
 client-visible interface are the ones used by Foresight.
 
-The plugin drafts selectable forecast questions, precise definitions,
+The plugin drafts forecast question units, precise definitions,
 independent resolution sources, resolution criteria, historical context, and
 optional recent news. Each stage remains pending until the user explicitly
 approves it. Probability monitoring is planned; it is not part of the current
@@ -23,25 +23,26 @@ npm install event-contract-builder
 ```
 
 The package root exports Foresight schemas, types, structural validation,
-client-visible tool descriptors, and server instructions. The same API is also
+client-visible tool descriptors, server instructions, and canonical stage preparation
+materials. The same API is also
 available from the `event-contract-builder/foresight` subpath.
 
 ```ts
 import {
-  DraftUnit,
+  ForecastQuestionUnit,
   foresightTools,
-  type DraftUnitT,
+  type ForecastQuestionUnitT,
 } from "event-contract-builder";
 
-const draft: DraftUnitT = {
+const draft: ForecastQuestionUnitT = {
   question: "Will CPI year-over-year inflation exceed 3 percent in June 2027?",
 };
 
-const validatedDraft = DraftUnit.parse(draft);
-const submitQuestionsTool = foresightTools.submit_drafted_questions;
+const validatedDraft = ForecastQuestionUnit.parse(draft);
+const submitQuestionTool = foresightTools.submit_drafted_question;
 
 console.log(validatedDraft.question);
-console.log(submitQuestionsTool.title);
+console.log(submitQuestionTool.title);
 ```
 
 The npm package describes and validates the public interface. It does not
@@ -50,9 +51,9 @@ specifications are retrieved through the public MCP interface.
 
 ## Forecast workflow
 
-The workflow is: draft questions, select a unit, define terms, choose resolution
-sources, define resolution criteria, add background information, and optionally
-add recent news. `reduce-semantic-risk` supports focused interpretation audits.
+The workflow is: draft and approve one forecast question unit, define terms,
+choose resolution sources, define resolution criteria, add background
+information, and optionally add recent news. `reduce-semantic-risk` supports focused interpretation audits.
 
 Question drafting in Bleavit Foresight is informed by Metaculus’s
 [question-writing guidance](https://www.metaculus.com/faq/).
@@ -63,6 +64,9 @@ Instruction ownership is deliberately split to avoid duplicate maintenance:
   approval, and export conventions.
 - Each `skills/*/SKILL.md` is a short workflow entry point.
 - Each skill reference owns that stage's semantic rules and detailed format.
+- [Stage preparation](src/foresight/stage-preparation.ts) bundles canonical skill
+  materials for the server prerequisite; [shared instructions](src/foresight/instructions.md)
+  own preparation routing.
 - `src/foresight/tools.ts` exposes concise tool intent and machine-enforced
   schemas; it does not restate skill procedures.
 
@@ -168,3 +172,8 @@ and regulatory status of forecast specifications produced with this tooling.
 
 Copyright © 2026 Christopher Maximilian Altmann. Licensed under the Apache
 License, Version 2.0.
+
+The package exports the site’s shared visual tokens and icon through
+`event-contract-builder/appearance/tokens.css` and
+`event-contract-builder/appearance/foresight-icon.png`. Their canonical sources
+remain in [`site/tokens.css`](site/tokens.css) and `site/assets/`.
