@@ -461,7 +461,7 @@ const get_approved_forecast_specificationTool = {
 const delete_forecast_specificationTool = {
   title: "Delete Forecast Specification",
   description:
-    "Immediately and permanently delete one stored Forecast Specification. Call only when the user explicitly asks to delete it and supplies its forecast specification ID.",
+    "Immediately and permanently delete the specified active draft or saved Forecast Specification by ID. Call only after the user explicitly asks to delete that record.",
   inputSchema: deleteForecastSpecificationShape,
   outputSchema: deleteForecastSpecificationOutputSchema,
   annotations: {
