@@ -1,6 +1,6 @@
 ---
 name: define-background-information
-description: Research and draft neutral context and background information for a forecast specification after its resolution criteria are approved.
+description: Research and draft neutral context and background information for a forecast specification.
 ---
 
 # Define background information

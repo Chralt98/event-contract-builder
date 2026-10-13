@@ -237,7 +237,7 @@ export const CriteriaWorkingDraft = boundedPayload(
 export const BackgroundWorkingDraft = boundedPayload(
   z.strictObject({
     stage: z.literal("background_information"),
-    background_information: text,
+    background_information: presentationText,
   }),
 );
 export const NewsWorkingDraft = boundedPayload(
@@ -583,6 +583,8 @@ export const WorkspaceFieldDefinition = z.strictObject({
   control: WorkspaceControlKind,
   validation: z.string().min(1).max(200),
   multiline: z.boolean().optional(),
+  maxLength: z.number().int().min(1).max(MAX_EXPANDED_TEXT_LENGTH).optional(),
+  maxRows: z.number().int().min(1).max(50).optional(),
   internal: z.boolean().optional(),
   readOnly: z.boolean().optional(),
   emphasis: z.literal("prerequisite").optional(),

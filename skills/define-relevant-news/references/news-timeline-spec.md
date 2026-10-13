@@ -4,7 +4,7 @@ Use only after explicit opt-in following background approval.
 
 ## Research and selection
 
-Research recent developments materially related to the exact unit or criteria.
+Research recent developments materially related to the exact forecast question unit or criteria.
 Open original pages; search snippets are leads, not evidence. Prefer official
 announcements, filings, releases, or records, and use reputable reporting when
 it adds facts or context. Cite the direct public item URL.

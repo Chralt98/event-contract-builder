@@ -1,6 +1,6 @@
 ---
 name: define-resolution-criteria
-description: Define source-grounded resolution criteria for the question represented by a forecast specification after its resolution sources are approved.
+description: Define source-grounded resolution criteria for the question represented by a forecast specification.
 ---
 
 # Define resolution criteria

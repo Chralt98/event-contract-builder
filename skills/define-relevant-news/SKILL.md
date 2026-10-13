@@ -1,6 +1,6 @@
 ---
 name: define-relevant-news
-description: Research and review an optional, succinct timeline of recent news relevant to an approved forecast specification, only after the user explicitly opts in.
+description: Research and review an optional, succinct timeline of recent news relevant to a forecast specification, only after the user explicitly opts in.
 ---
 
 # Define relevant news
