@@ -1,17 +1,20 @@
 # Bleavit Foresight MCP server
 
+Before analysis, research, or drafting, use the `preparation` bundle from an
+approval handoff or stage review when supplied; otherwise call `prepare_stage`
+for that stage. Read the complete bundle: it contains the canonical shared
+runtime instructions, active skill, and required references. Tool descriptions
+do not replace preparation.
+
+## Runtime policy
+
 The packaged skills own semantic drafting and research. This server owns
 validation, rendering, workflow state, and approvals. Follow the active skill's
 reference for stage-specific rules; do not reproduce those rules from this
 file or from tool descriptions.
 
-Before analysis, research, or drafting, read the shared server instructions,
-the active stage skill, and its required references. Use the `preparation`
-bundle from an approval handoff or stage review when supplied; otherwise call
-`prepare_stage` for that stage. Read its complete bundle before generating
-content. The bundle contains canonical file contents, so do not reread those
-files separately unless the skill calls for an additional conditional reference.
-Tool descriptions do not replace this preparation.
+Do not reread the bundled files separately unless the skill calls for an
+additional conditional reference.
 
 Pass the returned `preparation_receipt` to stage submissions and generated
 workspace commands (`submit_generated_draft` or `submit_proposal`). Reuse it

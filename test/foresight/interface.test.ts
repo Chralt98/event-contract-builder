@@ -12,6 +12,7 @@ import {
   parseConnectorResolutionCriteria,
   parseConnectorForecastQuestionUnit,
   foresightServerInstructions,
+  foresightDiscoveryInstructions,
 } from "../../src/foresight";
 
 const source = {
@@ -42,6 +43,19 @@ const backgroundInformation =
   "The local observatory publishes daily weather measurements for the surrounding area.";
 
 describe("public forecast interface", () => {
+  test("discovery routes to complete preparation within the plugin tool budget", () => {
+    expect(
+      new TextEncoder().encode(foresightDiscoveryInstructions).byteLength,
+    ).toBeLessThan(600);
+    expect(foresightDiscoveryInstructions).toContain("prepare_stage");
+    expect(
+      foresightServerInstructions.startsWith(foresightDiscoveryInstructions),
+    ).toBe(true);
+    expect(foresightDiscoveryInstructions.length).toBeLessThan(
+      foresightServerInstructions.length,
+    );
+  });
+
   test("forecast sources use the Foresight source schema", () => {
     expect(DataSource.parse(source)).toEqual(source);
     expect(Object.keys(DataSource.shape).sort()).toEqual(
