@@ -47,9 +47,13 @@ handoff state without attaching or opening the MCP App UI. Model workflows
 fetch current stage state with `get_forecast_stage_review`; this initializes
 untouched stages and returns structured state without attaching or opening the
 MCP App UI. Use `execute_workspace_command` to navigate in the App. Use commands returned in
-`workspace.presentation.actions`; replace editable
-payloads as needed and use a fresh command ID for a new operation. Preserve the
-same command ID and payload when retrying a lost acknowledgement.
+`workspace.presentation.actions` as complete command objects, preserving their
+target and revision bindings. Replace only editable payloads, use a fresh
+command ID for a new operation, and preserve the same ID and payload when
+retrying a lost acknowledgement. Never call this tool with empty or guessed
+arguments to inspect availability or substitute for a missing stage submission
+tool. If a required stage submission tool is absent from the live tool catalog,
+stop and report the integration gap.
 
 After stage preparation, for a new model-generated question call `submit_drafted_question` directly;
 it creates the record and workspace. Do not call `create_question_workspace`
