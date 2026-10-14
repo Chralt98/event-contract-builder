@@ -167,10 +167,23 @@ export type ForecastConditionT = z.infer<typeof ForecastCondition>;
  * Glossary mapping each key term to its precise, unambiguous definition.
  * Keys and values are both required to be non-empty.
  */
+export const MAX_DEFINED_TERMS = 20;
+export const MAX_TERM_LENGTH = 120;
+export const MAX_TERM_DEFINITION_LENGTH = 600;
 export const Definitions = z
-  .record(z.string().min(1), z.string().min(1))
+  .record(
+    z.string().min(1).max(MAX_TERM_LENGTH),
+    z.string().min(1).max(MAX_TERM_DEFINITION_LENGTH),
+  )
+  .superRefine((definitions, ctx) => {
+    if (Object.keys(definitions).length > MAX_DEFINED_TERMS)
+      ctx.addIssue({
+        code: "custom",
+        message: `A glossary can contain at most ${MAX_DEFINED_TERMS} terms.`,
+      });
+  })
   .describe(
-    "Glossary of key terms used in the specification: word → definition",
+    `Glossary of up to ${MAX_DEFINED_TERMS} key terms: each term name is at most ${MAX_TERM_LENGTH} characters and each definition is at most ${MAX_TERM_DEFINITION_LENGTH} characters.`,
   );
 
 export type DefinitionsT = z.infer<typeof Definitions>;

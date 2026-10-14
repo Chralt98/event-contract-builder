@@ -637,8 +637,15 @@ test("working condition uses canonical dispositions while permitting incomplete 
 });
 
 test("migrated stage drafts are bounded, preserve incomplete rows, and bind commands to their stage", async () => {
-  const { ContentWorkingDraft, validateContentWorkingDraft, SourceHierarchy } =
-    await import("../../src/foresight");
+  const {
+    ContentWorkingDraft,
+    validateContentWorkingDraft,
+    SourceHierarchy,
+    Definitions,
+    MAX_DEFINED_TERMS,
+    MAX_TERM_LENGTH,
+    MAX_TERM_DEFINITION_LENGTH,
+  } = await import("../../src/foresight");
   const terms = {
     stage: "defined_terms" as const,
     definitions: [{ id: id(), term: "rain", definition: "" }],
@@ -663,11 +670,78 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
   expect(
     ContentWorkingDraft.safeParse({
       ...terms,
-      definitions: Array.from({ length: 51 }, () => ({
+      definitions: Array.from({ length: MAX_DEFINED_TERMS + 1 }, () => ({
         id: id(),
         term: "",
         definition: "",
       })),
+    }).success,
+  ).toBe(false);
+  expect(
+    ContentWorkingDraft.safeParse({
+      stage: "defined_terms",
+      definitions: [
+        {
+          id: id(),
+          term: "t".repeat(MAX_TERM_LENGTH),
+          definition: "d".repeat(MAX_TERM_DEFINITION_LENGTH),
+        },
+      ],
+    }).success,
+  ).toBe(true);
+  expect(
+    ContentWorkingDraft.safeParse({
+      stage: "defined_terms",
+      definitions: [
+        { id: id(), term: "t".repeat(MAX_TERM_LENGTH + 1), definition: "d" },
+      ],
+    }).success,
+  ).toBe(false);
+  expect(
+    ContentWorkingDraft.safeParse({
+      stage: "defined_terms",
+      definitions: [
+        {
+          id: id(),
+          term: "term",
+          definition: "d".repeat(MAX_TERM_DEFINITION_LENGTH + 1),
+        },
+      ],
+    }).success,
+  ).toBe(false);
+  expect(
+    Definitions.safeParse(
+      Object.fromEntries(
+        Array.from({ length: MAX_DEFINED_TERMS }, (_, index) => [
+          `term ${index}`,
+          "definition",
+        ]),
+      ),
+    ).success,
+  ).toBe(true);
+  expect(
+    Definitions.safeParse(
+      Object.fromEntries(
+        Array.from({ length: MAX_DEFINED_TERMS + 1 }, (_, index) => [
+          `term ${index}`,
+          "definition",
+        ]),
+      ),
+    ).success,
+  ).toBe(false);
+  expect(
+    Definitions.safeParse({
+      ["t".repeat(MAX_TERM_LENGTH)]: "d".repeat(MAX_TERM_DEFINITION_LENGTH),
+    }).success,
+  ).toBe(true);
+  expect(
+    Definitions.safeParse({
+      ["t".repeat(MAX_TERM_LENGTH + 1)]: "definition",
+    }).success,
+  ).toBe(false);
+  expect(
+    Definitions.safeParse({
+      term: "d".repeat(MAX_TERM_DEFINITION_LENGTH + 1),
     }).success,
   ).toBe(false);
   expect(
@@ -877,7 +951,7 @@ test("Criteria and Background text fields allow 32,000 characters", () => {
   ).toBe(false);
 });
 
-test("Criteria exposes its question binding read-only and one editable criteria field", () => {
+test("Criteria exposes only one editable criteria field", () => {
   expect(contentStageDefinitions.resolution_criteria.label).toBe(
     "Resolution Criteria",
   );
@@ -889,14 +963,9 @@ test("Criteria exposes its question binding read-only and one editable criteria 
       field.control === "prose" && !("readOnly" in field && field.readOnly),
   );
   expect(fields.map((field) => field.label)).toEqual(["Resolution Criteria"]);
-  const questionBinding =
-    contentStageDefinitions.resolution_criteria.fields.find(
-      (field) => field.path.at(-1) === "question",
-    );
-  expect(questionBinding).toMatchObject({
-    label: "Question being resolved",
-    readOnly: true,
-  });
+  expect(fields.map((field) => field.path)).toEqual([
+    ["resolution_criteria", "criteria"],
+  ]);
 });
 
 test("News timeline fields use title case for Publication Date", () => {

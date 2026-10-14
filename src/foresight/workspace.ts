@@ -13,6 +13,9 @@ import {
   ForecastCondition,
   MAX_TEMPLATE_VARIABLES,
   MAX_VARIABLE_VALUES,
+  MAX_DEFINED_TERMS,
+  MAX_TERM_LENGTH,
+  MAX_TERM_DEFINITION_LENGTH,
 } from "./display-question";
 import {
   ForecastSpecificationId,
@@ -207,8 +210,12 @@ export const TermsWorkingDraft = boundedPayload(
   z.strictObject({
     stage: z.literal("defined_terms"),
     definitions: uniqueRows(
-      z.strictObject({ id: WorkspaceRowId, term: text, definition: text }),
-      50,
+      z.strictObject({
+        id: WorkspaceRowId,
+        term: z.string().max(MAX_TERM_LENGTH),
+        definition: z.string().max(MAX_TERM_DEFINITION_LENGTH),
+      }),
+      MAX_DEFINED_TERMS,
     ),
   }),
 );
@@ -444,12 +451,14 @@ export const contentStageDefinitions = {
         label: "Definitions",
         control: "rows",
         validation: "Definitions",
+        maxRows: MAX_DEFINED_TERMS,
       },
       {
         path: ["definitions", "*", "term"],
         label: "Term",
         control: "prose",
         validation: "Definitions.key",
+        maxLength: MAX_TERM_LENGTH,
       },
       {
         path: ["definitions", "*", "definition"],
@@ -457,6 +466,7 @@ export const contentStageDefinitions = {
         control: "prose",
         validation: "Definitions.value",
         multiline: true,
+        maxLength: MAX_TERM_DEFINITION_LENGTH,
       },
     ],
   },
@@ -497,13 +507,6 @@ export const contentStageDefinitions = {
         label: "Resolution Criteria",
         control: "group",
         validation: "ResolutionCriteria",
-      },
-      {
-        path: ["resolution_criteria", "question"],
-        label: "Question being resolved",
-        control: "prose",
-        validation: "ResolutionCriteria.question",
-        readOnly: true,
       },
       {
         path: ["resolution_criteria", "criteria"],
