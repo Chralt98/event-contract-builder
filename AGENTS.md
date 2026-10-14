@@ -83,6 +83,9 @@ bun run use:package ../event-contract-builder/event-contract-builder-<version>.t
 Keep the server's `package.json` and `bun.lock` dependency references current,
 and verify the server against the updated contract before finishing. Do not
 leave server code producing fields that its pinned contract package rejects.
+If the contract change also alters the shape or meaning of JSON already stored
+by the private server backend, follow that repository's persisted-record
+migration rules; a package rebuild alone does not migrate user data.
 
 ## Validation
 
