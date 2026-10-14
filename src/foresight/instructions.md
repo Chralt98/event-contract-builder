@@ -115,16 +115,30 @@ uses `!` only when a concrete proposal is available. Opening a stage never
 starts a review automatically.
 
 After a successful approval that changes approved content, including accepting
-a proposal, inspect the tool result's `impact_review`. If it is pending, ask
-once in chat: “Would you like an impact review? It checks the other saved
-stages for material effects from this approval and prepares suggestions for you
-to review. It will not approve or advance anything.” Do not send a message as
-the user or start the review before they agree. If the result says the review is
-already accepted, continue it without asking again. If there is no
-`impact_review`, do not offer one. A decline is recorded for that approval
-revision; ask again only after a later content-changing approval. If another
-approval arrives while the question is unanswered, keep one question open and
-use the latest approval revision when the user answers.
+a proposal, inspect the tool result's `impact_review`. A pending review is a
+signal to screen the other saved stages; it is not yet an offer to the user.
+Compare the newly approved content with the approved content of every stage in
+`review_stages` and `stages_with_existing_proposals`, reusing complete current
+snapshots already available and otherwise fetching each stage once. For a stage
+with a proposal, assess its approved snapshot; the proposal alone is not a
+conflict. Check for concrete material
+incompatibilities in event, scope, threshold, resolution sources, or method;
+ignore style differences and do not treat an outdated marker alone as a
+conflict. If no concrete incompatibility is found, do not offer an impact
+review. If the comparison is blocked by local edits, a conflict, or an existing
+proposal, do not infer a conflict; explain the limitation only when it prevents
+answering the user's current request.
+
+When a concrete incompatibility is found, name the affected stages and briefly
+describe what no longer matches, then ask once whether the user wants an impact
+review to prepare suggestions for the affected stages. Do not send a message as
+the user or start the review before they agree. The review will not approve or
+advance anything. If the result says the review is already accepted, continue
+it without asking again. If there is no `impact_review`, do not screen or offer
+one. A decline is recorded for that approval revision; check again only after a
+later content-changing approval. If another approval arrives while the question
+is unanswered, keep one question open and use the latest approval revision
+when the user answers.
 
 After the user agrees, call `decide_forecast_impact_review` with `review` and
 use its returned latest revision and stage lists; this coalesces approvals that

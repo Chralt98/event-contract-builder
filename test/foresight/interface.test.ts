@@ -467,6 +467,15 @@ describe("public forecast interface", () => {
       /After a successful approval that changes approved content/,
     );
     expect(foresightServerInstructions).toMatch(
+      /A pending review is a\s+signal to screen the other saved stages; it is not yet an offer to the user\./,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /If no concrete incompatibility is found, do not offer an impact\s+review\./,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /name the affected stages and briefly\s+describe what no longer matches/,
+    );
+    expect(foresightServerInstructions).toMatch(
       /uses `!` only when a\s+concrete proposal is available/,
     );
     expect(foresightServerInstructions).toMatch(

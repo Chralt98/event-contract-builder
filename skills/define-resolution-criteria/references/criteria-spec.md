@@ -48,6 +48,56 @@ check that complete text against [criteria-validation.md](criteria-validation.md
 Review criteria by meaning; do not use regular expressions or fixed-phrase
 checks for semantic requirements.
 
+Use the same seven-part order for every draft. Write the parts as labeled
+paragraphs in the criteria language, using the same translated labels for every
+draft in that language. Keep the labels and order below; do not add a second
+No rule at the end:
+
+1. **Outcome** — Start with the Yes rule, then the evidence-based No rule, then
+   the disposition for evidence that cannot establish either outcome and for
+   clear reality that the question cannot fairly map to an outcome. For
+   conditional units, state the approved `ifUnmet` branch here and keep it
+   distinct from an ordinary No result. The No rule must require evidence that
+   the Yes condition was not met; missing proof alone is not No.
+2. **Scope** — Define outcome-bearing terms and state what counts or does not
+   count when a plausible boundary could change the result. Include this
+   paragraph only when the question and approved definitions do not already
+   settle a material boundary.
+3. **Target and timing** — Follow the question's wording to identify what is
+   being forecast. If it asks what a named source will publish, announce, or
+   decide, that source action is the target. Otherwise, the target is the
+   underlying event or value and approved sources are evidence for it. State
+   the exact date and any material time and time zone; clarify whether a cutoff
+   applies to the event, measurement period, or publication. If intent is
+   ambiguous and could change the outcome, settle it in the chat interview.
+4. **Sources** — List the exact approved primary source and every approved
+   fallback in order, with each fallback's approved trigger. Never promote an
+   evidence source into the event being forecast, or add a fallback, without
+   approval.
+5. **Method** — Give the resolver actionable steps for locating and applying
+   the evidence, including material subject, measure, geography, query,
+   aggregation, or cutoff settings.
+6. **Data versions** — When relevant, identify which release or vintage
+   controls and how to handle corrections or material methodology changes.
+   Omit this paragraph when versioning cannot affect the outcome.
+7. **Exceptions** — When relevant, resolve material cases such as a source
+   failing to publish, conflicting evidence, a canceled or postponed event, or
+   an invalidated assumption. State the specific disposition and fallback;
+   omit speculative or immaterial cases.
+
+The **Outcome**, **Target and timing**, **Sources**, and **Method** paragraphs
+are always present, even when concise. Include **Scope**, **Data versions**, and
+**Exceptions** only when they add material information. The opening Outcome
+paragraph must state both Yes and No before any procedural detail; later
+paragraphs may explain those rules but must not introduce a conflicting result
+path. Use the approved output language and stable labels; do not require English
+phrases when criteria are written in another language.
+
+For an event-targeted question, the approved sources provide evidence about the
+event, and the source hierarchy remains controlling. Use a fallback only under
+its approved trigger. Do not silently substitute a source or change the target
+from the event to a source's publication, or vice versa.
+
 Audit the complete criteria, including evidence and exception rules, for
 outcome-bearing terms introduced beyond the forecast question unit. Define any term
 whose ambiguity could change the resolution in the criteria itself, using an
@@ -91,10 +141,10 @@ placeholders by their declared names where needed. If a single complete rule
 cannot cover the forecast question unit uniformly, report that the unit needs revision
 instead of expanding the criteria by value.
 
-The No complement should say that the outcome resolves No otherwise (or an
-equivalent concise phrase). Do not enumerate additional negative conditions;
-explain material exceptions and unresolved outcomes within the same complete
-criteria text.
+State No directly in the opening Outcome paragraph. It must describe evidence
+that establishes the Yes condition was not met by the deadline. Do not make
+missing or conflicting evidence a No outcome; state the applicable unresolved
+disposition instead. Do not enumerate redundant negative conditions.
 
 Use plain language for an informed non-specialist, avoiding jargon and
 preferring words to symbols when precision is unchanged. Use LaTeX math
@@ -130,8 +180,8 @@ After all chat interview decisions are settled, call
 criteria review before approval. Do not show a separate draft. Render the
 question once, followed by its single complete outcome rule. The forecast question unit
 already displays its placeholders and allowed values; do not duplicate them as
-per-value criteria. Do not append a second No complement or repeat the original
-unit question inside the criteria.
+per-value criteria. Do not append a second No rule or repeat the original unit
+question inside the criteria.
 
 For the initial criteria review, ask whether the user approves the criteria
 and wants to continue to Background, or wants changes. On assent, follow the
