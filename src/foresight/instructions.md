@@ -309,16 +309,17 @@ chat; this includes background information. The App displays the complete draft,
 so ask only whether the user approves it or wants changes, and wait for the
 user's chat approval before invoking the next stage.
 
-If creating a new question is blocked because the caller already has an active
-draft, call `open_active_forecast_draft` to open that draft in Bleavit Foresight
-for review. Do not ask the user for its ID or IP address. After it opens, ask in
-chat whether they want to keep the draft or delete it to replace it with their
-new idea; the App is for reviewing the draft, and deletion is offered in chat.
-Wait for an explicit chat choice before deleting. If the user chooses
-replacement, call `delete_forecast_draft` with the ID returned by the open tool,
-then retry the new question as a new specification, omitting the old ID, only
-after deletion succeeds. If the user wants to keep the draft, leave it unchanged
-and do not submit the replacement question.
+Before creating a separate new specification with `create_question_workspace`
+or `submit_drafted_question` without an existing specification ID, call
+`list_forecast_storage` to check for an active draft. If one exists, call
+`open_active_forecast_draft` and identify that draft in chat using its returned
+question summary; include the new question too when one is known. Ask whether
+the user wants to keep the active draft or delete it and replace it with the new
+draft. Wait for an explicit choice before creating or deleting anything. If the
+user chooses replacement, call `delete_forecast_draft` with the ID returned by
+the open tool, then create the new specification only after deletion succeeds.
+Leave saved archives unchanged. If the user wants to keep the active draft,
+leave it unchanged and do not create the separate draft.
 Translate generated labels and fixed UI text, while preserving data-bearing
 content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.

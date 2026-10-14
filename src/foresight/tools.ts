@@ -376,7 +376,7 @@ const execute_completion_commandTool = {
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
   description:
-    "Start an empty resumable question draft with an immutable language for manual entry. The draft cannot be approved until it contains a valid question.",
+    "Start an empty resumable question draft for manual entry. Check for an active draft first and get the user's choice before replacing it.",
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,
@@ -579,7 +579,7 @@ const submit_defined_termsTool = {
 const submit_drafted_questionTool = {
   title: "Submit Drafted Question",
   description:
-    "Save a generated question with a current stage preparation receipt. Creates a record or updates its generated draft; after an App edit, saves a proposal.",
+    "Save a generated question with a current stage preparation receipt. Creates or updates a record; confirm any active draft's replacement first. After an App edit, saves a proposal.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {

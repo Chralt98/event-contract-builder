@@ -728,6 +728,12 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain("execute_completion_command");
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
+    expect(foresightServerInstructions).toContain(
+      "list_forecast_storage` to check for an active draft",
+    );
+    expect(foresightServerInstructions).toContain(
+      "Wait for an explicit choice before creating or deleting",
+    );
 
     expect(criteriaSkill).toContain(
       "Read [references/criteria-spec.md](references/criteria-spec.md)",
@@ -759,6 +765,12 @@ describe("public forecast interface", () => {
   test("keeps tool descriptions concise and delegates procedure to skills", () => {
     expect(foresightTools.get_forecast_stage_review.description).toContain(
       "does not attach or open the MCP App UI",
+    );
+    expect(foresightTools.create_question_workspace.description).toContain(
+      "Check for an active draft first",
+    );
+    expect(foresightTools.submit_drafted_question.description).toContain(
+      "confirm any active draft's replacement first",
     );
     for (const tool of Object.values(foresightTools)) {
       expect(tool.description.length).toBeLessThanOrEqual(260);
