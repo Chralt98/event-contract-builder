@@ -7,21 +7,23 @@ definitions, resolution deadline, and approved source hierarchy. Review meaning
 and coverage; wording may vary, so do not require exact phrases, case, or regex
 matches. The checklist below reviews content, not separate input fields. The
 criteria text itself must follow the seven-part paragraph order in
-[criteria-spec.md](criteria-spec.md), using its stable labels in the approved
-output language. This checklist is for the model's pre-submission review only;
-do not include it in the submitted criteria text.
+[criteria-spec.md](criteria-spec.md), written as ordinary prose paragraphs
+without headings or labels. This checklist is for the model's pre-submission
+review only; do not include it in the submitted criteria text.
 
 ## Schema Order
 
-- Confirm the text begins with **Outcome**, which states Yes first, then No,
+- Confirm the opening paragraph states Yes first, then No,
   then the approved dispositions for insufficient evidence and clear reality
   that cannot fairly map to an outcome. No must require evidence that the Yes
   condition failed; missing or conflicting evidence alone is not No.
-- Follow with **Scope** only when a material boundary needs definition, then
-  **Target and timing**, **Sources**, and **Method**, in that order.
-- Add **Data versions** only when source revisions, releases, or methodology
-  could change the result. Add **Exceptions** when a material edge case needs
-  an explicit disposition. Keep either paragraph in its fixed position.
+- Include a scope paragraph only when a material boundary needs definition,
+  then provide the target and timing, sources, and method paragraphs in that
+  order.
+- Include a data versions paragraph only when source revisions, releases, or methodology
+  could change the result. Include an exceptions paragraph when a material edge
+  case needs an explicit disposition. Keep either paragraph in its fixed
+  position.
 - Use the question's wording to determine whether the target is a named
   source's publication, announcement, or decision, or the underlying event or
   value. If that distinction could change the outcome and the wording does not
@@ -52,7 +54,7 @@ do not include it in the submitted criteria text.
   the resolution deadline” does not identify the cutoff. Never invent a time
   or zone; if the missing precision could change the result, resolve it with the
   user before submission.
-- State the No rule in the opening Outcome paragraph. The approved evidence
+- State the No rule in the opening paragraph. The approved evidence
   must establish that the Yes condition was not met by the cutoff; do not use
   “otherwise” to turn missing proof into No. Explain material edge cases in the
   ordered text without adding a second No rule.

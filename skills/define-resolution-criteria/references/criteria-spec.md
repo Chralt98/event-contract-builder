@@ -48,10 +48,11 @@ check that complete text against [criteria-validation.md](criteria-validation.md
 Review criteria by meaning; do not use regular expressions or fixed-phrase
 checks for semantic requirements.
 
-Use the same seven-part order for every draft. Write the parts as labeled
-paragraphs in the criteria language, using the same translated labels for every
-draft in that language. Keep the labels and order below; do not add a second
-No rule at the end:
+Use the same seven-part order for every draft, but write each part as an
+ordinary prose paragraph without headings, labels, or label-like introductions
+such as “Outcome:” or “Sources:”. The content and transitions should make each
+paragraph's role clear. Keep the order below; do not add a second No rule at
+the end:
 
 1. **Outcome** — Start with the Yes rule, then the evidence-based No rule, then
    the disposition for evidence that cannot establish either outcome and for
@@ -85,13 +86,12 @@ No rule at the end:
    an invalidated assumption. State the specific disposition and fallback;
    omit speculative or immaterial cases.
 
-The **Outcome**, **Target and timing**, **Sources**, and **Method** paragraphs
-are always present, even when concise. Include **Scope**, **Data versions**, and
-**Exceptions** only when they add material information. The opening Outcome
-paragraph must state both Yes and No before any procedural detail; later
-paragraphs may explain those rules but must not introduce a conflicting result
-path. Use the approved output language and stable labels; do not require English
-phrases when criteria are written in another language.
+The outcome, target and timing, sources, and method paragraphs are always
+present, even when concise. Include scope, data versions, and exceptions only
+when they add material information. The opening paragraph must state both Yes
+and No before any procedural detail; later paragraphs may explain those rules
+but must not introduce a conflicting result path. Use the approved output
+language throughout.
 
 For an event-targeted question, the approved sources provide evidence about the
 event, and the source hierarchy remains controlling. Use a fallback only under
@@ -131,9 +131,8 @@ occurring, a report being issued, or a data series remaining comparable, and
 specify how plausible failures affect resolution, including any fallback or
 unresolved treatment.
 
-Create one criteria object whose `question` exactly matches the forecast question unit
-question, including its placeholders, and whose `criteria` contains the
-complete open-text rule and all required content areas. Do not create separate
+Create one criteria object whose `criteria` contains the complete open-text
+rule and all required content areas. Do not create separate
 criteria for each placeholder value or range. Use the forecast question unit's declared
 values as the complete set of possible substitutions, and state one rule that
 applies uniformly to every allowed value and meaningful combination. Refer to
@@ -177,11 +176,11 @@ and exception rules consistently to every allowed value.
 
 After all chat interview decisions are settled, call
 `submit_resolution_criteria` once; the rendered submission is the only
-criteria review before approval. Do not show a separate draft. Render the
-question once, followed by its single complete outcome rule. The forecast question unit
-already displays its placeholders and allowed values; do not duplicate them as
-per-value criteria. Do not append a second No rule or repeat the original unit
-question inside the criteria.
+criteria review before approval. Do not show a separate draft. Present the
+single complete outcome rule. The forecast question unit already displays its
+placeholders and allowed values; do not duplicate them as per-value criteria.
+Do not append a second No rule or repeat the original unit question inside the
+criteria.
 
 For the initial criteria review, ask whether the user approves the criteria
 and wants to continue to Background, or wants changes. On assent, follow the

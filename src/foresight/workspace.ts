@@ -1,9 +1,6 @@
 import { OptionalPreparationReceipt } from "./stage-preparation";
 import { z } from "zod";
-import {
-  ResolutionCriteria,
-  parseConnectorResolutionCriteria,
-} from "./resolution-criteria";
+import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
 import type { ForecastQuestionUnitT } from "./display-question";
@@ -236,7 +233,6 @@ export const CriteriaWorkingDraft = boundedPayload(
   z.strictObject({
     stage: z.literal("resolution_criteria"),
     resolution_criteria: z.strictObject({
-      question: text,
       criteria: resolutionCriteriaText,
     }),
   }),
@@ -396,10 +392,9 @@ export function validateContentWorkingDraft(
   ) {
     try {
       if (draft.stage === "resolution_criteria") {
-        const criteria = ResolutionCriteria.parse(
+        ResolutionCriteria.parse(
           (domain as { resolution_criteria: unknown }).resolution_criteria,
         );
-        parseConnectorResolutionCriteria(criteria, forecastQuestionUnit);
       } else if (draft.stage === "background_information")
         ForecastBackgroundInformation.parse(draft.background_information);
       else
@@ -410,7 +405,6 @@ export function validateContentWorkingDraft(
       if (!(error instanceof z.ZodError)) throw error;
       for (const issue of error.issues) {
         let path = issue.path.map(String);
-        if (path[0] === "resolutionCriteria") path.shift();
         if (
           draft.stage === "resolution_criteria" &&
           path[0] !== "resolution_criteria"
@@ -430,9 +424,7 @@ export function validateContentWorkingDraft(
               ? "Enter a publication date (YYYY-MM-DD) or an ISO date-time with its offset."
               : issue.code === "invalid_format" && path.at(-1) === "url"
                 ? "Enter a valid source URL."
-                : issue.message.includes("separate question binding")
-                  ? "The separate question binding must match the approved question; the criteria text does not need to repeat it."
-                  : issue.message;
+                : issue.message;
         add(path.length ? path : [draft.stage], message);
       }
     }
@@ -506,7 +498,6 @@ export const contentStageDefinitions = {
         path: ["resolution_criteria"],
         label: "Resolution Criteria",
         control: "group",
-        validation: "ResolutionCriteria",
       },
       {
         path: ["resolution_criteria", "criteria"],

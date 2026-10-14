@@ -34,7 +34,6 @@ const input = {
 };
 
 const criteria = {
-  question: input.forecast_question_unit.question,
   criteria:
     "The approved source reports measurable rainfall for the target date by the deadline. Otherwise it resolves No; use the approved source hierarchy and document unresolved evidence.",
 };
@@ -627,7 +626,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("resolution criteria accept one complete text bound to the approved question", () => {
+  test("resolution criteria accept one complete criteria text without a question field", () => {
     const schema = z.object(
       foresightTools.submit_resolution_criteria.inputSchema,
     );
@@ -642,9 +641,7 @@ describe("public forecast interface", () => {
     };
 
     expect(schema.safeParse(payload).success).toBe(true);
-    expect(
-      parseConnectorResolutionCriteria(criteria, input.forecast_question_unit),
-    ).toEqual(criteria);
+    expect(parseConnectorResolutionCriteria(criteria)).toEqual(criteria);
     expect(
       schema.safeParse({
         ...payload,
@@ -658,88 +655,41 @@ describe("public forecast interface", () => {
       schema.safeParse({
         ...payload,
         resolution_criteria: {
-          question: input.forecast_question_unit.question,
           criteria: "",
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      schema.safeParse({
+        ...payload,
+        resolution_criteria: {
+          ...criteria,
+          question: input.forecast_question_unit.question,
         },
       }).success,
     ).toBe(false);
   });
 
   test("one complete criteria text applies to every placeholder substitution", () => {
-    const scalarUnit = {
-      question: "Will the value be <range>?",
-      variables: [
-        {
-          name: "range",
-          values: ["below 10", "from 10 through 19", "at least 20"],
-        },
-      ],
+    const candidate = {
+      criteria:
+        "Resolve Yes when the approved evidence establishes the question's condition; otherwise No.",
     };
-    const categoryUnit = {
-      question: "Will <party> control the U.S. Senate after the 2026 election?",
-      variables: [
-        {
-          name: "party",
-          values: ["Democratic Party", "Republican Party"],
-        },
-      ],
-    };
-    for (const unit of [scalarUnit, categoryUnit]) {
-      const candidate = {
-        question: unit.question,
-        criteria:
-          "Resolve Yes when the approved evidence establishes the question's condition; otherwise No.",
-      };
-      expect(parseConnectorResolutionCriteria(candidate, unit).question).toBe(
-        unit.question,
-      );
-    }
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        {
-          question: "Will Candidate C control the Senate?",
-          criteria:
-            "Resolve Yes if Candidate C controls the Senate; otherwise No.",
-        },
-        categoryUnit,
-      ),
-    ).toThrow(
-      "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
-    );
+    expect(parseConnectorResolutionCriteria(candidate)).toEqual(candidate);
   });
 
-  test("conditional criteria retain the forecast question unit's exact question", () => {
-    const forecastQuestionUnit = {
-      question: "Will Alice win the election?",
-      condition: {
-        statement: "Alice appears on the final ballot",
-        ifUnmet: "annulled" as const,
-      },
-    };
+  test("conditional criteria retain the approved unmet disposition", () => {
     const conditionalCriteria = {
-      question: forecastQuestionUnit.question,
       criteria:
         "Resolve Yes if Alice appears on the final ballot and wins, according to the election authority. Otherwise resolve No; if she is absent from the final ballot, annul.",
     };
-    expect(
-      parseConnectorResolutionCriteria(
-        conditionalCriteria,
-        forecastQuestionUnit,
-      ),
-    ).toEqual(conditionalCriteria);
-    expect(() =>
-      parseConnectorResolutionCriteria(
-        { ...conditionalCriteria, question: "Will Bob win the election?" },
-        forecastQuestionUnit,
-      ),
-    ).toThrow(
-      "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
+    expect(parseConnectorResolutionCriteria(conditionalCriteria)).toEqual(
+      conditionalCriteria,
     );
   });
 
   test("criteria text accepts concise or multi-sentence question-specific logic", () => {
     const candidate = {
-      question: input.forecast_question_unit.question,
       criteria:
         "Otherwise resolve No. A tie uses the source's published tie-break. A cancellation follows the approved disposition.",
     };

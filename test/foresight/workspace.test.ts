@@ -821,7 +821,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
   ).toBe(false);
 });
 
-test("Criteria and News workspace approval reuse canonical identity and ordering validators", () => {
+test("Criteria and News workspace approval reuse canonical and ordering validators", () => {
   const unit = {
     question: "Will Berlin report rain tomorrow?",
     condition: {
@@ -832,17 +832,14 @@ test("Criteria and News workspace approval reuse canonical identity and ordering
   const criteria = {
     stage: "resolution_criteria" as const,
     resolution_criteria: {
-      question: unit.question,
       criteria:
         "Outcome Rules: This market settles Yes if the approved daily report records precipitation by October 5, 2026; otherwise, it settles No. Resolution Sources: Use the approved daily report. Resolution Method: Read the report for the target date and compare its measured value to the outcome rule. Exceptions and Unresolved Outcomes: If evidence is insufficient, mark the result Ambiguous.",
     },
   };
   expect(validateContentWorkingDraft(criteria, true, unit)).toEqual([]);
   const mismatch = structuredClone(criteria);
-  mismatch.resolution_criteria.question = "Will Paris report rain tomorrow?";
-  expect(
-    validateContentWorkingDraft(mismatch, true, unit).length,
-  ).toBeGreaterThan(0);
+  mismatch.resolution_criteria.criteria = "";
+  expect(validateContentWorkingDraft(mismatch, true, unit).length).toBe(1);
   const news = {
     stage: "news_timeline" as const,
     items: [
@@ -878,7 +875,6 @@ test("Criteria keeps one complete open-text field without requiring a fixed lead
   const draft = {
     stage: "resolution_criteria" as const,
     resolution_criteria: {
-      question: "Will Berlin report rain tomorrow?",
       criteria:
         "This market settles Yes if the Weather Service reports rain by October 22. Otherwise, it resolves No. Use the official report, read the published value for the target date, and apply the rule. Annul if evidence is unavailable.",
     },
@@ -893,7 +889,6 @@ test("Criteria permits a full combined draft larger than an individual field", (
     CriteriaWorkingDraft.safeParse({
       stage: "resolution_criteria",
       resolution_criteria: {
-        question: "Will the report meet the threshold?",
         criteria: "x".repeat(32_000),
       },
     }).success,
@@ -902,7 +897,6 @@ test("Criteria permits a full combined draft larger than an individual field", (
     CriteriaWorkingDraft.safeParse({
       stage: "resolution_criteria",
       resolution_criteria: {
-        question: "Will the report meet the threshold?",
         criteria: "x".repeat(32_001),
       },
     }).success,

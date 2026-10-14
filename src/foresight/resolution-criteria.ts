@@ -1,9 +1,4 @@
 import { z } from "zod";
-import {
-  DisplayQuestion,
-  ForecastQuestionUnit,
-  type ForecastQuestionUnitT,
-} from "./display-question";
 
 /**
  * Resolution rules may need prose, formulas, source field names, or several
@@ -18,16 +13,9 @@ const ResolutionText = z
     "Precise resolution text; may contain prose, formulas, source fields, dates, thresholds, classifications, or other question-appropriate logic.",
   );
 
-const QuestionIdentity = DisplayQuestion.describe(
-  "The exact question being resolved, including its placeholders.",
-);
-
-/** One editable, complete criteria text bound to its exact approved question. */
+/** One editable, complete criteria text for the approved forecast question unit. */
 export const ResolutionCriteria = z
   .strictObject({
-    question: QuestionIdentity.describe(
-      "The exact question being resolved, including its placeholders.",
-    ),
     criteria: ResolutionText.describe(
       "One complete user-facing resolution-criteria text covering the outcome rules, approved resolution sources, resolution method, and relevant exceptions or unresolved outcomes.",
     ),
@@ -42,31 +30,9 @@ export const ConnectorResolutionCriteria = ResolutionCriteria;
 export type ResolutionCriteriaT = z.infer<typeof ResolutionCriteria>;
 export type ConnectorResolutionCriteriaT = ResolutionCriteriaT;
 
-const ResolutionCriteriaForUnit = z
-  .object({
-    forecastQuestionUnit: ForecastQuestionUnit,
-    resolutionCriteria: ResolutionCriteria,
-  })
-  .superRefine(({ forecastQuestionUnit, resolutionCriteria }, ctx) => {
-    if (resolutionCriteria.question !== forecastQuestionUnit.question) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolutionCriteria", "question"],
-        message:
-          "The separate question binding must match the approved question; the criteria text does not need to repeat it.",
-      });
-    }
-  });
-
-/** Parse connector input and verify it matches the selected outcome and condition. */
+/** Parse connector input as one complete criteria text. */
 export function parseConnectorResolutionCriteria(
   criteria: ConnectorResolutionCriteriaT,
-  forecastQuestionUnit?: ForecastQuestionUnitT,
 ): ResolutionCriteriaT {
-  if (!forecastQuestionUnit) return ResolutionCriteria.parse(criteria);
-
-  return ResolutionCriteriaForUnit.parse({
-    forecastQuestionUnit,
-    resolutionCriteria: criteria,
-  }).resolutionCriteria;
+  return ResolutionCriteria.parse(criteria);
 }
