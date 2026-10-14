@@ -1,6 +1,10 @@
 # Optional recent-news timeline specification
 
-Use only after explicit opt-in following background approval.
+New news research requires explicit opt-in following background approval.
+Removing an already approved timeline is a separate user-requested operation
+and does not require opt-in or research: set the current News choice to Skip,
+review the resulting empty draft in the MCP App, and wait for approval. Keep
+the approved timeline intact until that empty draft is approved.
 
 ## Research and selection
 

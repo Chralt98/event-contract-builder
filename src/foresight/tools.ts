@@ -37,6 +37,14 @@ export const approvalShape = {
   ),
 };
 
+export const impactReviewOfferSchema = z.strictObject({
+  approved_stage: approvalStageSchema,
+  approved_revision: WorkspaceRevision,
+  status: z.enum(["pending", "accepted"]),
+  review_stages: z.array(approvalStageSchema),
+  stages_with_existing_proposals: z.array(approvalStageSchema),
+});
+
 export const approvalOutputSchema = z
   .object({
     forecast_specification_id: ForecastSpecificationId,
@@ -45,9 +53,33 @@ export const approvalOutputSchema = z
     forecast_question_unit: ConnectorForecastQuestionUnit,
     workspace: WorkspaceSnapshot.optional(),
     approved_stage: approvalStageSchema,
+    impact_review: impactReviewOfferSchema.optional(),
     ...workspaceRevisionBindingShape,
   })
   .strict();
+
+export const impactReviewDecisionShape = {
+  forecast_specification_id: ForecastSpecificationId,
+  approved_revision: WorkspaceRevision.describe(
+    "The approved revision whose impact review the user accepted or declined.",
+  ),
+  decision: z.enum(["review", "decline", "complete"]),
+};
+
+export const impactReviewDecisionOutputSchema = z.strictObject({
+  forecast_specification_id: ForecastSpecificationId,
+  approved_stage: approvalStageSchema.optional(),
+  approved_revision: WorkspaceRevision.optional(),
+  status: z.enum([
+    "pending",
+    "accepted",
+    "declined",
+    "completed",
+    "no_review_available",
+  ]),
+  review_stages: z.array(approvalStageSchema),
+  stages_with_existing_proposals: z.array(approvalStageSchema),
+});
 
 export const approvedForecastSpecificationLookupShape = {
   forecast_specification_id: optionalForecastSpecificationId,
@@ -364,6 +396,7 @@ const execute_workspace_commandTool = {
   inputSchema: WorkspaceCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
+    impact_review: impactReviewOfferSchema.optional(),
   }),
   annotations: {
     readOnlyHint: false,
@@ -381,6 +414,7 @@ const advance_forecast_specificationTool = {
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,
     preparation: StagePreparation.optional(),
+    impact_review: impactReviewOfferSchema.optional(),
   }),
   annotations: {
     readOnlyHint: false,
@@ -390,10 +424,24 @@ const advance_forecast_specificationTool = {
   },
 } as const;
 
+const decide_forecast_impact_reviewTool = {
+  title: "Record Forecast Impact Review Decision",
+  description:
+    "Record whether the user accepts or declines a whole-specification impact review offered after content-changing approval. Complete it after all eligible stages are reviewed.",
+  inputSchema: impactReviewDecisionShape,
+  outputSchema: impactReviewDecisionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
 const set_forecast_news_choiceTool = {
   title: "Set Forecast News Choice",
   description:
-    "Save the user's Skip, Research, or no-qualifying-news choice without opening the News App. Submit researched news afterward to show its populated review.",
+    "Save the user's Skip, Research, or no-qualifying-news choice without opening the News App. Skip clears existing items from the editable draft; the approved timeline remains until its removal is approved.",
   inputSchema: SetForecastNewsChoiceCommand,
   outputSchema: z.strictObject({
     result: SetForecastNewsChoiceResult,
@@ -619,6 +667,7 @@ export const foresightTools: {
   readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
   readonly set_forecast_news_choice: typeof set_forecast_news_choiceTool;
   readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
+  readonly decide_forecast_impact_review: typeof decide_forecast_impact_reviewTool;
   readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
   readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
   readonly execute_completion_command: typeof execute_completion_commandTool;
@@ -640,6 +689,7 @@ export const foresightTools: {
   advance_forecast_specification: advance_forecast_specificationTool,
   set_forecast_news_choice: set_forecast_news_choiceTool,
   get_forecast_stage_review: get_forecast_stage_reviewTool,
+  decide_forecast_impact_review: decide_forecast_impact_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,
   execute_completion_command: execute_completion_commandTool,

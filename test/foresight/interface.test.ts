@@ -449,7 +449,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow instructions keep App review, stale-stage review, and chat distinct", () => {
+  test("workflow instructions make impact reviews chat-confirmed and specification-wide", () => {
     expect(foresightServerInstructions).toContain(
       "The MCP App is the supported surface for complete workflow reviews",
     );
@@ -458,10 +458,16 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
     expect(foresightServerInstructions).toMatch(
-      /Hosts that support private model requests run the\s+review without a chat message/,
+      /Opening a stage never\s+starts a review automatically\./,
+    );
+    expect(foresightServerInstructions).toContain(
+      "`decide_forecast_impact_review`",
     );
     expect(foresightServerInstructions).toMatch(
-      /The App uses `!` only when a\s+concrete proposal is available/,
+      /After a successful approval that changes approved content/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /uses `!` only when a\s+concrete proposal is available/,
     );
     expect(foresightServerInstructions).toMatch(
       /After\s+submitting generated content,\s+do not quote or summarize the submitted draft in\s+chat/,

@@ -110,24 +110,43 @@ workspace `reopen`), reconciliation, and retry; never infer the bindings from
 conversation memory. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
 Keep the approved snapshot distinct from pending edits; outdated dependent work
-must be reviewed before export. The App marks outdated approvals with `↻` and,
-when the user opens an eligible stage, automatically compares its retained
-draft with its approved version and current prerequisites. If the approved
-content is still valid and unchanged, use `revalidate_unchanged`; do not ask the
-user to approve it again. If material content must change, submit a
-revision-bound proposal and leave it unapproved. The App uses `!` only when a
-concrete proposal is available. Resolve earlier stale prerequisites first;
-optional News requires a fresh explicit choice and is not researched by this
-automatic review.
+must be reviewed before export. The App marks outdated approvals with `↻` and
+uses `!` only when a concrete proposal is available. Opening a stage never
+starts a review automatically.
 
-Request discretionary AI suggestions only when the user asks for changes or
-review. The App automatically reviews outdated stages and shows material
-proposals there for the user to review; unchanged valid content is revalidated
-without asking for approval. Hosts that support private model requests run the
-review without a chat message. Other hosts use a short, clearly App-labeled
-chat request to start the review; do not include internal workflow instructions
-or repeat draft field values in that request. Keep stage-specific research and
-post-approval procedures in the corresponding skill reference.
+After a successful approval that changes approved content, including accepting
+a proposal, inspect the tool result's `impact_review`. If it is pending, ask
+once in chat: “Would you like an impact review? It checks the other saved
+stages for material effects from this approval and prepares suggestions for you
+to review. It will not approve or advance anything.” Do not send a message as
+the user or start the review before they agree. If the result says the review is
+already accepted, continue it without asking again. If there is no
+`impact_review`, do not offer one. A decline is recorded for that approval
+revision; ask again only after a later content-changing approval. If another
+approval arrives while the question is unanswered, keep one question open and
+use the latest approval revision when the user answers.
+
+After the user agrees, call `decide_forecast_impact_review` with `review` and
+use its returned latest revision and stage lists; this coalesces approvals that
+arrived while the prompt was pending. Review every returned stage with saved
+content, including stages before and after the approval that triggered the
+review. If the latest App context packet reports
+`local_edits_uncommitted: true` for a stage, skip and report that stage. Also
+skip and report stages with an existing proposal or conflict.
+Reuse a complete current snapshot already available for a stage. Otherwise,
+fetch each eligible stage once; do not repeat a successful fetch or refetch
+after a successful save. On a conflict, refetch only the affected stage.
+If a proposal or pending decision in an earlier stage could invalidate later
+suggestions, defer those later stages and revisit them after that decision.
+For each stage, use its skill and current workspace bindings. Consider only
+changes to meaning or resolution material: event, scope, threshold, sources, or
+method. Ignore style-only edits. If an affected approved stage remains valid
+and unchanged but is outdated, use `revalidate_unchanged`; otherwise submit a
+complete revision-bound proposal and leave it unapproved. Never apply a
+proposal, approve a stage, or advance as part of the impact review. Ask for a
+fresh explicit News choice when its prerequisites changed; do not research News
+until the user opts in. Report proposals, unchanged revalidations, and skipped
+stages, then call `decide_forecast_impact_review` with `complete`.
 
 Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
 as acceptance of the current reviewed content when the referent is clear. Route
