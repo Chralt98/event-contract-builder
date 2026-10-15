@@ -3,9 +3,18 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import {
   approvalStageSchema,
+  PreparationReceipt,
   foresightStageMaterials,
   foresightTools,
 } from "../../src/foresight";
+
+test("preparation receipts accept bounded opaque tokens without requiring UUIDs", () => {
+  expect(PreparationReceipt.safeParse("sp1.payload.signature").success).toBe(
+    true,
+  );
+  expect(PreparationReceipt.safeParse("").success).toBe(false);
+  expect(PreparationReceipt.safeParse("x".repeat(513)).success).toBe(false);
+});
 
 test("stage bundles contain the canonical skill and its required references", () => {
   for (const stage of approvalStageSchema.options) {

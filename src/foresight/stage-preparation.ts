@@ -20,9 +20,11 @@ const InstructionDocument = z.strictObject({
   content: z.string().min(1),
 });
 export const PreparationReceipt = z
-  .uuid()
+  .string()
+  .min(1)
+  .max(512)
   .describe(
-    "Receipt from current stage preparation; reuse until the server requires a refresh.",
+    "Opaque receipt from current stage preparation; reuse until the server requires a refresh.",
   );
 export const OptionalPreparationReceipt = PreparationReceipt.optional();
 export const StagePreparation = z.strictObject({
