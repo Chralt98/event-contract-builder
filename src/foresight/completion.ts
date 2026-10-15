@@ -3,17 +3,19 @@ import { ForecastSpecificationId } from "./workflow";
 import { WorkspaceRevision } from "./workspace";
 
 export const ExportFormat = z.enum(["yaml", "json", "markdown"]);
+export const ReopenCompletionCommand = z.strictObject({
+  kind: z.literal("reopen"),
+  forecast_specification_id: ForecastSpecificationId,
+});
+export const ExportCompletionCommand = z.strictObject({
+  kind: z.literal("export"),
+  forecast_specification_id: ForecastSpecificationId,
+  formats: z.array(ExportFormat).min(1).max(3),
+  expected_revision: WorkspaceRevision,
+});
 export const CompletionCommand = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("reopen"),
-    forecast_specification_id: ForecastSpecificationId,
-  }),
-  z.strictObject({
-    kind: z.literal("export"),
-    forecast_specification_id: ForecastSpecificationId,
-    formats: z.array(ExportFormat).min(1).max(3),
-    expected_revision: WorkspaceRevision,
-  }),
+  ReopenCompletionCommand,
+  ExportCompletionCommand,
 ]);
 export type CompletionCommand = z.infer<typeof CompletionCommand>;
 export const CompletionSnapshot = z.strictObject({

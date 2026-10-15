@@ -728,13 +728,13 @@ const mutation = {
   ...workspaceRevisionBindingShape,
   stage: editableWorkspaceStages,
 };
-const approveAndContinueCommand = z.strictObject({
+export const ApproveAndContinueCommand = z.strictObject({
   ...mutation,
   kind: z.literal("approve_and_continue"),
   preparation_receipt: OptionalPreparationReceipt,
   next_stage: WorkspaceNextStage,
 });
-const continueCommand = z.strictObject({
+export const ContinueForecastCommand = z.strictObject({
   ...mutation,
   kind: z.literal("continue"),
   preparation_receipt: OptionalPreparationReceipt,
@@ -765,7 +765,10 @@ function validateNextStage(
 /** Model-facing revision-bound approval/continue actions without App coupling. */
 export const AdvanceForecastCommand = boundedPayload(
   z
-    .discriminatedUnion("kind", [approveAndContinueCommand, continueCommand])
+    .discriminatedUnion("kind", [
+      ApproveAndContinueCommand,
+      ContinueForecastCommand,
+    ])
     .superRefine(validateNextStage),
 );
 /** Model-facing optional-news choice without opening the MCP App. */
@@ -871,7 +874,7 @@ export const WorkspaceCommand = boundedPayload(
         choice: NewsChoice.exclude(["undecided"]),
       }),
       z.strictObject({ ...mutation, kind: z.literal("approve") }),
-      approveAndContinueCommand,
+      ApproveAndContinueCommand,
       z.strictObject({
         ...mutation,
         stage: z.enum(["forecast_question_unit", "defined_terms"]),
@@ -879,7 +882,7 @@ export const WorkspaceCommand = boundedPayload(
         approved_revision: WorkspaceRevision,
         feedback: z.string().trim().min(1).max(4000),
       }),
-      continueCommand,
+      ContinueForecastCommand,
     ])
     .superRefine((command, ctx) => {
       if (

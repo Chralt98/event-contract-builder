@@ -45,7 +45,7 @@ hosts without MCP App support are unsupported for workflow reviews:
 `create_question_workspace` starts an incomplete draft; `execute_workspace_command`
 is the App-facing tool for navigating to an editable stage and performing edits,
 proposals, and proposal decisions. Model-driven approval and
-continuation use `advance_forecast_specification`, which returns structured
+continuation use the operation-specific approval or continuation tool, which returns structured
 handoff state without attaching or opening the MCP App UI. Model workflows
 fetch current stage state with `get_forecast_stage_review`; this initializes
 untouched stages and returns structured state without attaching or opening the
@@ -183,7 +183,7 @@ whether the user wants to approve, edit, or stay at the stage:
 - If `approve_and_continue` is unavailable but both approval and continuation
   are available, approve the exact reviewed content, then use the enabled
   `continue` action from the updated workspace with
-  `advance_forecast_specification`. Do not fetch or reopen a stage just to find
+  `continue_forecast_specification`. Do not fetch or reopen a stage just to find
   that action.
 - If validation, a conflict, or an unresolved proposal disables progression,
   resolve that issue or ask for the material choice before continuing. A pending
@@ -192,7 +192,7 @@ whether the user wants to approve, edit, or stay at the stage:
 
 After the user confirms the chat approval question, pass the complete action
 object, including `stage`, revision bindings, and `next_stage` when present, to
-`advance_forecast_specification`. Follow the returned next-stage instruction in
+`approve_and_continue_forecast_specification`. Follow the returned next-stage instruction in
 the same turn; do not wait for a button click. Use returned
 `next_stage_bindings` without reopening either the completed stage or the target
 stage. Do not call `get_forecast_stage_review` for content and bindings already
@@ -240,7 +240,7 @@ that stage only. If the user keeps or edits the current draft, use
 proposal as approval of a different stage or as permission to progress. Ask
 for stage approval and name the next stage in chat. If there is no proposal,
 report that no actionable improvement was found and keep the draft available.
-Use `advance_forecast_specification` only after the user confirms the chat
+Use `approve_and_continue_forecast_specification` only after the user confirms the chat
 approval question, then follow its returned stage handoff. A successful tool
 call or message delivery does not establish that generation has started or
 finished. If app messaging is unavailable, present the equivalent chat request.
@@ -248,7 +248,7 @@ finished. If app messaging is unavailable, present the equivalent chat request.
 `approve_forecast_specification` approves without advancing. Use it only when
 the user explicitly asks to approve and stay at the current stage; ordinary
 acceptance and progression should use the workspace's enabled
-`approve_and_continue` action through `advance_forecast_specification`.
+`approve_and_continue` action through `approve_and_continue_forecast_specification`.
 
 Pass the returned `forecast_specification_id` to every approval call; it is
 required even when continuing in the same chat. The latest Bleavit Foresight
@@ -346,7 +346,7 @@ round limit. Use App controls when they exist. Do not use the Plan-mode-only
 ## Completion and exports
 
 Once the optional news choice and any opted-in timeline are approved, call
-`execute_completion_command` with `kind: reopen` to open Export in the same
+`open_forecast_export` to open Export in the same
 turn. Handoff and news-choice tools do not open the App. Tell the user Export
 is ready only after that call succeeds, and let them choose an output format
 there; do not ask whether to open it. For a format requested in chat, reopen
@@ -360,8 +360,8 @@ An available preview does not finalize outdated or pending work; `ready` and
 News research still requires explicit opt-in. Feedback remains available after
 prior submissions; invite additional feedback when selected again.
 
-For requested YAML, JSON, and/or Markdown, call `execute_completion_command` with
-`kind: export`, the requested `formats`, and the reopened `expected_revision`.
+For requested YAML, JSON, and/or Markdown, call `export_forecast_specification` with
+the requested `formats` and the reopened `expected_revision`.
 Show the generated documents in the App completion/export flow; do not duplicate
 the full export in a chat review. Exporting saves the displayed approved revision
 as complete only when its current approvals are ready. The server excludes internal metadata. Route

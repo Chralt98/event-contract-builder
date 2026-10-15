@@ -361,6 +361,39 @@ describe("public forecast interface", () => {
       schema.safeParse({ ...action, kind: "reopen", next_stage: undefined })
         .success,
     ).toBe(false);
+    expect(
+      foresightTools.approve_and_continue_forecast_specification.inputSchema.safeParse(
+        action,
+      ).success,
+    ).toBe(true);
+    expect(
+      foresightTools.continue_forecast_specification.inputSchema.safeParse({
+        ...action,
+        kind: "continue",
+        approved_revision: "revision-1",
+      }).success,
+    ).toBe(true);
+  });
+
+  test("model completion operations have separate schemas and risk hints", () => {
+    expect(
+      foresightTools.open_forecast_export.inputSchema.safeParse({
+        kind: "reopen",
+        forecast_specification_id: "00000000-0000-4000-8000-000000000002",
+      }).success,
+    ).toBe(true);
+    expect(
+      foresightTools.export_forecast_specification.inputSchema.safeParse({
+        kind: "reopen",
+        forecast_specification_id: "00000000-0000-4000-8000-000000000002",
+      }).success,
+    ).toBe(false);
+    expect(
+      foresightTools.set_forecast_news_choice.annotations.destructiveHint,
+    ).toBe(true);
+    expect(
+      foresightTools.create_question_workspace.annotations.destructiveHint,
+    ).toBe(false);
   });
 
   test("approval outputs carry handoff metadata without a text review", () => {
@@ -725,7 +758,10 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Pass the returned `forecast_specification_id` to every approval call",
     );
-    expect(foresightServerInstructions).toContain("execute_completion_command");
+    expect(foresightServerInstructions).toContain("open_forecast_export");
+    expect(foresightServerInstructions).toContain(
+      "export_forecast_specification",
+    );
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
     expect(foresightServerInstructions).toContain(

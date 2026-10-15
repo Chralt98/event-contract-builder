@@ -1,9 +1,16 @@
 import { PreparationReceipt, StagePreparation } from "./stage-preparation";
-import { CompletionCommand, CompletionOutput } from "./completion";
+import {
+  CompletionCommand,
+  CompletionOutput,
+  ReopenCompletionCommand,
+  ExportCompletionCommand,
+} from "./completion";
 import { z } from "zod";
 import {
   WorkspaceCommand,
   AdvanceForecastCommand,
+  ApproveAndContinueCommand,
+  ContinueForecastCommand,
   WorkspaceCommandResult,
   SetForecastNewsChoiceCommand,
   SetForecastNewsChoiceResult,
@@ -366,7 +373,7 @@ const execute_completion_commandTool = {
   outputSchema: CompletionOutput,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: false,
   },
@@ -424,6 +431,70 @@ const advance_forecast_specificationTool = {
   },
 } as const;
 
+const approve_and_continue_forecast_specificationTool = {
+  title: "Approve and Continue Forecast Specification",
+  description:
+    "Approve the exact pending stage revision and continue to its next stage. Requires the user's explicit approval of that revision.",
+  inputSchema: ApproveAndContinueCommand,
+  outputSchema: z.strictObject({
+    result: z.unknown(),
+    preparation: StagePreparation.optional(),
+    impact_review: impactReviewOfferSchema.optional(),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const continue_forecast_specificationTool = {
+  title: "Continue Forecast Specification",
+  description:
+    "Continue from an already approved stage to its next stage. Requires explicit approval of the exact approved revision.",
+  inputSchema: ContinueForecastCommand,
+  outputSchema: z.strictObject({
+    result: z.unknown(),
+    preparation: StagePreparation.optional(),
+    impact_review: impactReviewOfferSchema.optional(),
+  }),
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const open_forecast_exportTool = {
+  title: "Open Forecast Export",
+  description:
+    "Open the Export view for one forecast specification so the user can review available formats.",
+  inputSchema: ReopenCompletionCommand,
+  outputSchema: CompletionOutput,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const export_forecast_specificationTool = {
+  title: "Export Forecast Specification",
+  description:
+    "Generate the selected formats for the exact approved revision. Exporting saves that revision as complete.",
+  inputSchema: ExportCompletionCommand,
+  outputSchema: CompletionOutput,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
 const decide_forecast_impact_reviewTool = {
   title: "Record Forecast Impact Review Decision",
   description:
@@ -448,7 +519,7 @@ const set_forecast_news_choiceTool = {
   }),
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: false,
   },
@@ -665,12 +736,16 @@ export const foresightTools: {
   readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly execute_workspace_command: typeof execute_workspace_commandTool;
   readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
+  readonly approve_and_continue_forecast_specification: typeof approve_and_continue_forecast_specificationTool;
+  readonly continue_forecast_specification: typeof continue_forecast_specificationTool;
   readonly set_forecast_news_choice: typeof set_forecast_news_choiceTool;
   readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
   readonly decide_forecast_impact_review: typeof decide_forecast_impact_reviewTool;
   readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
   readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
   readonly execute_completion_command: typeof execute_completion_commandTool;
+  readonly open_forecast_export: typeof open_forecast_exportTool;
+  readonly export_forecast_specification: typeof export_forecast_specificationTool;
   readonly delete_forecast_specification: typeof delete_forecast_specificationTool;
   readonly get_plugin_feedback_step: typeof get_plugin_feedback_stepTool;
   readonly submit_plugin_feedback: typeof submit_plugin_feedbackTool;
@@ -687,12 +762,17 @@ export const foresightTools: {
   create_question_workspace: create_question_workspaceTool,
   execute_workspace_command: execute_workspace_commandTool,
   advance_forecast_specification: advance_forecast_specificationTool,
+  approve_and_continue_forecast_specification:
+    approve_and_continue_forecast_specificationTool,
+  continue_forecast_specification: continue_forecast_specificationTool,
   set_forecast_news_choice: set_forecast_news_choiceTool,
   get_forecast_stage_review: get_forecast_stage_reviewTool,
   decide_forecast_impact_review: decide_forecast_impact_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,
   execute_completion_command: execute_completion_commandTool,
+  open_forecast_export: open_forecast_exportTool,
+  export_forecast_specification: export_forecast_specificationTool,
   delete_forecast_specification: delete_forecast_specificationTool,
   get_plugin_feedback_step: get_plugin_feedback_stepTool,
   submit_plugin_feedback: submit_plugin_feedbackTool,
