@@ -20,6 +20,12 @@ export const CompletionSnapshot = z.strictObject({
   forecast_specification_id: ForecastSpecificationId,
   revision: WorkspaceRevision,
   ready: z.boolean(),
+  preview_ready: z
+    .boolean()
+    .describe(
+      "A current draft preview can be rendered from approved content and valid manual edits, even while dependent stages need review.",
+    )
+    .optional(),
   complete: z.boolean(),
   news_available: z.boolean(),
   blocked_reason: z.string().optional(),

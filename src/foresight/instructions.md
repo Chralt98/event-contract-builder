@@ -109,8 +109,13 @@ require a fresh review (`get_forecast_stage_review` for a saved stage, or a
 workspace `reopen`), reconciliation, and retry; never infer the bindings from
 conversation memory. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
-Keep the approved snapshot distinct from pending edits; outdated dependent work
-must be reviewed before export. The App marks outdated approvals with `↻` and
+A valid manual edit to a stage that is already approved immediately updates
+that stage's approved content and export; it does not need chat approval. A
+model-generated draft, or a proposal copied into the draft without choosing
+accept, remains pending explicit chat approval after manual edits. Accepting a
+proposal in chat already approves it; do not ask for a second approval. Keep
+other pending edits distinct from approved content; outdated dependent work
+must be reviewed before finalization. The App marks outdated approvals with `↻` and
 uses `!` only when a concrete proposal is available. Opening a stage never
 starts a review automatically.
 
@@ -347,7 +352,11 @@ is ready only after that call succeeds, and let them choose an output format
 there; do not ask whether to open it. For a format requested in chat, reopen
 the completion/export flow to load its current revision, then export the
 requested format.
-The App presents the available formats and previews the selected document.
+The App reloads the selected preview after saving stage edits. A draft preview
+includes valid manual edits and previously approved sections, even when dependent
+stages are outdated. Unapproved model drafts and suggestions remain excluded.
+An available preview does not finalize outdated or pending work; `ready` and
+`complete` remain false until the current stage approvals and news choice are ready.
 News research still requires explicit opt-in. Feedback remains available after
 prior submissions; invite additional feedback when selected again.
 
@@ -355,7 +364,7 @@ For requested YAML, JSON, and/or Markdown, call `execute_completion_command` wit
 `kind: export`, the requested `formats`, and the reopened `expected_revision`.
 Show the generated documents in the App completion/export flow; do not duplicate
 the full export in a chat review. Exporting saves the displayed approved revision
-as complete. The server excludes internal metadata and outdated approvals. Route
+as complete only when its current approvals are ready. The server excludes internal metadata. Route
 requested changes through the affected stage and its approvals, then generate
 new exports.
 

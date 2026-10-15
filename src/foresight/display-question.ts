@@ -5,6 +5,7 @@ import { z } from "zod";
  */
 export const DisplayQuestion = z
   .string()
+  .trim()
   .min(10)
   .max(200)
   // Keep this as a runtime refinement rather than a regex so connector

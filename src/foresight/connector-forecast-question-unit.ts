@@ -16,6 +16,7 @@ import {
  */
 const ConnectorDisplayQuestion = z
   .string()
+  .trim()
   .min(10)
   .max(200)
   .describe(

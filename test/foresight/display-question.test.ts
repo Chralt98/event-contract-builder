@@ -12,6 +12,17 @@ const museumTemplate = {
 };
 
 describe("ForecastQuestionUnit schema", () => {
+  test("ignores surrounding whitespace when validating and returning a question", () => {
+    const question = "Will ETH be above USD 3000 on October 14, 2028 test?";
+    expect(
+      ForecastQuestionUnit.parse({ question: `  ${question}\n` }).question,
+    ).toBe(question);
+    expect(
+      ForecastQuestionUnit.safeParse({
+        question: "Will ETH be above USD 3000 on October 14, 2028? test\n",
+      }).success,
+    ).toBe(false);
+  });
   test("accepts a variable-backed question with finite values", () => {
     expect(ForecastQuestionUnit.parse(museumTemplate)).toEqual(museumTemplate);
   });
