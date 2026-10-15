@@ -862,6 +862,7 @@ export const WorkspaceCommand = boundedPayload(
           "resolution_sources",
           "resolution_criteria",
           "background_information",
+          "news_timeline",
         ]),
         kind: z.literal("revalidate_unchanged"),
         approved_revision: WorkspaceRevision,

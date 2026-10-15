@@ -240,6 +240,12 @@ test("every mutation requires its base revision and prerequisite bindings", () =
       approved_revision: "approved-r1",
       rationale: "Terms still match the updated question.",
     },
+    {
+      kind: "revalidate_unchanged",
+      stage: "news_timeline",
+      approved_revision: "approved-r2",
+      rationale: "The approved timeline remains unchanged.",
+    },
     { kind: "approve" },
     {
       kind: "continue",

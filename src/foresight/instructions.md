@@ -169,6 +169,13 @@ fresh explicit News choice when its prerequisites changed; do not research News
 until the user opts in. Report proposals, unchanged revalidations, and skipped
 stages, then call `decide_forecast_impact_review` with `complete`.
 
+When the user explicitly asks to revalidate or approve several outdated stages
+together, use `revalidate_unchanged_forecast_stages` for the requested stages.
+It revalidates each only when its saved draft exactly matches its previous
+approved content and current prerequisites; changed or otherwise ineligible
+stages are reported as skipped. News is eligible only when its existing opt-in
+choice and approved timeline are retained.
+
 Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
 as acceptance of the current reviewed content when the referent is clear. Route
 the action by the current stage and the user's intent. The chat must name the

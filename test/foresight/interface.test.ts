@@ -104,6 +104,32 @@ describe("public forecast interface", () => {
       }).success,
     ).toBe(true);
     expect(
+      foresightTools.revalidate_unchanged_forecast_stage.inputSchema.safeParse({
+        ...bindings,
+        stage: "news_timeline",
+        approved_revision: "approved-revision",
+        rationale: "The saved timeline remains unchanged.",
+      }).success,
+    ).toBe(true);
+    expect(
+      foresightTools.revalidate_unchanged_forecast_stages.inputSchema.safeParse(
+        {
+          forecast_specification_id: id,
+          stages: ["defined_terms", "resolution_criteria", "news_timeline"],
+          rationale: "These stages remain unchanged and valid.",
+        },
+      ).success,
+    ).toBe(true);
+    expect(
+      foresightTools.revalidate_unchanged_forecast_stages.inputSchema.safeParse(
+        {
+          forecast_specification_id: id,
+          stages: ["defined_terms", "defined_terms"],
+          rationale: "Duplicate stages must be rejected.",
+        },
+      ).success,
+    ).toBe(false);
+    expect(
       foresightTools.complete_forecast_stage_review.inputSchema.safeParse({
         ...bindings,
         stage: "forecast_question_unit",
@@ -119,6 +145,7 @@ describe("public forecast interface", () => {
       "accept_forecast_stage_proposal",
       "discard_forecast_stage_proposal",
       "revalidate_unchanged_forecast_stage",
+      "revalidate_unchanged_forecast_stages",
       "complete_forecast_stage_review",
     ] as const) {
       const tool = foresightTools[name];

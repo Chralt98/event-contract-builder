@@ -125,9 +125,53 @@ export const revalidateUnchangedForecastStageShape = z.strictObject({
     "resolution_sources",
     "resolution_criteria",
     "background_information",
+    "news_timeline",
   ]),
   approved_revision: WorkspaceRevision,
   rationale: z.string().trim().min(1).max(1000),
+});
+
+export const revalidateUnchangedForecastStagesShape = z
+  .strictObject({
+    forecast_specification_id: ForecastSpecificationId,
+    stages: z
+      .array(
+        z.enum([
+          "defined_terms",
+          "resolution_sources",
+          "resolution_criteria",
+          "background_information",
+          "news_timeline",
+        ]),
+      )
+      .min(1)
+      .max(5),
+    rationale: z.string().trim().min(1).max(1000),
+  })
+  .superRefine((value, ctx) => {
+    if (new Set(value.stages).size !== value.stages.length)
+      ctx.addIssue({
+        code: "custom",
+        path: ["stages"],
+        message: "Each stage may be listed only once.",
+      });
+  });
+
+export const revalidateUnchangedForecastStagesOutputSchema = z.strictObject({
+  forecast_specification_id: ForecastSpecificationId,
+  results: z.array(
+    z.strictObject({
+      stage: z.enum([
+        "defined_terms",
+        "resolution_sources",
+        "resolution_criteria",
+        "background_information",
+        "news_timeline",
+      ]),
+      status: z.enum(["revalidated", "skipped", "failed"]),
+      message: z.string().optional(),
+    }),
+  ),
 });
 
 export const completeForecastStageReviewShape = z.strictObject({
@@ -599,9 +643,23 @@ const discard_forecast_stage_proposalTool = {
 const revalidate_unchanged_forecast_stageTool = {
   title: "Revalidate Unchanged Forecast Stage",
   description:
-    "Revalidate an already approved content stage against current prerequisites only when its content is unchanged. Requires the exact approved revision and a rationale; it does not approve changed content.",
+    "Revalidate an already approved stage against current prerequisites only when its content is unchanged. Requires the exact approved revision and a rationale; it does not approve changed content.",
   inputSchema: revalidateUnchangedForecastStageShape,
   outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const revalidate_unchanged_forecast_stagesTool = {
+  title: "Revalidate Unchanged Forecast Stages",
+  description:
+    "Revalidate selected outdated stages together only when each saved draft exactly matches its prior approved content and current prerequisites. Use only after the user explicitly asks to approve or revalidate all selected stages; report ineligible stages.",
+  inputSchema: revalidateUnchangedForecastStagesShape,
+  outputSchema: revalidateUnchangedForecastStagesOutputSchema,
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
@@ -952,6 +1010,7 @@ export const foresightTools: {
   readonly accept_forecast_stage_proposal: typeof accept_forecast_stage_proposalTool;
   readonly discard_forecast_stage_proposal: typeof discard_forecast_stage_proposalTool;
   readonly revalidate_unchanged_forecast_stage: typeof revalidate_unchanged_forecast_stageTool;
+  readonly revalidate_unchanged_forecast_stages: typeof revalidate_unchanged_forecast_stagesTool;
   readonly complete_forecast_stage_review: typeof complete_forecast_stage_reviewTool;
   readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
   readonly approve_and_continue_forecast_specification: typeof approve_and_continue_forecast_specificationTool;
@@ -985,6 +1044,8 @@ export const foresightTools: {
   accept_forecast_stage_proposal: accept_forecast_stage_proposalTool,
   discard_forecast_stage_proposal: discard_forecast_stage_proposalTool,
   revalidate_unchanged_forecast_stage: revalidate_unchanged_forecast_stageTool,
+  revalidate_unchanged_forecast_stages:
+    revalidate_unchanged_forecast_stagesTool,
   complete_forecast_stage_review: complete_forecast_stage_reviewTool,
   advance_forecast_specification: advance_forecast_specificationTool,
   approve_and_continue_forecast_specification:
