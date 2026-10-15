@@ -20,6 +20,8 @@ import {
   contentDomainInput,
   workspaceActionLabel,
   CriteriaWorkingDraft,
+  ContentWorkingDraft,
+  WorkspaceSnapshot,
 } from "../../src/foresight";
 
 const id = () => crypto.randomUUID();
@@ -975,4 +977,46 @@ test("News timeline fields use title case for Publication Date", () => {
     "Source URL",
     "Summary",
   ]);
+});
+
+test("stage dispatch preserves strict draft and snapshot validation for every content stage", () => {
+  const drafts = [
+    { stage: "defined_terms", definitions: [] },
+    { stage: "resolution_sources", sources: [], condition_sources: null },
+    { stage: "resolution_criteria", resolution_criteria: { criteria: "" } },
+    { stage: "background_information", background_information: "" },
+    { stage: "news_timeline", items: [] },
+  ];
+  expect(WorkspaceSnapshot.safeParse(snapshot).success).toBe(true);
+  for (const draft of drafts) {
+    expect(ContentWorkingDraft.safeParse(draft).success).toBe(true);
+    expect(
+      ContentWorkingDraft.safeParse({ ...draft, stage: "unknown" }).success,
+    ).toBe(false);
+    expect(
+      ContentWorkingDraft.safeParse({ ...draft, unexpected: true }).success,
+    ).toBe(false);
+    const content = {
+      forecast_specification_id: identity.forecast_specification_id,
+      language_code: "en",
+      revision: "r1",
+      prerequisite_revisions: {},
+      stage: draft.stage,
+      draft,
+      approved: null,
+      proposals: [],
+      presentation: snapshot.presentation,
+    };
+    expect(WorkspaceSnapshot.safeParse(content).success).toBe(true);
+    const mismatched = drafts.find((other) => other.stage !== draft.stage)!;
+    expect(
+      WorkspaceSnapshot.safeParse({ ...content, draft: mismatched }).success,
+    ).toBe(false);
+    expect(
+      WorkspaceSnapshot.safeParse({
+        ...content,
+        draft: { ...draft, unexpected: true },
+      }).success,
+    ).toBe(false);
+  }
 });

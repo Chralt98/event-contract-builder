@@ -273,7 +273,7 @@ export const WorkspaceNextStage = z.enum([
   "news_timeline",
   "completed",
 ]);
-export const ContentWorkingDraft = z.union([
+export const ContentWorkingDraft = z.discriminatedUnion("stage", [
   TermsWorkingDraft,
   SourcesWorkingDraft,
   CriteriaWorkingDraft,
@@ -1143,7 +1143,7 @@ export const ContentWorkspaceSnapshot = boundedPayload(
   workspaceReviewLimitBytes,
 );
 export type ContentWorkspaceSnapshot = z.infer<typeof ContentWorkspaceSnapshot>;
-export const WorkspaceSnapshot = z.union([
+export const WorkspaceSnapshot = z.discriminatedUnion("stage", [
   QuestionWorkspaceSnapshot,
   ContentWorkspaceSnapshot,
 ]);
