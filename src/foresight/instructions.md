@@ -40,18 +40,17 @@ stages never approves or advances content, and the App does not show stage
 approval or Continue buttons.
 
 Submission tools validate and store a pending stage. All six stages use one
-revision-bound MCP App workspace. Shared core tools remain model-visible, but
-hosts without MCP App support are unsupported for workflow reviews:
-`create_question_workspace` starts an incomplete draft; `execute_workspace_command`
-is App-only and runs commands selected in the workspace UI. Model workflows use
-the operation-specific review, submission, approval, and continuation tools.
-Model-driven approval and
-continuation use the operation-specific approval or continuation tool, which returns structured
-handoff state without attaching or opening the MCP App UI. Model workflows
-fetch current stage state with `get_forecast_stage_review`; this initializes
-untouched stages and returns structured state without attaching or opening the
-MCP App UI. The App uses commands returned in `workspace.presentation.actions`
-as complete command objects, preserving their target and revision bindings.
+revision-bound MCP App workspace. `execute_workspace_command` is App-only and
+runs commands selected in the workspace UI. Chat uses operation-specific tools:
+`get_forecast_stage_review` for stage review, stage submission tools for generated
+drafts and proposals, `save_forecast_stage_draft` for an incomplete or direct
+draft edit, dedicated proposal actions for apply, accept, or discard, and the
+revalidation, review-completion, news-choice, approval, and continuation tools
+for their named actions. These tools return structured state without requiring
+the App UI. Model-driven approval and continuation use the operation-specific
+approval or continuation tool. The App uses commands returned in
+`workspace.presentation.actions` as complete command objects, preserving their
+target and revision bindings.
 The App replaces only editable payloads, uses a fresh command ID for a new
 operation, and preserves the same ID and payload when retrying a lost
 acknowledgement. Model workflows must not call this App-only tool; if a required
@@ -234,11 +233,15 @@ When a concrete proposal exists, keep the user in the decision flow. In the
 MCP App, keep the normal draft editor above the read-only suggestion. The user
 may copy individual suggested text values to the clipboard and paste them into
 the editor; copying never changes the draft. In chat, explicit acceptance of
-the exact proposal authorizes `accept_proposal`, which applies and approves
-that stage only. If the user keeps or edits the current draft, use
-`discard_proposal` after their choice; do not treat applying or discarding a
-proposal as approval of a different stage or as permission to progress. Ask
-for stage approval and name the next stage in chat. If there is no proposal,
+the exact proposal authorizes `accept_forecast_stage_proposal`, which applies
+and approves that stage only. If the user wants to apply a suggestion without
+approving it, use `apply_forecast_stage_proposal`; stage approval remains a
+separate decision. Use `propose_forecast_stage_changes` for a new chat-authored
+suggestion, and `save_forecast_stage_draft` when they ask to save an incomplete
+or direct edit for review. If the user keeps or edits the current draft, use
+`discard_forecast_stage_proposal` after their choice; do not treat applying or
+discarding a proposal as approval of a different stage or as permission to
+progress. Ask for stage approval and name the next stage in chat. If there is no proposal,
 report that no actionable improvement was found and keep the draft available.
 Use `approve_and_continue_forecast_specification` only after the user confirms the chat
 approval question, then follow its returned stage handoff. A successful tool

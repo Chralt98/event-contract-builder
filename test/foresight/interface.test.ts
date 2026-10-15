@@ -55,6 +55,82 @@ describe("public forecast interface", () => {
     );
   });
 
+  test("chat workspace actions expose single-purpose draft and proposal tools", () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    const bindings = {
+      forecast_specification_id: id,
+      stage: "defined_terms",
+      expected_revision: "stage-revision",
+      prerequisite_revisions: {},
+    };
+    const draft = { stage: "defined_terms", definitions: [] };
+    const prepared = {
+      ...bindings,
+      preparation_receipt: id,
+      draft,
+    };
+
+    expect(
+      foresightTools.save_forecast_stage_draft.inputSchema.safeParse(prepared)
+        .success,
+    ).toBe(true);
+    expect(
+      foresightTools.save_forecast_stage_draft.inputSchema.safeParse({
+        ...prepared,
+        stage: "resolution_sources",
+      }).success,
+    ).toBe(false);
+    expect(
+      foresightTools.propose_forecast_stage_changes.inputSchema.safeParse(
+        prepared,
+      ).success,
+    ).toBe(true);
+
+    const proposal = { ...bindings, proposal_id: id };
+    for (const name of [
+      "apply_forecast_stage_proposal",
+      "accept_forecast_stage_proposal",
+      "discard_forecast_stage_proposal",
+    ] as const)
+      expect(foresightTools[name].inputSchema.safeParse(proposal).success).toBe(
+        true,
+      );
+
+    expect(
+      foresightTools.revalidate_unchanged_forecast_stage.inputSchema.safeParse({
+        ...bindings,
+        approved_revision: "approved-revision",
+        rationale: "Content is unchanged and prerequisites are current.",
+      }).success,
+    ).toBe(true);
+    expect(
+      foresightTools.complete_forecast_stage_review.inputSchema.safeParse({
+        ...bindings,
+        stage: "forecast_question_unit",
+        approved_revision: "approved-revision",
+        feedback: "The approved question is clear.",
+      }).success,
+    ).toBe(true);
+
+    for (const name of [
+      "save_forecast_stage_draft",
+      "propose_forecast_stage_changes",
+      "apply_forecast_stage_proposal",
+      "accept_forecast_stage_proposal",
+      "discard_forecast_stage_proposal",
+      "revalidate_unchanged_forecast_stage",
+      "complete_forecast_stage_review",
+    ] as const) {
+      const tool = foresightTools[name];
+      expect(tool.description.length).toBeGreaterThan(20);
+      expect(tool.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: expect.any(Boolean),
+        openWorldHint: false,
+      });
+    }
+  });
+
   test("forecast sources use the Foresight source schema", () => {
     expect(DataSource.parse(source)).toEqual(source);
     expect(Object.keys(DataSource.shape).sort()).toEqual(
@@ -806,7 +882,10 @@ describe("public forecast interface", () => {
       "does not attach or open the MCP App UI",
     );
     expect(foresightTools.create_question_workspace.description).toContain(
-      "Check for an active draft first",
+      "Check for an active draft and get the user's choice first",
+    );
+    expect(foresightTools.create_question_workspace.description).toContain(
+      "this tool creates a new record",
     );
     expect(foresightTools.submit_drafted_question.description).toContain(
       "confirm any active draft's replacement first",

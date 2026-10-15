@@ -19,6 +19,9 @@ import {
   ContentWorkspaceSnapshot,
   WorkspaceRevision,
   workspaceRevisionBindingShape,
+  workspacePayloadLimitBytes,
+  WorkspaceDraft,
+  editableWorkspaceStages,
 } from "./workspace";
 import { Definitions } from "./display-question";
 import { SourceHierarchy } from "./resolution";
@@ -44,12 +47,122 @@ export const approvalShape = {
   ),
 };
 
+const chatWorkspaceMutationShape = {
+  forecast_specification_id: ForecastSpecificationId,
+  ...workspaceRevisionBindingShape,
+  stage: editableWorkspaceStages,
+};
+
+function boundedWorkspaceToolInput<T extends z.ZodType>(schema: T) {
+  return schema.superRefine((value, ctx) => {
+    if (
+      new TextEncoder().encode(JSON.stringify(value)).byteLength >
+      workspacePayloadLimitBytes
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: `Workspace payload exceeds ${workspacePayloadLimitBytes / 1024} KiB.`,
+      });
+  });
+}
+
+function addDraftStageIssue(
+  value: { stage: string; draft?: z.infer<typeof WorkspaceDraft> },
+  ctx: z.RefinementCtx,
+) {
+  if (!value.draft) return;
+  const draftStage =
+    "stage" in value.draft ? value.draft.stage : "forecast_question_unit";
+  if (draftStage !== value.stage)
+    ctx.addIssue({
+      code: "custom",
+      path: ["draft"],
+      message: "Draft must match the selected stage.",
+    });
+}
+
+export const saveForecastStageDraftShape = boundedWorkspaceToolInput(
+  z
+    .strictObject({
+      ...chatWorkspaceMutationShape,
+      preparation_receipt: PreparationReceipt,
+      draft: WorkspaceDraft,
+    })
+    .superRefine(addDraftStageIssue),
+);
+
+export const proposeForecastStageChangesShape = boundedWorkspaceToolInput(
+  z
+    .strictObject({
+      ...chatWorkspaceMutationShape,
+      preparation_receipt: PreparationReceipt,
+      draft: WorkspaceDraft,
+      rationale: z.string().trim().min(1).max(1000).optional(),
+    })
+    .superRefine(addDraftStageIssue),
+);
+
+export const forecastStageProposalShape = z.strictObject({
+  ...chatWorkspaceMutationShape,
+  proposal_id: z.uuid(),
+});
+
+export const applyForecastStageProposalShape = boundedWorkspaceToolInput(
+  z
+    .strictObject({
+      ...forecastStageProposalShape.shape,
+      draft: WorkspaceDraft.optional(),
+    })
+    .superRefine((value, ctx) => {
+      addDraftStageIssue(value, ctx);
+    }),
+);
+
+export const revalidateUnchangedForecastStageShape = z.strictObject({
+  ...chatWorkspaceMutationShape,
+  stage: z.enum([
+    "defined_terms",
+    "resolution_sources",
+    "resolution_criteria",
+    "background_information",
+  ]),
+  approved_revision: WorkspaceRevision,
+  rationale: z.string().trim().min(1).max(1000),
+});
+
+export const completeForecastStageReviewShape = z.strictObject({
+  ...chatWorkspaceMutationShape,
+  stage: z.enum(["forecast_question_unit", "defined_terms"]),
+  approved_revision: WorkspaceRevision,
+  feedback: z.string().trim().min(1).max(4000),
+});
+
 export const impactReviewOfferSchema = z.strictObject({
   approved_stage: approvalStageSchema,
   approved_revision: WorkspaceRevision,
   status: z.enum(["pending", "accepted"]),
   review_stages: z.array(approvalStageSchema),
   stages_with_existing_proposals: z.array(approvalStageSchema),
+});
+
+const workspaceActionOutputSchema = z.strictObject({
+  result: z
+    .object({
+      status: z.enum([
+        "already_processed",
+        "snapshot",
+        "saved",
+        "conflict",
+        "invalid",
+        "failed",
+        "continue_intent",
+      ]),
+    })
+    .passthrough()
+    .describe(
+      "Workspace action result. Reopen the stage review for the full updated snapshot.",
+    ),
+  impact_review: impactReviewOfferSchema.optional(),
 });
 
 export const approvalOutputSchema = z
@@ -383,7 +496,7 @@ const execute_completion_commandTool = {
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
   description:
-    "Start an empty resumable question draft for manual entry. Check for an active draft first and get the user's choice before replacing it.",
+    "Create a new empty, resumable question draft for manual entry. Check for an active draft and get the user's choice first; this tool creates a new record.",
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,
@@ -409,6 +522,104 @@ const execute_workspace_commandTool = {
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+const save_forecast_stage_draftTool = {
+  title: "Save Forecast Stage Draft",
+  description:
+    "Save a partial or complete chat-authored draft for one forecast stage using its reviewed revision bindings. The draft remains pending explicit stage approval and this tool does not open the App.",
+  inputSchema: saveForecastStageDraftShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const propose_forecast_stage_changesTool = {
+  title: "Propose Forecast Stage Changes",
+  description:
+    "Create a revision-bound proposal for one forecast stage without applying or approving it. Use after the user asks for a suggestion or proposed changes; requires current stage preparation and review bindings.",
+  inputSchema: proposeForecastStageChangesShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const apply_forecast_stage_proposalTool = {
+  title: "Apply Forecast Stage Proposal",
+  description:
+    "Apply a current proposal to its stage draft without approving the stage. Use only when the user asks to apply that proposal but has not approved the resulting stage.",
+  inputSchema: applyForecastStageProposalShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const accept_forecast_stage_proposalTool = {
+  title: "Accept Forecast Stage Proposal",
+  description:
+    "Apply and approve one current forecast stage proposal. Call only after the user explicitly accepts that exact proposal; this approval can trigger a whole-specification impact review.",
+  inputSchema: forecastStageProposalShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const discard_forecast_stage_proposalTool = {
+  title: "Discard Forecast Stage Proposal",
+  description:
+    "Remove one current forecast stage proposal without changing or approving the stage draft. Call only when the user explicitly asks to discard it.",
+  inputSchema: forecastStageProposalShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: true,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const revalidate_unchanged_forecast_stageTool = {
+  title: "Revalidate Unchanged Forecast Stage",
+  description:
+    "Revalidate an already approved content stage against current prerequisites only when its content is unchanged. Requires the exact approved revision and a rationale; it does not approve changed content.",
+  inputSchema: revalidateUnchangedForecastStageShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
+} as const;
+
+const complete_forecast_stage_reviewTool = {
+  title: "Complete Forecast Stage Review",
+  description:
+    "Record review feedback for the exact current approved Question or Terms revision. This stores the review note without changing stage approval.",
+  inputSchema: completeForecastStageReviewShape,
+  outputSchema: workspaceActionOutputSchema,
+  annotations: {
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
     openWorldHint: false,
   },
 } as const;
@@ -735,6 +946,13 @@ export const foresightTools: {
   readonly prepare_stage: typeof prepare_stageTool;
   readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly execute_workspace_command: typeof execute_workspace_commandTool;
+  readonly save_forecast_stage_draft: typeof save_forecast_stage_draftTool;
+  readonly propose_forecast_stage_changes: typeof propose_forecast_stage_changesTool;
+  readonly apply_forecast_stage_proposal: typeof apply_forecast_stage_proposalTool;
+  readonly accept_forecast_stage_proposal: typeof accept_forecast_stage_proposalTool;
+  readonly discard_forecast_stage_proposal: typeof discard_forecast_stage_proposalTool;
+  readonly revalidate_unchanged_forecast_stage: typeof revalidate_unchanged_forecast_stageTool;
+  readonly complete_forecast_stage_review: typeof complete_forecast_stage_reviewTool;
   readonly advance_forecast_specification: typeof advance_forecast_specificationTool;
   readonly approve_and_continue_forecast_specification: typeof approve_and_continue_forecast_specificationTool;
   readonly continue_forecast_specification: typeof continue_forecast_specificationTool;
@@ -761,6 +979,13 @@ export const foresightTools: {
   prepare_stage: prepare_stageTool,
   create_question_workspace: create_question_workspaceTool,
   execute_workspace_command: execute_workspace_commandTool,
+  save_forecast_stage_draft: save_forecast_stage_draftTool,
+  propose_forecast_stage_changes: propose_forecast_stage_changesTool,
+  apply_forecast_stage_proposal: apply_forecast_stage_proposalTool,
+  accept_forecast_stage_proposal: accept_forecast_stage_proposalTool,
+  discard_forecast_stage_proposal: discard_forecast_stage_proposalTool,
+  revalidate_unchanged_forecast_stage: revalidate_unchanged_forecast_stageTool,
+  complete_forecast_stage_review: complete_forecast_stage_reviewTool,
   advance_forecast_specification: advance_forecast_specificationTool,
   approve_and_continue_forecast_specification:
     approve_and_continue_forecast_specificationTool,
