@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bleavit-foresight",
-  "version": "0.14.2+codex.20261015151947",
+  "version": "0.14.2+codex.20261015152554",
   "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
@@ -15,7 +15,6 @@
     "term definition",
     "resolution criteria",
     "resolution sources",
-    "semantic risk",
     "event contract",
     "prediction market"
   ],
@@ -27,7 +26,7 @@
       "interface": {
         "displayName": "Bleavit Foresight",
         "shortDescription": "Create forecast specifications",
-        "longDescription": "Built for forecasters and researchers, Bleavit Foresight guides users through an interactive, approval-based workflow. It drafts concise questions from new events, forecasts, or outcomes; clarifies ambiguous terms; identifies independent, authoritative resolution sources; and develops source-grounded resolution criteria. Users can add neutral background information and, with explicit opt-in, a concise timeline of relevant recent news. A semantic-risk review can examine wording, exceptions, and resolution rules. The plugin supports research and specification drafting; it does not predict outcomes.",
+        "longDescription": "Make your forecast clear before the outcome is in. Bleavit Foresight turns an event, idea, or outcome into a reviewable specification: shape a focused question, clarify key terms, choose independent resolution sources, and set criteria grounded in evidence. Work through each stage and approve it as you go. Add neutral background or opt in to recent news for context. Build a specification others can interpret and assess. Foresight supports research and drafting; it does not predict outcomes.",
         "developerName": "Christopher Maximilian Altmann",
         "category": "Productivity",
         "capabilities": ["Interactive"],
