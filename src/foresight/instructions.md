@@ -53,9 +53,12 @@ approval or continuation tool. The App uses commands returned in
 target and revision bindings.
 The App replaces only editable payloads, uses a fresh command ID for a new
 operation, and preserves the same ID and payload when retrying a lost
-acknowledgement. Model workflows must not call this App-only tool; if a required
-stage submission tool is absent from the live tool catalog, stop and report the
-integration gap.
+acknowledgement. Model workflows must not call this App-only tool. If a
+stage-specific submission tool is absent from the live tool catalog, use
+`save_forecast_stage_draft` with the complete validated stage draft and current
+preparation receipt and revision bindings. For a requested revision-bound
+suggestion, use `propose_forecast_stage_changes`. These tools open or update
+the App with the stage for review.
 
 After stage preparation, for a new model-generated question call `submit_drafted_question` directly;
 it creates the record and workspace. Do not call `create_question_workspace`

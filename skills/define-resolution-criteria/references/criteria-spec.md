@@ -26,11 +26,13 @@ decisions remain. There is no fixed question or round limit. Continue until no
 material decision remains; do not open or fetch the Criteria workspace during
 these rounds.
 
-When the interview is complete, construct and validate the criteria, then call
-`submit_resolution_criteria` once. Its response opens the Criteria workspace
-with one editable text field for review. Do not show a separate draft before
-submission. After the first approval, use the existing criteria field on later
-visits. If the user asks in chat to repeat the interview or revise existing
+When the interview is complete, construct and validate the criteria, then submit
+it once. Use `submit_resolution_criteria` when it is in the live tool catalog;
+otherwise follow the server-wide
+[fallback](../../../src/foresight/instructions.md#workflow-state). The result
+opens the Criteria workspace with one editable text field for review. Do not
+show a separate draft before submission. After the first approval, use the
+existing criteria field on later visits. If the user asks in chat to repeat the interview or revise existing
 criteria, fetch the latest saved criteria and revision first. Treat the saved
 text as the starting point: ask whether it captures the user's intent, identify
 needed clarifications, and invite additional information. Use the same
@@ -174,9 +176,10 @@ and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
-After all chat interview decisions are settled, call
-`submit_resolution_criteria` once; the rendered submission is the only
-criteria review before approval. Do not show a separate draft. Present the
+After all chat interview decisions are settled, submit the complete criteria
+once; the rendered submission is the only criteria review before approval.
+Follow the server-wide fallback if `submit_resolution_criteria` is absent. Do
+not show a separate draft. Present the
 single complete outcome rule. The forecast question unit already displays its
 placeholders and allowed values; do not duplicate them as per-value criteria.
 Do not append a second No rule or repeat the original unit question inside the

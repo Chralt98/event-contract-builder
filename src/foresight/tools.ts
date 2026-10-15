@@ -529,7 +529,7 @@ const execute_workspace_commandTool = {
 const save_forecast_stage_draftTool = {
   title: "Save Forecast Stage Draft",
   description:
-    "Save a partial or complete chat-authored draft for one forecast stage using its reviewed revision bindings. The draft remains pending explicit stage approval and this tool does not open the App.",
+    "Save a partial or complete chat-authored draft for one forecast stage using its reviewed revision bindings. The draft remains pending explicit stage approval and opens in the App for review.",
   inputSchema: saveForecastStageDraftShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {

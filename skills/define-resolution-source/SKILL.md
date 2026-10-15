@@ -12,11 +12,12 @@ fallback rules.
 1. Require a forecast question with approved definitions.
 2. Research the complete hierarchy, preferring at least two independent sources when
    available.
-3. Finish research before calling `submit_resolution_source`; submit the full
-   hierarchy once and follow the server-wide
-   [MCP App rendering rule](../../src/foresight/instructions.md#language-and-rendering).
+3. Finish research before submitting the full hierarchy once. Use
+   `submit_resolution_source` when it is in the live tool catalog; otherwise
+   follow the server-wide [fallback](../../src/foresight/instructions.md#workflow-state).
 4. If the user edits the hierarchy and asks for an AI review, submit the full
-   suggested hierarchy using the current revision bindings. After explicit
+   suggested hierarchy using the current revision bindings, following the
+   server-wide fallback when the stage-specific tool is absent. After explicit
    approval, follow the server-wide
    [approval routing](../../src/foresight/instructions.md#workflow-state) and
    its returned handoff to `define-resolution-criteria`.
