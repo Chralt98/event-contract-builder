@@ -515,7 +515,7 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).not.toContain("review_markdown");
     expect(foresightTools.execute_workspace_command.description).toContain(
-      "For model-driven approval or continuation",
+      "Model workflows use the operation-specific",
     );
     expect(foresightTools.advance_forecast_specification.description).toContain(
       "without attaching or opening the App UI",

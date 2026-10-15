@@ -43,20 +43,20 @@ Submission tools validate and store a pending stage. All six stages use one
 revision-bound MCP App workspace. Shared core tools remain model-visible, but
 hosts without MCP App support are unsupported for workflow reviews:
 `create_question_workspace` starts an incomplete draft; `execute_workspace_command`
-is the App-facing tool for navigating to an editable stage and performing edits,
-proposals, and proposal decisions. Model-driven approval and
+is App-only and runs commands selected in the workspace UI. Model workflows use
+the operation-specific review, submission, approval, and continuation tools.
+Model-driven approval and
 continuation use the operation-specific approval or continuation tool, which returns structured
 handoff state without attaching or opening the MCP App UI. Model workflows
 fetch current stage state with `get_forecast_stage_review`; this initializes
 untouched stages and returns structured state without attaching or opening the
-MCP App UI. Use `execute_workspace_command` to navigate in the App. Use commands returned in
-`workspace.presentation.actions` as complete command objects, preserving their
-target and revision bindings. Replace only editable payloads, use a fresh
-command ID for a new operation, and preserve the same ID and payload when
-retrying a lost acknowledgement. Never call this tool with empty or guessed
-arguments to inspect availability or substitute for a missing stage submission
-tool. If a required stage submission tool is absent from the live tool catalog,
-stop and report the integration gap.
+MCP App UI. The App uses commands returned in `workspace.presentation.actions`
+as complete command objects, preserving their target and revision bindings.
+The App replaces only editable payloads, uses a fresh command ID for a new
+operation, and preserves the same ID and payload when retrying a lost
+acknowledgement. Model workflows must not call this App-only tool; if a required
+stage submission tool is absent from the live tool catalog, stop and report the
+integration gap.
 
 After stage preparation, for a new model-generated question call `submit_drafted_question` directly;
 it creates the record and workspace. Do not call `create_question_workspace`

@@ -397,9 +397,9 @@ const create_question_workspaceTool = {
 } as const;
 
 const execute_workspace_commandTool = {
-  title: "Workspace Command",
+  title: "Workspace App Action",
   description:
-    "Run one revision-bound App workspace command for navigation and App actions. For model-driven approval or continuation, use advance_forecast_specification so the App opens with the submitted next-stage draft.",
+    "Run a revision-bound command selected from the workspace App, such as navigation, draft editing, or proposal review. Model workflows use the operation-specific review, submission, approval, and continuation tools.",
   inputSchema: WorkspaceCommand,
   outputSchema: z.strictObject({
     result: WorkspaceCommandResult,

@@ -18,9 +18,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    `submit_drafted_question` directly once; it creates the record and workspace.
    Do not create an empty workspace or fetch a stage review first.
 3. For an update to an existing record, fetch its current question and revision
-   with `get_forecast_stage_review` before generation or editing. Use its
-   available commands through `execute_workspace_command`, following the
-   server's shared workspace routing.
+   with `get_forecast_stage_review` before generation or editing.
 4. Submit the proposed forecast question with `submit_drafted_question`. Approval
    remains a separate explicit action. Follow the server's approval and
    Continue routing before `define-terms`.
