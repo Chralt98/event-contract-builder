@@ -31,7 +31,7 @@ export const ForecastNewsItem = z.object({
 export type ForecastNewsItemT = z.infer<typeof ForecastNewsItem>;
 
 /**
- * A newest-to-oldest list of distinct, incremental, non-binding news updates.
+ * A user-ordered list of distinct, incremental, non-binding news updates.
  * The user can select items by their unique unit numbers.
  */
 export const ForecastNewsTimeline = z
@@ -47,32 +47,9 @@ export const ForecastNewsTimeline = z
             message: "News timeline unit numbers must be unique.",
           });
         }
-
-        for (let index = 1; index < items.length; index += 1) {
-          const newer = items[index - 1];
-          const older = items[index];
-          if (!newer || !older) continue;
-
-          const newerDate = newer.published_at.slice(0, 10);
-          const olderDate = older.published_at.slice(0, 10);
-          const bothTimesKnown =
-            newer.published_at.length > 10 && older.published_at.length > 10;
-          const isOutOfOrder = bothTimesKnown
-            ? Date.parse(newer.published_at) < Date.parse(older.published_at)
-            : newerDate < olderDate;
-
-          if (isOutOfOrder) {
-            ctx.addIssue({
-              code: "custom",
-              path: ["items", index, "published_at"],
-              message:
-                "News timeline items must be ordered from the most recent publication to the oldest.",
-            });
-          }
-        }
       })
       .describe(
-        "Up to twelve highly relevant, non-redundant news items, ordered newest to oldest. Each item has a unique selectable unit number. An empty list is only for explicitly removing a previously approved timeline.",
+        "Up to twelve highly relevant, non-redundant news items in the user's chosen order. Each item has a unique selectable unit number. An empty list is only for explicitly removing a previously approved timeline.",
       ),
   })
   .describe(

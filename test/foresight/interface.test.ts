@@ -543,7 +543,7 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("news timeline requires unique item numbers and newest-to-oldest dates", () => {
+  test("news timeline requires unique item numbers but permits user-selected date order", () => {
     const item = {
       unit_number: 1,
       published_at: "2026-09-17T10:30:00+02:00",
@@ -590,7 +590,7 @@ describe("public forecast interface", () => {
         ...payload,
         news_timeline: { items: [olderItem, item] },
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       schema.safeParse({
         ...payload,
@@ -605,7 +605,7 @@ describe("public forecast interface", () => {
           ],
         },
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       schema.safeParse({
         ...payload,
@@ -623,7 +623,7 @@ describe("public forecast interface", () => {
           ],
         },
       }).success,
-    ).toBe(false);
+    ).toBe(true);
   });
 
   test("resolution criteria accept one complete criteria text without a question field", () => {
@@ -729,7 +729,10 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
     expect(foresightServerInstructions).toContain(
-      "list_forecast_storage` to check for an active draft",
+      "check_active_forecast_draft` to check whether an active draft exists",
+    );
+    expect(foresightServerInstructions).toContain(
+      "does not read saved archives",
     );
     expect(foresightServerInstructions).toContain(
       "Wait for an explicit choice before creating or deleting",

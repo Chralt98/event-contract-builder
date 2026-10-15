@@ -821,7 +821,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
   ).toBe(false);
 });
 
-test("Criteria and News workspace approval reuse canonical and ordering validators", () => {
+test("Criteria and News workspace approval reuse canonical validators", () => {
   const unit = {
     question: "Will Berlin report rain tomorrow?",
     condition: {
@@ -866,7 +866,7 @@ test("Criteria and News workspace approval reuse canonical and ordering validato
     "id",
   );
   news.items.reverse();
-  expect(validateContentWorkingDraft(news).length).toBeGreaterThan(0);
+  expect(validateContentWorkingDraft(news)).toEqual([]);
   news.items[0]!.published_at = "";
   expect(validateContentWorkingDraft(news).length).toBeGreaterThan(0);
 });

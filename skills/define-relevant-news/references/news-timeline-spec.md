@@ -36,7 +36,7 @@ the user keeps all displayed items without changes (for example, “all keep”)
 the displayed proposal is already the exact selected timeline: treat that
 response as approval without resubmitting or asking for approval again. For a
 subset or edited timeline, resubmit only the selected items in their existing
-newest-first order, show the complete filtered timeline in the App, and ask for
+order, show the complete filtered timeline in the App, and ask for
 approval without restating its details in chat. After approval, follow the server-wide
 [approval routing](../../../src/foresight/instructions.md#workflow-state) to
 approve and complete the workflow. Keep any chat response to useful context not

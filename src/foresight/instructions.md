@@ -311,7 +311,8 @@ user's chat approval before invoking the next stage.
 
 Before creating a separate new specification with `create_question_workspace`
 or `submit_drafted_question` without an existing specification ID, call
-`list_forecast_storage` to check for an active draft. If one exists, call
+`check_active_forecast_draft` to check whether an active draft exists; this
+check returns only its presence and does not read saved archives. If one exists, call
 `open_active_forecast_draft` and identify that draft in chat using its returned
 question summary; include the new question too when one is known. Ask whether
 the user wants to keep the active draft or delete it and replace it with the new
@@ -391,25 +392,25 @@ user it is available in the App if they want to request deletion. Call
 provides the feedback reference.
 
 For email, use `support@bleavit.com` as the recipient without asking the user
-for an address. Draft a concise subject from the user's feedback and put the
-recipient and subject in the email writing block's metadata attributes in the
-first email-draft response. Keep those values out of the message body. Use this
-exact structure, with a fresh five-digit ID:
+for an address. In the first email-draft response, return only one native email
+writing block, without a code fence or commentary. Draft a concise subject from
+the user's feedback. Set the `recipient` metadata to `support@bleavit.com` so it
+populates the Recipients field; never put a `To:` line or recipient address in
+the body. Put the subject in metadata too. Replace `unique-id`, `Concise subject`, and
+`Email body` with a unique ID, the generated subject, and a concise email body
+containing the feedback. Use this exact structure:
 
 ```text
-:::writing{variant="email" id="<five-digit ID>" recipient="support@bleavit.com" subject="<generated subject>"}
-<draft body>
+:::writing{id="unique-id" variant="email" recipient="support@bleavit.com" subject="Concise subject"}
+Email body
 :::
 ```
 
-Never leave either field blank or put a `Subject:` label in the body. Then
-provide a `mailto:` link to the same recipient with the same subject and body
-URL-encoded so the user's email client can open a prefilled draft. Explain that
-the plugin may open links in a browser and cannot guarantee handoff to an email
-client. Do not claim that an email was sent or add forecast content or
-identifiers. For GitHub, explain that an issue is public and may be copied or
-indexed; link to the issue form without prefilling the user's feedback. Do not
-submit an email or GitHub issue on the user's behalf.
+Do not add extra commentary, a separate `mailto:` link, forecast content, or
+identifiers. Do not claim that an email was sent. For GitHub, explain that an
+issue is public and may be copied or indexed; link to the issue form without
+prefilling the user's feedback. Do not submit an email or GitHub issue on the
+user's behalf.
 
 ## Validation errors
 

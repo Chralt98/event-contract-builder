@@ -265,7 +265,7 @@ export const newsTimelineShape = {
   ),
   ...proposalRationaleShape,
   news_timeline: ForecastNewsTimeline.describe(
-    "Newest-first, incremental factual news; empty only for requested removal.",
+    "Incremental factual news in the user's chosen order; empty only for requested removal.",
   ),
   followUp: z
     .string()
