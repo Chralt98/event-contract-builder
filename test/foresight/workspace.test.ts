@@ -414,6 +414,14 @@ test("conflicts and Continue carry recoverable, revision-bound intent", () => {
   expect(
     WorkspaceCommandResult.parse({
       ...identity,
+      status: "already_processed",
+      recovery: "reopen_workspace",
+      message: "Reopen the workspace to load its current state.",
+    }).status,
+  ).toBe("already_processed");
+  expect(
+    WorkspaceCommandResult.parse({
+      ...identity,
       status: "conflict",
       expected_revision: "r1",
       current_revision: "r2",

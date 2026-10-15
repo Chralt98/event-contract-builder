@@ -1152,6 +1152,12 @@ export const WorkspaceCommandResult = boundedPayload(
   z.discriminatedUnion("status", [
     z.strictObject({
       ...commandIdentity,
+      status: z.literal("already_processed"),
+      recovery: z.literal("reopen_workspace"),
+      message: z.string().min(1).max(1000),
+    }),
+    z.strictObject({
+      ...commandIdentity,
       status: z.enum(["snapshot", "saved"]),
       snapshot: WorkspaceSnapshot,
     }),
