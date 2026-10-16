@@ -458,6 +458,9 @@ describe("public forecast interface", () => {
 
     expect(schema.safeParse(action).success).toBe(true);
     expect(
+      schema.safeParse({ ...action, mcp_access_token: "token" }).success,
+    ).toBe(false);
+    expect(
       schema.safeParse({ ...action, next_stage: "resolution_sources" }).success,
     ).toBe(false);
     expect(
@@ -867,14 +870,13 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
-    expect(foresightServerInstructions).toContain(
-      "check_active_forecast_draft` to check whether an active draft exists",
+    expect(foresightServerInstructions).toContain("resume_forecast_workspace");
+    expect(foresightServerInstructions).not.toContain(
+      "check_active_forecast_draft",
     );
+    expect(foresightServerInstructions).toContain("one specification");
     expect(foresightServerInstructions).toContain(
-      "does not read saved archives",
-    );
-    expect(foresightServerInstructions).toContain(
-      "Wait for an explicit choice before creating or deleting",
+      "do not silently create a replacement",
     );
 
     expect(criteriaSkill).toContain(
@@ -907,15 +909,6 @@ describe("public forecast interface", () => {
   test("keeps tool descriptions concise and delegates procedure to skills", () => {
     expect(foresightTools.get_forecast_stage_review.description).toContain(
       "does not attach or open the MCP App UI",
-    );
-    expect(foresightTools.create_question_workspace.description).toContain(
-      "Check for an active draft and get the user's choice first",
-    );
-    expect(foresightTools.create_question_workspace.description).toContain(
-      "this tool creates a new record",
-    );
-    expect(foresightTools.submit_drafted_question.description).toContain(
-      "confirm any active draft's replacement first",
     );
     for (const tool of Object.values(foresightTools)) {
       expect(tool.description.length).toBeLessThanOrEqual(260);

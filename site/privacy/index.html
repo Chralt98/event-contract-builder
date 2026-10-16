@@ -45,25 +45,28 @@
           conversation content under its own privacy terms.
         </p>
         <p>
-          To limit abuse, the hosted Worker uses the source IP provided by
-          Cloudflare to enforce per-IP request and write limits. For storage
-          quota accounting, it derives a keyed HMAC identifier from that address
-          and stores the identifier with records in D1; the application does not
-          store the raw IP address in D1. Cloudflare separately processes
-          network and request metadata as the infrastructure provider, as
-          described below.
+          Each workspace contains one specification and belongs to your Bleavit
+          Foresight account. You can authenticate with Google or a one-time code
+          sent to your email address. The service stores linked sign-in
+          identities and internal account identifiers separately from forecast
+          content. Workspace ownership uses the internal account identifier;
+          source IPs are used only for coarse abuse limits, never to identify
+          the owner of a specification. The application does not store raw IP
+          addresses in D1. Cloudflare separately processes network and request
+          metadata as described below.
         </p>
         <p>
           If you choose the private feedback option, the feedback tool accepts
           only the text you submit. The service stores that text separately from
           Forecast Specifications with a random feedback reference and
-          timestamps; it does not associate account details, a contact address,
-          conversation history, or a Forecast Specification with the feedback.
-          Cloudflare may process technical request metadata as described below.
-          Free-text can still contain personal data if you include it, so do not
-          include personal, sensitive, or secret information. ChatGPT or Codex
-          separately processes the conversation and tool call under its own
-          privacy terms.
+          timestamps and an account identifier used to authorize deletion. This
+          identifier can associate feedback with its account, but no forecast
+          content, account details, contact address, or conversation history is
+          attached automatically. Cloudflare may process technical request
+          metadata as described below. Free-text can still contain personal data
+          if you include it, so do not include personal, sensitive, or secret
+          information. ChatGPT or Codex separately processes the conversation
+          and tool call under its own privacy terms.
         </p>
         <h2>Purposes and legal bases</h2>
         <p>
@@ -91,10 +94,13 @@
         <p>
           Submitted information is used to validate, render, and continue your
           forecast specification. The hosted service stores records in a
-          Cloudflare Worker and D1 database. It does not require a user account;
-          the record ID itself grants access: anyone who obtains it can access
-          or update that record until it expires or is deleted. Treat the ID as
-          private and share it only with people who should have that access.
+          Cloudflare Worker and D1 database. Sign-in with Google or a
+          verification code sent by email establishes a Bleavit Foresight
+          account; ChatGPT or Codex then receives separate OAuth authorization
+          to use the MCP service. Specification IDs select records but do not
+          grant access. The account that authorized the request must own each
+          record. You can revoke connected MCP clients or delete your account
+          and its forecast data from the account page.
         </p>
         <p>
           Private feedback is stored separately from Forecast Specifications in
@@ -138,13 +144,14 @@
         </p>
         <h2>Retention and controls</h2>
         <p>
-          A record expires 30 days after its most recent update. It becomes
-          inaccessible at expiry and is removed by an hourly cleanup; an access
-          request also removes an expired record. You can ask the MCP service to
-          delete an active record immediately with
-          <code>delete_forecast_specification</code>, providing its record ID.
-          Deletion is permanent. Keep the ID private, and do not submit secrets
-          or sensitive information.
+          Each account may keep one active draft and up to three compact
+          archives. An archive expires 30 days after it is created; reading or
+          exporting it does not extend that period. Active drafts keep the
+          service’s existing expiry behavior. You can ask the MCP service to
+          delete a specification immediately with
+          <code>delete_forecast_specification</code>. Deletion is permanent.
+          Deleting your account revokes its connected clients and removes its
+          specifications, feedback, sessions, and linked sign-in identities.
         </p>
         <p>
           Cloudflare also handles technical connection and invocation

@@ -13,10 +13,9 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    event or outcome information rather than guessing. If only the horizon is
    unspecified, preserve that intent with the cutoff-date variable workflow in
    the reference and ask for values when needed; do not demand one fixed date.
-2. After the server-wide stage preparation, for a new event draft one forecast question unit as defined in the
-   reference and call
-   `submit_drafted_question` directly once; it creates the record and workspace.
-   Do not create an empty workspace or fetch a stage review first.
+2. After server-wide stage preparation and workspace creation, draft one forecast
+   question unit as defined in the reference. Follow the server-wide creation
+   and submission routing for the current transport.
 3. For an update to an existing record, fetch its current question and revision
    with `get_forecast_stage_review` before generation or editing.
 4. Submit the proposed forecast question with `submit_drafted_question`. Approval

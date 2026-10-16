@@ -1,3 +1,4 @@
+import { workspaceAccessTools } from "./workspace-access";
 import { PreparationReceipt, StagePreparation } from "./stage-preparation";
 import {
   CompletionCommand,
@@ -540,7 +541,7 @@ const execute_completion_commandTool = {
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
   description:
-    "Create a new empty, resumable question draft for manual entry. Check for an active draft and get the user's choice first; this tool creates a new record.",
+    "Create an empty question draft in the local in-memory adapter. Hosted clients use create_forecast_workspace.",
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,
@@ -849,7 +850,7 @@ const get_approved_forecast_specificationTool = {
 const delete_forecast_specificationTool = {
   title: "Delete Forecast Specification",
   description:
-    "Immediately and permanently delete the specified active draft or saved Forecast Specification by ID. Call only after the user explicitly asks to delete that record.",
+    "Immediately and permanently delete the current workspace’s draft or archive. Call only after the user explicitly asks to delete that specification.",
   inputSchema: deleteForecastSpecificationShape,
   outputSchema: deleteForecastSpecificationOutputSchema,
   annotations: {
@@ -919,7 +920,7 @@ const submit_defined_termsTool = {
 const submit_drafted_questionTool = {
   title: "Submit Drafted Question",
   description:
-    "Save a generated question with a current stage preparation receipt. Creates or updates a record; confirm any active draft's replacement first. After an App edit, saves a proposal.",
+    "Save a generated question in the current workspace with a current stage preparation receipt. After an App edit, saves a proposal.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {
@@ -1000,7 +1001,7 @@ const submit_forecast_question_unitTool = {
   },
 } as const;
 
-export const foresightTools: {
+const baseForesightTools: {
   readonly prepare_stage: typeof prepare_stageTool;
   readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly execute_workspace_command: typeof execute_workspace_commandTool;
@@ -1070,6 +1071,12 @@ export const foresightTools: {
   submit_background_information: submit_background_informationTool,
   submit_news_timeline: submit_news_timelineTool,
   submit_forecast_question_unit: submit_forecast_question_unitTool,
+};
+
+export const foresightTools: typeof baseForesightTools &
+  typeof workspaceAccessTools = {
+  ...baseForesightTools,
+  ...workspaceAccessTools,
 };
 
 export type ForesightToolName = keyof typeof foresightTools;

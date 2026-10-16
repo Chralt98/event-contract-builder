@@ -14,3 +14,5 @@ export * from "./workspace";
 export * from "./completion";
 
 export * from "./stage-preparation";
+
+export * from "./workspace-access";

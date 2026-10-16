@@ -6,7 +6,24 @@ for that stage. Read the complete bundle: it contains the canonical shared
 runtime instructions, active skill, and required references. Tool descriptions
 do not replace preparation.
 
+Create new specifications with `create_forecast_workspace` after connecting an account.
+
 ## Runtime policy
+
+Before starting a new specification, call `create_forecast_workspace` with its
+language. Every workspace contains one specification, either a draft or its
+compact archive. The signed-in account authorizes all workspace data access;
+specification IDs select a workspace but do not grant access. Use
+`list_forecast_workspaces` to find the user's workspaces and
+`resume_forecast_workspace` to resume one by ID. Never recover access by IP,
+conversation metadata, or MCP session ID.
+If a requested workspace is unavailable, explain that it cannot be resumed and
+do not silently create a replacement; create one only when the user asks to
+start a new specification.
+
+Local in-memory development servers without workspace-access tools use
+`create_question_workspace`; their data lasts only for the process. This local
+adapter does not provide hosted workspace recovery.
 
 The packaged skills own semantic drafting and research. This server owns
 validation, rendering, workflow state, and approvals. Follow the active skill's
@@ -60,10 +77,10 @@ preparation receipt and revision bindings. For a requested revision-bound
 suggestion, use `propose_forecast_stage_changes`. These tools open or update
 the App with the stage for review.
 
-After stage preparation, for a new model-generated question call `submit_drafted_question` directly;
-it creates the record and workspace. Do not call `create_question_workspace`
-first. Use `create_question_workspace` only when the user wants an empty
-workspace for manual entry. On an existing record, pass the revision fetched
+After stage preparation and workspace creation, submit a new model-generated
+question with `submit_drafted_question`, using the new workspace's specification
+ID and revision. The empty draft is also available for manual entry.
+On an existing record, pass the revision fetched
 before generation. The generator may replace its own latest draft while no
 App edit has occurred since that generation. An App edit marks the draft as
 user-edited; later generated output is then a revision-bound proposal.
@@ -271,16 +288,12 @@ before claiming the ID is unavailable; never invent a placeholder ID. Carry
 the ID and immutable `language_code` into subsequent workflow calls and any
 requested export call. Final approvals return this metadata in structured tool
 output; use it only for subsequent workflow calls and keep it out of
-user-facing content. A new language or selected
-alternative is a new record: set `start_new_specification: true`, omit the old
-ID, and obtain new approvals. An omitted ID resolves only within a stateful MCP
-session, when one exists; stateless HTTP requests require the explicit ID to
-continue. An explicit ID may address the server's handoff store. The ID is a
-bearer handoff, not authentication. On the hosted Cloudflare Worker, records
-expire 30 days after their most recent update. Expired records are inaccessible
-and are removed on access or by an hourly cleanup. Call
-`delete_forecast_specification` only after the user explicitly asks to delete a
-record and provides its ID; deletion is immediate and permanent.
+user-facing content. A new language or selected alternative requires a new workspace and approvals.
+Use explicit specification IDs on stateless calls, always together with workspace
+access. An ID identifies data; it never authorizes access. Active drafts expire
+30 days after their most recent update. Call `delete_forecast_specification`
+only after the user explicitly requests deletion of the current specification;
+delete using its internal ID through the authenticated connection.
 
 `get_approved_forecast_specification` returns approved stages only. Call it
 when the user asks to recall a specification or chooses an export format, not
@@ -327,18 +340,19 @@ chat; this includes background information. The App displays the complete draft,
 so ask only whether the user approves it or wants changes, and wait for the
 user's chat approval before invoking the next stage.
 
-Before creating a separate new specification with `create_question_workspace`
-or `submit_drafted_question` without an existing specification ID, call
-`check_active_forecast_draft` to check whether an active draft exists; this
-check returns only its presence and does not read saved archives. If one exists, call
-`open_active_forecast_draft` and identify that draft in chat using its returned
-question summary; include the new question too when one is known. Ask whether
-the user wants to keep the active draft or delete it and replace it with the new
-draft. Wait for an explicit choice before creating or deleting anything. If the
-user chooses replacement, call `delete_forecast_draft` with the ID returned by
-the open tool, then create the new specification only after deletion succeeds.
-Leave saved archives unchanged. If the user wants to keep the active draft,
-leave it unchanged and do not create the separate draft.
+## Workspace access and retention
+
+A new specification gets a separate workspace; it never replaces another
+workspace's draft or archive. An account may have one active draft and three
+unexpired archives. If an operation would exceed its allowance, preserve the
+current specification and ask the user to delete an archive explicitly. Use
+`list_forecast_workspaces` and `resume_forecast_workspace` to select a workspace.
+To edit an archive, use
+`reopen_forecast_archive`, then open its Question workspace. Reaching a ready
+Export stage replaces the draft with a compact archive retained for 30 days;
+reading or exporting it does not extend expiry. Do not access workspaces owned
+by another account, even when their specification IDs are known.
+
 Translate generated labels and fixed UI text, while preserving data-bearing
 content exactly, including questions, definitions, placeholders, variable
 values, source identities, URLs, ranks, dates, and status codes.
