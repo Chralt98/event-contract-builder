@@ -226,7 +226,7 @@ export const approvalOutputSchema = z
 export const impactReviewDecisionShape = {
   forecast_specification_id: ForecastSpecificationId,
   approved_revision: WorkspaceRevision.describe(
-    "The approved revision whose impact review the user accepted or declined.",
+    "The approved revision whose impact review the user explicitly requested or declined.",
   ),
   decision: z.enum(["review", "decline", "complete"]),
 };
@@ -768,7 +768,7 @@ const export_forecast_specificationTool = {
 const decide_forecast_impact_reviewTool = {
   title: "Record Forecast Impact Review Decision",
   description:
-    "Record whether the user accepts or declines a whole-specification impact review offered after content-changing approval. Complete it after all eligible stages are reviewed.",
+    "Start or decline a whole-specification impact review only after the user explicitly requests it, then mark it complete after all eligible stages are reviewed.",
   inputSchema: impactReviewDecisionShape,
   outputSchema: impactReviewDecisionOutputSchema,
   annotations: {

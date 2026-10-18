@@ -1044,6 +1044,13 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
       title: z.string().min(1).max(200),
       export_available: z.boolean().optional(),
       export_complete: z.boolean().optional(),
+      impact_review: z
+        .strictObject({
+          approved_stage: approvalStageSchema,
+          approved_revision: WorkspaceRevision,
+          status: z.enum(["pending", "accepted"]),
+        })
+        .optional(),
       stages: z
         .array(
           z.strictObject({

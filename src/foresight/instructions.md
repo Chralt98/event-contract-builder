@@ -134,41 +134,27 @@ model-generated draft, or a proposal copied into the draft without choosing
 accept, remains pending explicit chat approval after manual edits. Accepting a
 proposal in chat already approves it; do not ask for a second approval. Keep
 other pending edits distinct from approved content; outdated dependent work
-must be reviewed before finalization. The App marks outdated approvals with `↻` and
-uses `!` only when a concrete proposal is available. Opening a stage never
-starts a review automatically.
+must be reviewed before finalization. The App shows one central `↻ Revalidate`
+action for an available impact review. It shows `↻` on a stage only when that
+stage has a concrete suggestion to review; prerequisite staleness by itself
+does not add a stage marker. Opening or editing a stage never starts an impact
+review.
 
-After a successful approval that changes approved content, including accepting
-a proposal, inspect the tool result's `impact_review`. A pending review is a
-signal to screen the other saved stages; it is not yet an offer to the user.
-Compare the newly approved content with the approved content of every stage in
-`review_stages` and `stages_with_existing_proposals`, reusing complete current
-snapshots already available and otherwise fetching each stage once. For a stage
-with a proposal, assess its approved snapshot; the proposal alone is not a
-conflict. Check for concrete material
-incompatibilities in event, scope, threshold, resolution sources, or method;
-ignore style differences and do not treat an outdated marker alone as a
-conflict. If no concrete incompatibility is found, do not offer an impact
-review. If the comparison is blocked by local edits, a conflict, or an existing
-proposal, do not infer a conflict; explain the limitation only when it prevents
-answering the user's current request.
+Start an impact review only when the user clicks `Revalidate` in the App or
+explicitly asks for an impact review in chat. A button click is explicit
+authorization; do not ask for confirmation again. If the user asks in chat,
+use the latest App snapshot's `presentation.impact_review` (reopen its
+`approved_stage` if needed) and call `decide_forecast_impact_review` with
+`review`. If the review is already accepted, continue it without asking. If no
+review is available, explain that there is no pending impact review. Never
+screen stages or prepare impact suggestions before this explicit request.
+If the review fails or cannot assess a stage, report that in chat and do not
+mark that stage without a concrete proposal.
 
-When a concrete incompatibility is found, name the affected stages and briefly
-describe what no longer matches, then ask once whether the user wants an impact
-review to prepare suggestions for the affected stages. Do not send a message as
-the user or start the review before they agree. The review will not approve or
-advance anything. If the result says the review is already accepted, continue
-it without asking again. If there is no `impact_review`, do not screen or offer
-one. A decline is recorded for that approval revision; check again only after a
-later content-changing approval. If another approval arrives while the question
-is unanswered, keep one question open and use the latest approval revision
-when the user answers.
-
-After the user agrees, call `decide_forecast_impact_review` with `review` and
-use its returned latest revision and stage lists; this coalesces approvals that
-arrived while the prompt was pending. Review every returned stage with saved
-content, including stages before and after the approval that triggered the
-review. If the latest App context packet reports
+Use the returned latest revision and stage lists; this coalesces approvals that
+arrived while the user was deciding whether to start a review. Review every
+returned stage with saved content, including stages before and after the
+approval that triggered the review. If the latest App context packet reports
 `local_edits_uncommitted: true` for a stage, skip and report that stage. Also
 skip and report stages with an existing proposal or conflict.
 Reuse a complete current snapshot already available for a stage. Otherwise,

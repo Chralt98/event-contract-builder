@@ -587,7 +587,7 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow instructions make impact reviews chat-confirmed and specification-wide", () => {
+  test("workflow instructions make impact reviews explicitly user-triggered and specification-wide", () => {
     expect(foresightServerInstructions).toContain(
       "The MCP App is the supported surface for complete workflow reviews",
     );
@@ -596,25 +596,22 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
     expect(foresightServerInstructions).toMatch(
-      /Opening a stage never\s+starts a review automatically\./,
+      /Opening or editing a stage never starts an impact\s+review\./,
     );
     expect(foresightServerInstructions).toContain(
       "`decide_forecast_impact_review`",
     );
     expect(foresightServerInstructions).toMatch(
-      /After a successful approval that changes approved content/,
+      /Start an impact review only when the user clicks `Revalidate` in the App or\s+explicitly asks for an impact review in chat\./,
+    );
+    expect(foresightServerInstructions).toContain(
+      "prerequisite staleness by itself",
+    );
+    expect(foresightServerInstructions).toContain(
+      "do not mark that stage without a concrete proposal",
     );
     expect(foresightServerInstructions).toMatch(
-      /A pending review is a\s+signal to screen the other saved stages; it is not yet an offer to the user\./,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /If no concrete incompatibility is found, do not offer an impact\s+review\./,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /name the affected stages and briefly\s+describe what no longer matches/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /uses `!` only when a\s+concrete proposal is available/,
+      /shows `↻` on a stage only when that\s+stage has a concrete suggestion to review/,
     );
     expect(foresightServerInstructions).toMatch(
       /After\s+submitting generated content,\s+do not quote or summarize the submitted draft in\s+chat/,
