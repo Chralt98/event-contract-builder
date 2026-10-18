@@ -13,6 +13,15 @@ specification IDs select a workspace but do not grant access. Use
 `list_forecast_workspaces` to find the user's workspaces and
 `resume_forecast_workspace` to resume one by ID. Never recover access by IP,
 conversation metadata, or MCP session ID.
+If creation is rejected because an active draft already exists, call
+`open_active_forecast_draft` to show that draft in Bleavit Foresight, then ask
+whether the user wants to continue it or delete it and start the requested new
+specification. A request to start another specification does not authorize
+deletion. If the user chooses replacement, call `delete_forecast_draft` with
+the ID returned by the open operation, then create the new specification. If
+the user keeps the current draft, continue that workspace and leave the new
+request aside. If the draft cannot be opened, preserve it and explain that it
+must be reviewed before it can be replaced.
 If a requested workspace is unavailable, explain that it cannot be resumed and
 do not silently create a replacement; create one only when the user asks to
 start a new specification.
