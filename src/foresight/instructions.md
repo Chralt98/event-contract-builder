@@ -72,8 +72,11 @@ The App replaces only editable payloads, uses a fresh command ID for a new
 operation, and preserves the same ID and payload when retrying a lost
 acknowledgement. Model workflows must not call this App-only tool. If a
 stage-specific submission tool is absent from the live tool catalog, use
-`save_forecast_stage_draft` with the complete validated stage draft and current
-preparation receipt and revision bindings. For a requested revision-bound
+`save_forecast_stage_draft` only when its live schema accepts that stage's
+complete working draft, with the current preparation receipt and revision
+bindings. If the generic tool rejects the stage or returns no actionable
+validation issue, stop and report the missing tool instead of probing payload
+shapes or switching to a test connector. For a requested revision-bound
 suggestion, use `propose_forecast_stage_changes`. These tools open or update
 the App with the stage for review.
 
@@ -220,14 +223,16 @@ After the proposal is saved, explain its rationale in the text chat. The App
 shows the concrete suggested values for review and copying, without the
 rationale field.
 
-If a command fails input validation, correct the missing or invalid fields from
-the returned action before retrying, without fetching or reopening a different
-stage. An MCP App-originated message that names the next stage and supplies its
-specification ID, language, and approved revision is an executable workflow
-handoff. Complete the named stage's analysis and submit its prepared content in
-the same turn so the populated stage opens in the MCP App. A stage review fetch
-only returns structured state; it does not display the stage. Do not stop after
-fetching it, reply only that the stage is ready, or ask the user to start it.
+If a command fails input validation, correct only fields named by the returned
+action and retry once, without fetching or reopening a different stage. If no
+actionable validation issue is returned, stop instead of probing alternate
+payload shapes. An MCP App-originated message that names the next stage and
+supplies its specification ID, language, and approved revision is an executable
+workflow handoff. Complete the named stage's analysis and submit its prepared
+content in the same turn so the populated stage opens in the MCP App. A stage
+review fetch only returns structured state; it does not display the stage. Do
+not stop after fetching it, reply only that the stage is ready, or ask the user
+to start it.
 After the populated stage opens, ask the user to approve it in chat before
 progressing again. Stop for user input when the stage skill requires a
 substantive decision or the user must approve the review.

@@ -13,6 +13,11 @@ Open original pages; search snippets are leads, not evidence. Prefer official
 announcements, filings, releases, or records, and use reputable reporting when
 it adds facts or context. Cite the direct public item URL.
 
+Start with one batched search of up to four distinct, targeted queries, then
+open the strongest original sources together. Search again only to close a
+specific evidence gap or verify a candidate that could change the timeline;
+do not repeat the same coverage with site or date variations.
+
 Treat the approved background as already known. Compare candidates oldest to
 newest, retain only each item's distinct factual update, omit repetitions, then
 display at most twelve highly relevant items newest first. Do not pad the list.
