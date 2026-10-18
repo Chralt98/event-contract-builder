@@ -9,10 +9,9 @@
           "auth": {
             "type": "oauth",
             "client": {
-              "mode": "provided",
-              "clientId": "p821Eagmnq_zzMNp",
-              "tokenEndpointAuthMethod": "none"
+              "mode": "dcr"
             },
+            "registrationUrl": "https://auth.foresight.bleavit.com/oauth/register",
             "baseScopes": ["mcp:read", "mcp:write", "offline_access"]
           }
         }
