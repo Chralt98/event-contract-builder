@@ -125,11 +125,12 @@ again to retrieve fields or refresh the App. If acknowledgement is uncertain,
 fetch only the affected stage and retry only if the review shows that the
 submission was not saved.
 
-For every approval, pass the exact `expected_revision` and
-`prerequisite_revisions` from the reviewed result. Missing or stale bindings
-require a fresh review (`get_forecast_stage_review` for a saved stage, or a
-workspace `reopen`), reconciliation, and retry; never infer the bindings from
-conversation memory. Preserve local edits on conflict. An incomplete draft may
+Missing or stale bindings require one fresh review (`get_forecast_stage_review`
+for a saved stage, or a workspace `reopen`) and reconciliation. Compare the
+rejected bindings with the fresh response before retrying once with a corrected
+command. If the bindings are identical or the same conflict persists, report
+the conflict instead of repeating reviews or asking the user to refresh an
+unchanged App. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
 A valid manual edit to a stage that is already approved immediately updates
 that stage's approved content and export; it does not need chat approval. A
@@ -205,9 +206,13 @@ whether the user wants to approve, edit, or stay at the stage:
   proposal still requires a clear choice of the draft or suggestion; never
   silently apply it.
 
-After the user confirms the chat approval question, pass the complete action
-object, including `stage`, revision bindings, and `next_stage` when present, to
-`approve_and_continue_forecast_specification`. Follow the returned next-stage instruction in
+After the user confirms the chat approval question, pass the enabled action's
+complete `command` object from `workspace.presentation.actions` to
+`approve_and_continue_forecast_specification`. When code tools are available,
+retain the response and pass that object programmatically; do not retype opaque
+revision identifiers or reconstruct bindings from conversation memory. Preserve
+its `stage`, `expected_revision`, `prerequisite_revisions`, and `next_stage`,
+and attach the current preparation receipt. Follow the returned next-stage instruction in
 the same turn; do not wait for a button click. Use returned
 `next_stage_bindings` without reopening either the completed stage or the target
 stage. Do not call `get_forecast_stage_review` for content and bindings already
