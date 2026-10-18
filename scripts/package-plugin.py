@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import shutil
 import zipfile
@@ -53,6 +54,9 @@ if plugin_name != "event-contract-builder":
 manifest.pop("apps", None)
 openai_extension = manifest.get("extensions", {}).get("com.openai", {})
 openai_extension.pop("apps", None)
+demo_recording_url = os.environ.get("PLUGIN_DEMO_RECORDING_URL")
+if demo_recording_url:
+    openai_extension.setdefault("review", {})["demo_recording_url"] = demo_recording_url
 (output / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
 (output / "mcp.json").write_text(json.dumps(mcp_config, indent=2) + "\n")
 shutil.copytree(root / "skills", output / "skills")

@@ -156,7 +156,9 @@ manifest omits the local `apps` reference. By default, its MCP configuration
 uses the endpoint in `mcp.production.json` for both packaged MCP configs;
 override it for another environment with `bun run package:plugin -- --mcp-url
 https://your-endpoint.example/mcp`. The tracked development configs remain
-pointed at localhost. This command does not publish anything.
+pointed at localhost. Set `PLUGIN_DEMO_RECORDING_URL` when packaging to add a
+private review demo URL to the generated manifest without storing it in the
+repository source. This command does not publish anything.
 
 ## Product website
 

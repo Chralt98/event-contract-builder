@@ -9,7 +9,9 @@
           "auth": {
             "type": "oauth",
             "client": {
-              "mode": "cimd"
+              "mode": "provided",
+              "clientId": "p821Eagmnq_zzMNp",
+              "tokenEndpointAuthMethod": "none"
             },
             "baseScopes": ["mcp:read", "mcp:write", "offline_access"]
           }
