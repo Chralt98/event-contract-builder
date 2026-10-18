@@ -27,8 +27,16 @@ if not isinstance(production_server, dict) or not isinstance(production_server.g
 mcp_url = args.mcp_url or production_server["url"]
 manifest = json.loads((root / "plugin.json").read_text())
 mcp_config = json.loads((root / "mcp.json").read_text())
-for server in mcp_config["mcpServers"].values():
-    server["url"] = mcp_url
+mcp_servers = mcp_config.get("mcpServers")
+if not isinstance(mcp_servers, dict) or "bleavit-foresight" not in mcp_servers:
+    raise ValueError("mcp.json must define the bleavit-foresight server")
+if len(mcp_servers) != 1:
+    raise ValueError("The public plugin package must define exactly one MCP server")
+mcp_servers["bleavit-foresight"] = {
+    **mcp_servers["bleavit-foresight"],
+    **production_server,
+    "url": mcp_url,
+}
 plugin_name = manifest["name"]
 output = root / "out" / plugin_name
 if output.exists():

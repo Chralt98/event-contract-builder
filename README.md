@@ -53,7 +53,7 @@ specifications are retrieved through the public MCP interface.
 
 The workflow is: draft and approve one forecast question unit, define terms,
 choose resolution sources, define resolution criteria, add background
-information, and optionally add recent news. `reduce-semantic-risk` supports focused interpretation audits.
+information, and optionally add recent news.
 
 Question drafting in Bleavit Foresight is informed by Metaculus’s
 [question-writing guidance](https://www.metaculus.com/faq/).
@@ -75,7 +75,7 @@ Change a rule at its owning layer rather than copying it into another one.
 ## Hosted service and repository boundary
 
 This repository contains the open-source Foresight package, plugin assets,
-seven skills, and client-visible MCP interface. The hosted Bleavit Foresight
+six skills, and client-visible MCP interface. The hosted Bleavit Foresight
 service provides MCP execution, workflow state, rendering, and future
 monitoring services. Those operational components are not included here. See
 the [repository boundary](docs/repository-boundary.md) for details.
@@ -138,6 +138,9 @@ bun run refresh:plugin --check
 Refresh updates the installed plugin and prunes development files from its
 cache. Start a **new Codex task** to load refreshed skills. After changing MCP
 tool descriptions or schemas, refresh the app connection as well.
+The refresh uses a unique `<package.json version>+codex.<timestamp>` version in
+the local Codex cache only; the source manifests retain the public plugin
+SemVer used for submission.
 
 ## Package the plugin
 

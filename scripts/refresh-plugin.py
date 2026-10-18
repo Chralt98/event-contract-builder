@@ -54,6 +54,7 @@ def update_plugin_cachebuster(root, helpers, package, manifest, portable_manifes
     portable_manifest["version"] = version
     (root / ".codex-plugin/plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (root / "plugin.json").write_text(json.dumps(portable_manifest, indent=2) + "\n")
+    return version
 
 
 def main():
@@ -136,27 +137,48 @@ def main():
     if args.check:
         print(f"Verified {name}@{marketplace_name}: {root}")
         return
-    update_plugin_cachebuster(root, helpers, package, manifest, portable_manifest)
-    subprocess.run(
-        [
-            "bun",
-            "x",
-            "--no-install",
-            "prettier",
-            str(root / ".codex-plugin/plugin.json"),
-            str(root / "plugin.json"),
-            "--write",
-        ],
-        check=True,
-    )
-    installed = json.loads(subprocess.check_output(["codex", "plugin", "add", f"{name}@{marketplace_name}", "--json"], text=True))
+    plugin_manifest_path = root / ".codex-plugin/plugin.json"
+    portable_manifest_path = root / "plugin.json"
+    original_plugin_manifest = plugin_manifest_path.read_text()
+    original_portable_manifest = portable_manifest_path.read_text()
+    try:
+        # Give the local Codex cache a unique version without changing the
+        # public SemVer kept in the source manifests and release ZIP.
+        version = update_plugin_cachebuster(
+            root, helpers, package, manifest, portable_manifest
+        )
+        subprocess.run(
+            [
+                "bun",
+                "x",
+                "--no-install",
+                "prettier",
+                str(plugin_manifest_path),
+                str(portable_manifest_path),
+                "--write",
+            ],
+            check=True,
+        )
+        installed = json.loads(
+            subprocess.check_output(
+                ["codex", "plugin", "add", f"{name}@{marketplace_name}", "--json"],
+                text=True,
+            )
+        )
+    finally:
+        plugin_manifest_path.write_text(original_plugin_manifest)
+        portable_manifest_path.write_text(original_portable_manifest)
+
     cache = Path(installed["installedPath"])
-    version = json.loads((root / ".codex-plugin/plugin.json").read_text())["version"]
     expected = codex_dir / "plugins/cache" / marketplace_name / name / version
-    if cache.is_symlink() or cache.resolve() != expected.resolve() or cache.resolve() == root:
+    if (
+        cache.is_symlink()
+        or cache.resolve() != expected.resolve()
+        or cache.resolve() == root
+    ):
         raise ValueError("Unexpected installed cache location; refusing to clean it")
     # Local installation copies the source tree, including ignored development
-    # files. Only prune the freshly installed cache; never change source files.
+    # files. Only prune the freshly installed cache.
     allowed = {
         ".codex-plugin",
         "plugin.json",

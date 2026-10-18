@@ -596,22 +596,22 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
     expect(foresightServerInstructions).toMatch(
-      /Opening or editing a stage never starts an impact\s+review\./,
+      /Opening or editing a stage never starts an\s+impact\s+review\./,
     );
     expect(foresightServerInstructions).toContain(
       "`decide_forecast_impact_review`",
     );
     expect(foresightServerInstructions).toMatch(
-      /Start an impact review only when the user clicks `Revalidate` in the App or\s+explicitly asks for an impact review in chat\./,
-    );
-    expect(foresightServerInstructions).toContain(
-      "prerequisite staleness by itself",
-    );
-    expect(foresightServerInstructions).toContain(
-      "do not mark that stage without a concrete proposal",
+      /Start an impact review only when the user explicitly asks in chat to revalidate\s+or check whether approved changes affect other stages\./,
     );
     expect(foresightServerInstructions).toMatch(
-      /shows `↻` on a stage only when that\s+stage has a concrete suggestion to review/,
+      /prerequisite staleness by\s+itself/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /do not\s+mark that stage without a concrete proposal/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /shows `↻` on a stage only when\s+that\s+stage has a concrete suggestion to review/,
     );
     expect(foresightServerInstructions).toMatch(
       /After\s+submitting generated content,\s+do not quote or summarize the submitted draft in\s+chat/,

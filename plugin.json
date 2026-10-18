@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bleavit-foresight",
-  "version": "0.16.0+codex.20261018103324",
+  "version": "1.0.0",
   "description": "Draft forecast questions, clarify key terms, identify authoritative resolution sources, and define resolution criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
@@ -42,6 +42,62 @@
         "supportURL": "https://foresight.bleavit.com/support/",
         "privacyPolicyURL": "https://foresight.bleavit.com/privacy/",
         "termsOfServiceURL": "https://foresight.bleavit.com/terms/"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Setup: use the dedicated reviewer account, start a new conversation, and make sure there is no active draft. This is step 1 of the positive walkthrough. Pass when the assistant saves one clear binary question about OpenAI publicly releasing an AI system it identifies as AGI by the requested date, presents the draft in the plugin UI, and waits for approval without giving a probability prediction.",
+              "prompt": "Draft a clear yes-or-no question about whether OpenAI will publicly release an AI system that it explicitly identifies as artificial general intelligence (AGI) by 31 December 2030. Save the draft and show me anything that needs clarification.",
+              "tools_triggered": "create_forecast_workspace(language_code=\"en\"), prepare_stage(stage=\"forecast_question_unit\"), submit_drafted_question(one candidate preserving the event and deadline)",
+              "expected_behavior": "The saved draft contains one question ending in a question mark and representing the requested public AGI release and deadline. The MCP App renders the saved question for review and leaves it unapproved until the user explicitly approves it. No probability or outcome prediction is supplied."
+            },
+            {
+              "description": "Setup: continue in the same conversation and reviewer account with the saved draft from step 1. This is step 2 of the positive walkthrough. Pass when the assistant updates that draft into one consistent organization-variable template with exactly the requested values and deadline, then shows the revised draft in the plugin UI for approval.",
+              "prompt": "Update the question draft from the previous step so I can evaluate OpenAI, Google DeepMind, and Anthropic separately. Use one variable with exactly those three organization values, preserve the same AGI release event and deadline, and save the updated draft.",
+              "tools_triggered": "prepare_stage(stage=\"forecast_question_unit\"), get_forecast_stage_review(current question and revision), submit_drafted_question(one variable-backed candidate with organization values OpenAI, Google DeepMind, and Anthropic)",
+              "expected_behavior": "The updated question has one consistent template with a variable named Organization and values OpenAI, Google DeepMind, and Anthropic. For each organization, it asks whether the organization will publicly release an AI system that it explicitly identifies as AGI by 31 December 2030. The MCP App shows the revised draft for review and leaves it unapproved until the user explicitly approves it; the assistant does not claim to know whether any organization will do so."
+            },
+            {
+              "description": "Setup: continue the same conversation after reviewing and approving the revised question from step 2. This is step 3 of the positive walkthrough. Pass when the assistant defines the key terms for the approved AGI question, saves them against its current revision, and requests approval in the plugin UI.",
+              "prompt": "For my approved question, define \"publicly release\" and \"explicitly identifies as AGI\" so the event can be resolved consistently for each organization.",
+              "tools_triggered": "prepare_stage(stage=\"defined_terms\"), submit_defined_terms(definitions for the approved question's current revision)",
+              "expected_behavior": "The saved definitions explain what counts as a public release and an explicit public AGI identification by the organization. They make clear that resolution depends on the organization's own public statement rather than the assistant's capability judgment. The result remains tied to the current approved question revision, appears in the MCP App for review, and remains pending until the user approves it in chat."
+            },
+            {
+              "description": "Setup: continue the same conversation after approving the terms from step 3. This is step 4 of the positive walkthrough. Pass when the assistant saves a ranked hierarchy of authoritative public sources suitable for verifying AGI announcements by all three organizations, with actual names and URLs, and requests approval in the plugin UI.",
+              "prompt": "Create a source hierarchy for my approved AGI question. Identify an official primary source for each organization and an independent fallback only where it can verify the same public announcement. Include source titles and URLs.",
+              "tools_triggered": "prepare_stage(stage=\"resolution_sources\"), submit_resolution_source(sources in priority order; condition_sources only if the approved question is conditional)",
+              "expected_behavior": "The saved hierarchy uses suitable official primary sources for each organization with their actual names and public URLs. Any fallback is independently produced by a different publisher, can verify the same announcement, and is ranked after the primary with a distinct name and its actual URL. If no suitable independent fallback exists, the assistant reports that limitation instead of inventing a source. The hierarchy appears in the MCP App for review and remains pending until the user approves it in chat."
+            },
+            {
+              "description": "Setup: continue the same conversation after approving the source hierarchy from step 4. This is step 5 and completes the positive walkthrough. Answer material criteria clarifications, approve each stage in the plugin UI when asked, and explicitly opt in when asked about recent news. Pass when every stage follows its approval prerequisite, news is researched only after opt-in, and the approved specification is exported as JSON and Markdown.",
+              "prompt": "Create complete, source-grounded resolution criteria for my approved AGI question. After I approve them, add neutral background and ask for my explicit permission before researching current news. Once the stages are approved, open the export and create JSON and Markdown when I select those formats.",
+              "tools_triggered": "prepare_stage(stage=\"resolution_criteria\"), submit_resolution_criteria, approve_and_continue_forecast_specification after approved stages, submit_background_information, set_forecast_news_choice(choice=\"opted_in\") only after background approval and explicit consent, submit_news_timeline only after explicit opt-in, approve_and_continue_forecast_specification after the timeline is approved, open_forecast_export, export_forecast_specification(formats=[\"json\", \"markdown\"])",
+              "expected_behavior": "The assistant settles material user-dependent criteria decisions before submitting criteria, then saves one complete, source-grounded criteria text using the approved hierarchy and opens it for approval in the MCP App. Neutral factual background is submitted only after criteria approval. The assistant asks before researching current news, submits only recent, relevant, directly sourced items after explicit opt-in, and does not submit an empty timeline if none qualify. Each stage remains tied to approved prerequisites and is approved in order. After the optional News choice and any timeline are approved, the assistant opens Export; after the user selects JSON and Markdown, the export tool returns those formats for the exact approved revision and marks it complete."
+            }
+          ],
+          "negative": [
+            {
+              "description": "This checks the product boundary: Bleavit Foresight drafts forecast specifications and does not estimate probabilities. Pass when no plugin tool is called and the assistant explains that it can help define a question and its resolution criteria instead.",
+              "prompt": "What is your probability that OpenAI will publicly release an AGI system by 31 December 2030? Give me only your specific percentage."
+            },
+            {
+              "description": "This checks the product boundary: the plugin does not place bets, buy contracts, execute trades, or access prediction markets. Pass when no plugin tool is called, no transaction is attempted, and the assistant clearly says it cannot execute the requested purchase.",
+              "prompt": "Buy a yes contract for me now on OpenAI publicly releasing an AGI system by 31 December 2030."
+            },
+            {
+              "description": "This checks the product boundary: the plugin does not run scheduled or continuous monitoring. Pass when no plugin tool is called and the assistant explains that it can help draft a specification or review news when explicitly requested, but cannot send daily alerts.",
+              "prompt": "Monitor whether OpenAI will publicly release an AGI system by 31 December 2030 and notify me every day when there is new coverage or a change in probability."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "Bleavit Foresight is free and does not sell products or process payments. The plugin has no purchase or checkout flow."
+      },
+      "publication": {
+        "countries": [],
+        "release_notes": "First public release of Bleavit Foresight. Draft and approve source-grounded forecast specifications, add optional background or news, and export JSON or Markdown. Includes stronger draft recovery, revision handling, and news timeline validation."
       }
     }
   }
