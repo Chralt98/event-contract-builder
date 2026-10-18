@@ -1,12 +1,8 @@
 # Bleavit Foresight MCP server
 
-Before analysis, research, or drafting, use the `preparation` bundle from an
-approval handoff or stage review when supplied; otherwise call `prepare_stage`
-for that stage. Read the complete bundle: it contains the canonical shared
-runtime instructions, active skill, and required references. Tool descriptions
-do not replace preparation.
-
-Create new specifications with `create_forecast_workspace` after connecting an account.
+Use `create_forecast_workspace` to start. Before stage work, use the current
+preparation bundle from a handoff or review or call `prepare_stage`; follow its
+instructions, active skill, and references.
 
 ## Runtime policy
 
@@ -98,7 +94,8 @@ next stage. Do not approve or progress automatically just because generation
 finished, the App opened, or the user navigated between stages. Once the user
 confirms, use the enabled approval-and-progression action and complete the
 returned next-stage handoff in the same turn. After submitting that stage, ask
-for its approval in chat before moving on. Ask the optional News choice in chat.
+for its approval in chat before moving on. Ask for the initial optional News
+choice only when no choice is saved for this specification.
 
 For stage submissions after Question, finish the analysis before submitting,
 prepare the complete payload, and use the exact revision and prerequisite
@@ -138,16 +135,15 @@ model-generated draft, or a proposal copied into the draft without choosing
 accept, remains pending explicit chat approval after manual edits. Accepting a
 proposal in chat already approves it; do not ask for a second approval. Keep
 other pending edits distinct from approved content; outdated dependent work
-must be reviewed before finalization. The App shows one central `↻ Revalidate`
-action for an available impact review. It shows `↻` on a stage only when that
-stage has a concrete suggestion to review; prerequisite staleness by itself
-does not add a stage marker. Opening or editing a stage never starts an impact
-review.
+must be reviewed before finalization. The App shows `↻` on a stage only when
+that stage has a concrete suggestion to review; prerequisite staleness by
+itself does not add a stage marker. Opening or editing a stage never starts an
+impact review.
 
-Start an impact review only when the user clicks `Revalidate` in the App or
-explicitly asks for an impact review in chat. A button click is explicit
-authorization; do not ask for confirmation again. If the user asks in chat,
-use the latest App snapshot's `presentation.impact_review` (reopen its
+Start an impact review only when the user explicitly asks in chat to revalidate
+or check whether approved changes affect other stages. Do not start one from an
+App action or infer consent from edits alone. Use the latest App snapshot's
+`presentation.impact_review` (reopen its
 `approved_stage` if needed) and call `decide_forecast_impact_review` with
 `review`. If the review is already accepted, continue it without asking. If no
 review is available, explain that there is no pending impact review. Never
@@ -158,7 +154,9 @@ mark that stage without a concrete proposal.
 Use the returned latest revision and stage lists; this coalesces approvals that
 arrived while the user was deciding whether to start a review. Review every
 returned stage with saved content, including stages before and after the
-approval that triggered the review. If the latest App context packet reports
+approval that triggered the review. A stale saved opt-in or no-results News
+decision also makes News eligible for review even without timeline items. If the
+latest App context packet reports
 `local_edits_uncommitted: true` for a stage, skip and report that stage. Also
 skip and report stages with an existing proposal or conflict.
 Reuse a complete current snapshot already available for a stage. Otherwise,
@@ -171,10 +169,14 @@ changes to meaning or resolution material: event, scope, threshold, sources, or
 method. Ignore style-only edits. If an affected approved stage remains valid
 and unchanged but is outdated, use `revalidate_unchanged`; otherwise submit a
 complete revision-bound proposal and leave it unapproved. Never apply a
-proposal, approve a stage, or advance as part of the impact review. Ask for a
-fresh explicit News choice when its prerequisites changed; do not research News
-until the user opts in. Report proposals, unchanged revalidations, and skipped
-stages, then call `decide_forecast_impact_review` with `complete`.
+proposal, approve a stage, or advance as part of the impact review. Reuse the
+saved News choice: `declined` or `undecided` means skip News without asking;
+`opted_in` or `unavailable` preserves permission to research. When opted-in
+News is eligible, check current news against the latest approved prerequisites
+before revalidating unchanged content or proposing an update. Never ask for a
+new News choice during impact review. Report proposals, unchanged
+revalidations, and skipped stages, then call `decide_forecast_impact_review`
+with `complete`.
 
 When the user explicitly asks to revalidate or approve several outdated stages
 together, use `revalidate_unchanged_forecast_stages` for the requested stages.
@@ -219,7 +221,8 @@ stage. Do not call `get_forecast_stage_review` for content and bindings already
 present in the loaded App or the handoff response; the call is unnecessary and
 may initialize an untouched stage. Content shown in the loaded App counts as
 reviewed, so the user can accept it in chat without repeating it. Optional News
-still requires explicit opt-in.
+still requires explicit opt-in for a new choice; a saved opt-in remains valid
+for later News review on the same specification.
 
 When generated output is a proposal against an App-edited draft, include a
 `rationale` with the material changes and why they improve the draft. Keep it
@@ -248,9 +251,11 @@ News App closed while research is underway. Save `opted_in` before researching
 or generating news; submit the populated timeline to open it for review. Save
 `declined` when the user skips news, and save `unavailable` after opted-in
 research when nothing qualifies or nothing is selected. These choices preserve
-a background-only record without approving an empty timeline. Renew the choice
-against current prerequisites after upstream changes. Timeline removal follows
-the News skill reference.
+a background-only record without approving an empty timeline. Reuse the saved
+choice after upstream changes: `declined` stays skipped, while `opted_in` or
+`unavailable` authorizes a fresh News check when the stage is reviewed. Ask for
+a new choice only when none is saved, or when the user changes their choice.
+Timeline removal follows the News skill reference.
 
 When a concrete proposal exists, keep the user in the decision flow. In the
 MCP App, keep the normal draft editor above the read-only suggestion. The user
@@ -343,9 +348,9 @@ workspace's draft or archive. An account may have one active draft and three
 unexpired archives. If an operation would exceed its allowance, preserve the
 current specification and ask the user to delete an archive explicitly. Use
 `list_forecast_workspaces` and `resume_forecast_workspace` to select a workspace.
-To edit an archive, use
-`reopen_forecast_archive`, then open its Question workspace. Reaching a ready
-Export stage replaces the draft with a compact archive retained for 30 days;
+To edit an archive, use `reopen_forecast_archive`; it restores the editable
+draft and opens its Question workspace in the associated App in the same call.
+Reaching a ready Export stage replaces the draft with a compact archive retained for 30 days;
 reading or exporting it does not extend expiry. Do not access workspaces owned
 by another account, even when their specification IDs are known.
 
@@ -380,8 +385,9 @@ includes valid manual edits and previously approved sections, even when dependen
 stages are outdated. Unapproved model drafts and suggestions remain excluded.
 An available preview does not finalize outdated or pending work; `ready` and
 `complete` remain false until the current stage approvals and news choice are ready.
-News research still requires explicit opt-in. Feedback remains available after
-prior submissions; invite additional feedback when selected again.
+News research still requires a saved opt-in; reuse it during later impact
+reviews. Feedback remains available after prior submissions; invite additional
+feedback when selected again.
 
 For requested YAML, JSON, and/or Markdown, call `export_forecast_specification` with
 the requested `formats` and the reopened `expected_revision`.

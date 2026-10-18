@@ -1,6 +1,15 @@
 # Optional recent-news timeline specification
 
-New news research requires explicit opt-in following background approval.
+Initial news research requires explicit opt-in following background approval.
+During impact review, reuse this specification's saved choice without asking
+again: `opted_in` and `unavailable` preserve research permission, while
+`declined` and `undecided` mean skip News for that review. When saved opted-in
+News is eligible for review, check current sources and developments against the
+latest approved prerequisites. If the existing timeline remains valid and
+unchanged, revalidate it; otherwise submit an updated proposal and leave it
+unapproved. Never replace `declined` with a new choice or treat changed
+prerequisites as revoked consent. A user can explicitly change their choice.
+
 Removing an already approved timeline is a separate user-requested operation
 and does not require opt-in or research: set the current News choice to Skip,
 review the resulting empty draft in the MCP App, and wait for approval. Keep

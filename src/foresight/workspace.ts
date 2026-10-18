@@ -249,14 +249,25 @@ export const NewsWorkingDraft = boundedPayload(
     items: uniqueRows(
       z.strictObject({
         id: WorkspaceRowId,
-        unit_number: z.number().int().positive(),
+        unit_number: z
+          .number()
+          .int()
+          .positive()
+          .describe("Unique 1-based number across the news timeline."),
         published_at: z.string().max(64),
         publisher: text,
         url: text,
         summary: z.string().max(1200),
       }),
       12,
-    ),
+    ).superRefine((items, ctx) => {
+      const unitNumbers = items.map(({ unit_number }) => unit_number);
+      if (new Set(unitNumbers).size !== unitNumbers.length)
+        ctx.addIssue({
+          code: "custom",
+          message: "News item numbers must be unique.",
+        });
+    }),
   }),
 );
 export const NewsChoice = z.enum([

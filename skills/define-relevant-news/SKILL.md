@@ -9,9 +9,11 @@ Read [references/news-timeline-spec.md](references/news-timeline-spec.md) before
 research. It is the sole source for relevance, freshness, incremental facts,
 selection, removal, and approval rules.
 
-1. Require explicit opt-in after background approval for new research. For a
-   user-requested removal of an approved timeline, do not research or require
-   opt-in: set News to Skip if needed, then review and approve the empty draft.
+1. Ask for the initial opt-in after background approval only when this
+   specification has no saved News choice. During impact review, reuse the
+   saved choice as described in the reference. For a user-requested removal of
+   an approved timeline, do not research or require opt-in: set News to Skip if
+   needed, then review and approve the empty draft.
 2. Research original sources, build the qualified timeline, and call
    `submit_news_timeline` with the candidates.
 3. For keep-all with no changes, treat the already visible proposal as
