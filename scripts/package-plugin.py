@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+from urllib.parse import urlparse
 import zipfile
 
 root = Path(__file__).resolve().parent.parent
@@ -16,6 +17,40 @@ parser.add_argument(
     help="Override the endpoint in mcp.production.json for the distributable ZIP",
 )
 args = parser.parse_args()
+
+
+def get_demo_recording_url():
+    name = "PLUGIN_DEMO_RECORDING_URL"
+    value = os.environ.get(name)
+    if value is None:
+        env_file = root / ".env"
+        if env_file.exists():
+            for line in env_file.read_text().splitlines():
+                assignment = line.strip()
+                if assignment.startswith("export "):
+                    assignment = assignment[len("export ") :].lstrip()
+                key, separator, raw_value = assignment.partition("=")
+                if not separator or key.strip() != name:
+                    continue
+                value = raw_value.strip()
+                if value[:1] in {"'", '"'}:
+                    if len(value) < 2 or value[-1] != value[0]:
+                        raise ValueError(f"{name} has an unmatched quote in .env")
+                    value = value[1:-1]
+                else:
+                    value = value.split(" #", 1)[0].strip()
+                break
+
+    if value is None:
+        return None
+
+    value = value.strip()
+    parsed_url = urlparse(value)
+    if not value or parsed_url.scheme != "https" or not parsed_url.netloc or value.startswith("["):
+        raise ValueError(f"{name} must be a plain HTTPS URL")
+    return value
+
+
 production_config = json.loads((root / "mcp.production.json").read_text())
 production_servers = production_config.get("mcpServers")
 production_server = (
@@ -54,7 +89,7 @@ if plugin_name != "event-contract-builder":
 manifest.pop("apps", None)
 openai_extension = manifest.get("extensions", {}).get("com.openai", {})
 openai_extension.pop("apps", None)
-demo_recording_url = os.environ.get("PLUGIN_DEMO_RECORDING_URL")
+demo_recording_url = get_demo_recording_url()
 if demo_recording_url:
     openai_extension.setdefault("review", {})["demo_recording_url"] = demo_recording_url
 (output / "plugin.json").write_text(json.dumps(manifest, indent=2) + "\n")
