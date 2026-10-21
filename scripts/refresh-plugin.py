@@ -123,7 +123,9 @@ def main():
         else:
             source.parent.mkdir(parents=True, exist_ok=True)
             source.symlink_to(root, target_is_directory=True)
-        helper.update_marketplace_json(marketplace, None, name, "AVAILABLE", "ON_INSTALL", "Productivity", True)
+        helper.update_marketplace_json(
+            marketplace, None, name, "AVAILABLE", "ON_INSTALL", "Education & Research", True
+        )
         if marketplace != Path.home() / ".agents/plugins/marketplace.json":
             subprocess.run(["codex", "plugin", "marketplace", "add", str(marketplace.parent)], check=True)
     marketplace_name = read_marketplace_name(marketplace, helpers)
