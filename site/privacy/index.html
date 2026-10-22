@@ -90,28 +90,38 @@
           processing using the privacy contact below. Support emails about
           feedback are used to respond and may inform service improvements.
         </p>
-        <h2 id="monthly-usage">Monthly usage statistics</h2>
+        <h2 id="monthly-usage">Monthly and weekly usage statistics</h2>
         <p>
           When usage measurement is enabled, we count Bleavit Foresight accounts
           that complete at least one successful forecast tool call in a calendar
-          month, using Europe/Berlin time. This helps us understand service
-          adoption and plan its operation and development. The count covers
-          connected clients together; it does not identify unique people or
-          ChatGPT accounts. Preparation, feedback, sign-in, and visits to
-          account settings do not count as forecast activity.
+          month or calendar week (Monday–Sunday), using Europe/Berlin time. This
+          helps us understand service adoption and plan its operation and
+          development. The count covers connected clients together; it does not
+          identify unique people or ChatGPT accounts. Preparation, feedback,
+          sign-in, and visits to account settings do not count as forecast
+          activity.
+        </p>
+        <p>
+          We also keep separate monthly and weekly totals of accounts that open
+          the Export view after completing the required approvals and optional
+          News decision, including choosing to skip News. This helps us measure
+          completed workflows. Opening a preview with missing approvals does not
+          qualify, and downloading a file is not required. Repeated openings or
+          multiple forecasts count the account only once per period.
         </p>
         <p>
           We use your existing internal account identifier and the current
-          activity month solely to avoid counting your account twice. This is
-          personal data, even though the identifier does not contain your name
-          or email address. We also record whether the usage notice has been
-          provided and your objection preference. We do not store individual
-          calls, exact activity times, tool names, forecast or conversation
-          content, IP addresses, device identifiers, or OAuth tokens for this
-          measurement. It adds no tracking cookies or browser storage. The
-          membership is stored in the existing authentication database hosted by
-          Cloudflare, subject to the provider arrangements described below, and
-          is not added to Worker logs.
+          activity month and week, plus separate current-period membership for
+          the Export milestone, solely to avoid counting your account twice in
+          each statistic. This is personal data, even though the identifier does
+          not contain your name or email address. We also record whether the
+          usage notice has been provided and your objection preference. We do
+          not store individual calls, exact activity times, tool names, forecast
+          or conversation content, IP addresses, device identifiers, or OAuth
+          tokens for this measurement. It adds no tracking cookies or browser
+          storage. The membership is stored in the existing authentication
+          database hosted by Cloudflare, subject to the provider arrangements
+          described below, and is not added to Worker logs.
         </p>
         <p>
           The legal basis is our legitimate interest in measuring adoption of
@@ -133,17 +143,19 @@
           >, or contact
           <a href="mailto:support@bleavit.com">support@bleavit.com</a>. An
           objection stops future measurement, removes your current membership,
-          and adjusts the current month's total. Deleting your account also
-          removes that membership. Account settings show your preference and
-          whether your account is included in the current month's count.
+          and adjusts all current monthly and weekly totals, including the
+          Export totals. Deleting your account also removes that membership.
+          Account settings show your preference and whether your account is
+          included in the current month's and week's counts.
         </p>
         <p>
-          Only the current month's account membership is needed. Past membership
-          is removed by scheduled maintenance after the month ends, normally on
-          the next 15-minute run, or replaced when the account is active in the
-          new month. We retain only month/count totals for previous months,
-          without account references, for up to 24 calendar months including the
-          current month. Access is restricted to the service operator. Past
+          Only the current month's and week's account membership is needed. Past
+          membership is removed by scheduled maintenance after the respective
+          period ends, normally on the next 15-minute run, or replaced when the
+          account is active in the new period. We retain only period/count
+          totals without account references: up to 24 calendar months for
+          monthly totals and 104 calendar weeks for weekly totals, including the
+          current period. Access is restricted to the service operator. Past
           totals retain no account membership and are not adjusted for later
           objections. Your notice flag and objection preference remain with your
           account until deletion; you can change your objection preference at
