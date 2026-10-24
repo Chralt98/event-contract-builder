@@ -110,7 +110,10 @@ cp .app.example.json .app.json
 ```
 
 `.app.json` is ignored by Git and contains your environment-specific app ID. The
-tracked `.mcp.json` and `mcp.json` use the production endpoint and OAuth settings.
+tracked `.mcp.json` and `mcp.json` use the production endpoint with server-discovered
+OAuth. Local refresh omits portable per-server `extensions`, which Codex Desktop
+0.163 rejects. Public packaging retains the explicit OAuth configuration from
+`mcp.production.json`.
 A normal `bun run refresh:plugin` installs the connection from
 `mcp.production.json`, including after a local refresh. `--production` remains an
 explicit alias for the default; it cannot be combined with `--local`. Refresh

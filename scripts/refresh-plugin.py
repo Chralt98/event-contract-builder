@@ -215,7 +215,11 @@ def main():
         config_path = cache / config_name
         config = json.loads(config_path.read_text())
         server = config["mcpServers"][name]
-        config["mcpServers"][name] = {**connection_server, "type": server["type"]}
+        # Desktop 0.163 rejects portable per-server extensions. OAuth uses
+        # server discovery locally; public packaging retains the auth metadata.
+        desktop_server = {**connection_server, "type": server["type"]}
+        desktop_server.pop("extensions", None)
+        config["mcpServers"][name] = desktop_server
         config_path.write_text(json.dumps(config, indent=2) + "\n")
     icon_source = root / "site/assets/foresight-icon.png"
     icon_destination = cache / "assets" / icon_source.name
