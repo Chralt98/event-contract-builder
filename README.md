@@ -96,10 +96,10 @@ components are provided separately.
 
 ## Develop with the local plugin
 
-Use the repository-linked plugin copy for local development and keep the
-production plugin connected to the deployed service. The local copy connects to
-`http://localhost:8787/mcp`; start the MCP worker in its owning project, since
-this repository does not include its runtime.
+The repository-linked plugin connects to the production service by default.
+For local development, run `bun run refresh:plugin -- --local` to install the
+connection from `mcp.local.json` (`http://localhost:8787/mcp`). Start the MCP worker
+in its owning project, since this repository does not include its runtime.
 
 The repository-linked plugin uses the local app mapping from `.app.json`. To
 create that mapping for this checkout, copy the example and replace the
@@ -110,10 +110,11 @@ cp .app.example.json .app.json
 ```
 
 `.app.json` is ignored by Git and contains your environment-specific app ID. The
-tracked `.mcp.json` and `mcp.json` stay pointed at localhost for development;
-`mcp.production.json` stores the deployed endpoint. Run
-`bun run refresh:plugin -- --production` to install a copy using that endpoint,
-or omit `--production` to restore the local endpoint. The distributable plugin
+tracked `.mcp.json` and `mcp.json` use the production endpoint and OAuth settings.
+A normal `bun run refresh:plugin` installs the connection from
+`mcp.production.json`, including after a local refresh. `--production` remains an
+explicit alias for the default; it cannot be combined with `--local`. Refresh
+changes the installed copy without rewriting the source MCP configs. The distributable plugin
 omits the local app mapping and uses the production configuration described
 below.
 
@@ -155,8 +156,7 @@ excludes the library build, development files and local app mapping. Its
 manifest omits the local `apps` reference. By default, its MCP configuration
 uses the endpoint in `mcp.production.json` for both packaged MCP configs;
 override it for another environment with `bun run package:plugin -- --mcp-url
-https://your-endpoint.example/mcp`. The tracked development configs remain
-pointed at localhost. Set `PLUGIN_DEMO_RECORDING_URL` in the project `.env`
+https://your-endpoint.example/mcp`. Set `PLUGIN_DEMO_RECORDING_URL` in the project `.env`
 file or packaging process environment to add a private review demo URL to the
 generated manifest without storing it in the repository source. Use a plain
 HTTPS URL. This command does not publish anything.

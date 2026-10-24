@@ -2,7 +2,19 @@
   "mcpServers": {
     "bleavit-foresight": {
       "type": "http",
-      "url": "http://localhost:8787/mcp"
+      "url": "https://api.foresight.bleavit.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "dcr"
+            },
+            "registrationUrl": "https://auth.foresight.bleavit.com/oauth/register",
+            "baseScopes": ["mcp:read", "mcp:write", "offline_access"]
+          }
+        }
+      }
     }
   }
 }
