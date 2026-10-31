@@ -13,13 +13,14 @@ import {
   parseConnectorForecastQuestionUnit,
   foresightServerInstructions,
   foresightDiscoveryInstructions,
+  MAX_SOURCE_URLS,
 } from "../../src/foresight";
 
 const source = {
   id: "agency-results",
   rank: 1,
   name: "Agency One",
-  url: "https://one.example/results",
+  urls: ["https://one.example/results"],
 };
 const input = {
   preparation_receipt: "00000000-0000-4000-8000-000000000001",
@@ -161,19 +162,31 @@ describe("public forecast interface", () => {
   test("forecast sources use the Foresight source schema", () => {
     expect(DataSource.parse(source)).toEqual(source);
     expect(Object.keys(DataSource.shape).sort()).toEqual(
-      ["id", "rank", "name", "url"].sort(),
+      ["id", "rank", "name", "urls"].sort(),
     );
+    expect(
+      DataSource.parse({
+        ...source,
+        access: "private",
+        evidence_relationship: "republished",
+        basis_source_ids: ["agency-results"],
+      }),
+    ).toEqual(source);
   });
 
   test("source URL errors explain how to fix an invalid web address", () => {
-    const invalid = DataSource.safeParse({ ...source, url: "not a link" });
+    const invalid = DataSource.safeParse({ ...source, urls: ["not a link"] });
     expect(invalid.success).toBe(false);
     if (!invalid.success)
       expect(invalid.error.issues[0]!.message).toBe(
         "Enter a complete HTTP or HTTPS web address, such as https://example.com/results.",
       );
     expect(
-      DataSource.safeParse({ ...source, url: "ftp://one.example/results" })
+      DataSource.safeParse({ ...source, urls: ["ftp://one.example/results"] })
+        .success,
+    ).toBe(false);
+    expect(
+      DataSource.safeParse({ ...source, urls: ["https://ok.example", "bad"] })
         .success,
     ).toBe(false);
   });
@@ -192,7 +205,7 @@ describe("public forecast interface", () => {
       id: "agency-two",
       rank: 2,
       name: "Agency Two",
-      url: "https://two.example/results",
+      urls: ["https://two.example/results"],
     };
     expect(
       schema.safeParse({ ...input, sources: [fallback, source] }).success,
@@ -205,7 +218,7 @@ describe("public forecast interface", () => {
           {
             ...fallback,
             name: source.name,
-            url: source.url,
+            urls: source.urls,
           },
         ],
       }).success,
@@ -214,7 +227,7 @@ describe("public forecast interface", () => {
       id: `agency-${index}`,
       rank: index + 1,
       name: `Agency ${index}`,
-      url: `https://agency-${index}.example/results`,
+      urls: [`https://agency-${index}.example/results`],
     }));
     expect(schema.safeParse({ ...input, sources: fourSources }).success).toBe(
       true,
@@ -225,7 +238,7 @@ describe("public forecast interface", () => {
         id: "agency-4",
         rank: 5,
         name: "Agency 4",
-        url: "https://agency-4.example/results",
+        urls: ["https://agency-4.example/results"],
       },
     ];
     expect(schema.safeParse({ ...input, sources: fiveSources }).success).toBe(
@@ -253,6 +266,37 @@ describe("public forecast interface", () => {
         false,
       );
     }
+  });
+
+  test("fallbacks and private data sources need only a name and URL list", () => {
+    const schema = z.object(
+      foresightTools.submit_resolution_source.inputSchema,
+    );
+    const mirror = {
+      id: "mirror-feed",
+      rank: 2,
+      name: "Public Data Mirror",
+      urls: ["https://mirror.example/series"],
+    };
+    expect(
+      schema.safeParse({
+        ...input,
+        sources: [source, mirror],
+      }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...input,
+        sources: [
+          {
+            id: "private-ledger",
+            rank: 1,
+            name: "Private household expense ledger",
+            urls: [],
+          },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   test("conditional sources use an independently validated hierarchy", () => {
@@ -292,10 +336,60 @@ describe("public forecast interface", () => {
       foresightTools.submit_resolution_source.inputSchema,
     );
 
-    expect(DataSource.parse(accountSource)).toEqual(accountSource);
+    expect(DataSource.parse(accountSource)).toMatchObject({
+      ...accountSource,
+      urls: [],
+    });
     expect(
       schema.safeParse({ ...input, sources: [accountSource] }).success,
     ).toBe(true);
+  });
+
+  test("sources can omit URLs and one source can use multiple locators", () => {
+    const schema = z.object(
+      foresightTools.submit_resolution_source.inputSchema,
+    );
+    expect(
+      schema.safeParse({
+        ...input,
+        sources: [
+          {
+            id: "private-ledger",
+            rank: 1,
+            name: "Private household expense ledger",
+            urls: [],
+          },
+        ],
+      }).success,
+    ).toBe(true);
+    expect(
+      schema.safeParse({
+        ...input,
+        sources: [
+          {
+            ...source,
+            urls: [
+              "https://data.example/series-a",
+              "https://data.example/series-b",
+            ],
+          },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
+  test("a resolution source has a bounded list of locators", () => {
+    const urls = Array.from(
+      { length: MAX_SOURCE_URLS },
+      (_, index) => `https://data.example/series-${index + 1}`,
+    );
+    expect(DataSource.safeParse({ ...source, urls }).success).toBe(true);
+    expect(
+      DataSource.safeParse({
+        ...source,
+        urls: [...urls, "https://data.example/extra"],
+      }).success,
+    ).toBe(false);
   });
 
   test("connector shape stays flat while runtime validates domain invariants", () => {
@@ -605,16 +699,19 @@ describe("public forecast interface", () => {
       /Start an impact review only when the user explicitly asks in chat to revalidate\s+or check whether approved changes affect other stages\./,
     );
     expect(foresightServerInstructions).toMatch(
-      /prerequisite staleness by\s+itself/,
+      /The App shows `↻` for an outdated stage\s+that needs review/,
     );
     expect(foresightServerInstructions).toMatch(
       /do not\s+mark that stage without a concrete proposal/,
     );
-    expect(foresightServerInstructions).toMatch(
-      /shows `↻` on a stage only when\s+that\s+stage has a concrete suggestion to review/,
+    expect(foresightServerInstructions).toContain(
+      "and `!` when a concrete suggestion is pending",
     );
     expect(foresightServerInstructions).toMatch(
-      /After\s+submitting generated content,\s+do not quote or summarize the submitted draft in\s+chat/,
+      /Before\s+submission, show the complete proposed content in chat/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /After submission, do not quote or summarize it again/,
     );
     expect(foresightServerInstructions).not.toContain("review_markdown");
     expect(foresightTools.execute_workspace_command.description).toContain(
@@ -856,7 +953,7 @@ describe("public forecast interface", () => {
     );
 
     expect(foresightServerInstructions).toContain(
-      "Submission tools validate and store a pending stage.",
+      "Submission tools validate and store stage content without opening the App.",
     );
     expect(foresightServerInstructions).toContain(
       "Pass the returned `forecast_specification_id` to every approval call",
@@ -873,6 +970,19 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).toContain("one specification");
     expect(foresightServerInstructions).toContain(
+      "Maintain one active draft and one question unit",
+    );
+    expect(foresightServerInstructions).toContain("new request aside");
+    expect(foresightServerInstructions).toMatch(
+      /preserve the\s+other stages and their data/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /Never\s+submit a new forecast question under the old specification ID/,
+    );
+    expect(foresightServerInstructions).toMatch(
+      /delete_forecast_draft[\s\S]*create_forecast_workspace/,
+    );
+    expect(foresightServerInstructions).toContain(
       "do not silently create a replacement",
     );
 
@@ -885,7 +995,7 @@ describe("public forecast interface", () => {
     expect(criteriaSkill).not.toContain("❓ **1 · <short title>**");
     expect(criteriaReference).toContain("request_user_input_async");
     expect(criteriaReference).toMatch(
-      /do not open or fetch the\s+Criteria workspace/,
+      /do not\s+open or fetch the\s+Criteria workspace/,
     );
     expect(criteriaReference).toContain("single editable");
     expect(criteriaReference).toContain(

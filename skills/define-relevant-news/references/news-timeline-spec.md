@@ -1,6 +1,7 @@
 # Optional recent-news timeline specification
 
-Initial news research requires explicit opt-in following background approval.
+Initial news research requires explicit opt-in following background approval;
+collect the opt-in with `request_user_input_async` when no choice is saved.
 During impact review, reuse this specification's saved choice without asking
 again: `opted_in` and `unavailable` preserve research permission, while
 `declined` and `undecided` mean skip News for that review. When saved opted-in
@@ -12,8 +13,9 @@ prerequisites as revoked consent. A user can explicitly change their choice.
 
 Removing an already approved timeline is a separate user-requested operation
 and does not require opt-in or research: set the current News choice to Skip,
-review the resulting empty draft in the MCP App, and wait for approval. Keep
-the approved timeline intact until that empty draft is approved.
+show the empty timeline in chat, and get the user's approval before submitting
+it. Keep the approved timeline intact until the empty timeline is saved and
+approved by the server-wide workflow.
 
 ## Research and selection
 
@@ -42,25 +44,25 @@ selected subset.
 
 ## Review and approval
 
-First submit all qualifying candidates and show the complete timeline and
-follow-up in the MCP App. Ask which item numbers are relevant or need changes;
-this is selection, not approval. Since the timeline is fully visible in the
-App, do not repeat item summaries, publishers, sources, or dates in chat. If
-the user keeps all displayed items without changes (for example, “all keep”),
-the displayed proposal is already the exact selected timeline: treat that
-response as approval without resubmitting or asking for approval again. For a
-subset or edited timeline, resubmit only the selected items in their existing
-order, show the complete filtered timeline in the App, and ask for
-approval without restating its details in chat. After approval, follow the server-wide
-[approval routing](../../../src/foresight/instructions.md#workflow-state) to
-approve and complete the workflow. Keep any chat response to useful context not
-already shown in the App and the next action; do not summarize the approved
-timeline there.
+Present all qualifying candidates in chat first. Use
+`request_user_input_async` when the user must choose which candidates to keep,
+revise, or omit. Show every candidate as its complete timeline entry, including
+publication date, publisher, summary, and direct source URL, so the user can
+make an informed selection. A selection of numbered entries approves the
+resulting timeline when it only includes or omits those exact entries; do not
+repeat that selection as a second approval question. If the user requests an
+edit or the selected content is materially revised, show the complete revised
+timeline and ask once whether it is approved. Submit only after the applicable
+selection or approval. The server-wide workflow records chat approval and opens
+Bleavit Foresight with the approved timeline for review.
+Then ask whether the user wants to finish and open Export. Keep any chat
+response to useful context not already shown in the App and the next action;
+do not summarize the approved timeline there.
 
 If no item qualifies or the user selects none, do not submit or approve an
 empty timeline; retain the background-only specification. An empty `items`
 array is reserved for a user-requested removal of an already approved timeline
-and itself requires review and approval.
+and must follow the same chat-approval and server-wide submission routing.
 
 News is optional, explanatory, and non-binding. It never changes approved
 questions, definitions, sources, criteria, or background.

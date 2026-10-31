@@ -557,7 +557,10 @@ test("all shared primitives accept editable values and bounded diagnostics", () 
       control: "source",
       path: ["source"],
       label,
-      value: { name: "", url: "" },
+      value: {
+        name: "",
+        urls: [],
+      },
     },
     {
       control: "group",
@@ -791,6 +794,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
     id: "primary",
     rank: 1,
     name: "Weather Agency",
+    urls: [],
   };
   expect(
     contentStageDefinitions.resolution_sources.fields
@@ -806,7 +810,10 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
     .filter((field) => field.control !== "rows")
     .map((field) => field.label);
   expect(sourceFieldLabels).toEqual(
-    expect.arrayContaining(["Name", "URL (optional)"]),
+    expect.arrayContaining(["Name", "URLs (one per line, optional)"]),
+  );
+  expect(sourceFieldLabels).not.toEqual(
+    expect.arrayContaining(["Access", "Evidence relationship"]),
   );
   expect(sourceFieldLabels).not.toEqual(
     expect.arrayContaining(["Publisher", "Dataset ID"]),
@@ -816,7 +823,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
     id: `agency-${index}`,
     rank: index + 1,
     name: `Agency ${index}`,
-    url: `https://agency-${index}.example/results`,
+    urls: [`https://agency-${index}.example/results`],
   }));
   expect(SourceHierarchy.safeParse(fourSources).success).toBe(true);
   const fiveSources = [
@@ -825,7 +832,7 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
       id: "agency-4",
       rank: 5,
       name: "Agency 4",
-      url: "https://agency-4.example/results",
+      urls: ["https://agency-4.example/results"],
     },
   ];
   expect(SourceHierarchy.safeParse(fiveSources).success).toBe(false);
@@ -835,6 +842,18 @@ test("migrated stage drafts are bounded, preserve incomplete rows, and bind comm
       { ...source, rank: 2, name: "Independent Agency" },
     ]).success,
   ).toBe(false);
+  const privateSource = {
+    id: "private-ledger",
+    rank: 1,
+    name: "Private household expense ledger",
+    urls: [],
+  };
+  expect(SourceHierarchy.safeParse([privateSource]).success).toBe(true);
+  const compositeSource = {
+    ...source,
+    urls: ["https://data.example/first", "https://data.example/second"],
+  };
+  expect(SourceHierarchy.safeParse([compositeSource]).success).toBe(true);
 });
 
 test("Criteria and News workspace approval reuse canonical validators", () => {

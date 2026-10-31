@@ -16,22 +16,26 @@ unresolved treatment, not be assumed unmet.
 ## Chat interview
 
 On first entry from approved Sources, ask material user-dependent decisions
-before opening the Criteria workspace. Resolve factual prerequisites yourself,
-then use `request_user_input_async` to ask every decision in the settled
-frontier. The interface presents questions sequentially. Put the recommended
-choice first and give its reason; the interface supplies a free-form response
-option. Defer dependent questions until their prerequisites are answered. After
-the user's responses, recompute the frontier and ask another round if material
-decisions remain. There is no fixed question or round limit. Continue until no
-material decision remains; do not open or fetch the Criteria workspace during
-these rounds.
+in chat before calling Bleavit Foresight MCP tools or opening the Criteria
+workspace. Resolve factual prerequisites yourself,
+then use `request_user_input_async` for each round of material decisions in the
+settled frontier. Present clear choices and a recommendation with its reason
+when useful, and allow a free-form answer. Defer dependent questions until
+their prerequisites are answered. After the user's responses, recompute the
+frontier and ask another round if material decisions remain. There is no fixed
+question or round limit. Continue until no material decision remains; do not
+open or fetch the Criteria workspace during these rounds.
 
-When the interview is complete, construct and validate the criteria, then submit
-it once. Use `submit_resolution_criteria` when it is in the live tool catalog;
+When the interview is complete, construct and validate the criteria, show the
+complete proposal in text chat, and ask whether the user is satisfied or wants
+changes. Make each requested revision in chat and ask again whether the user
+is satisfied. Only after the user confirms satisfaction with the exact text
+for entry, submit it once. Use `submit_resolution_criteria` when it is in the live tool catalog;
 otherwise follow the server-wide
 [fallback](../../../src/foresight/instructions.md#workflow-state). The result
-opens the Criteria workspace with one editable text field for review. Do not
-show a separate draft before submission. After the first approval, use the
+is saved without opening the App; the server-wide approval step then opens the
+Criteria workspace with the approved text in its editable field. After the
+first approval, use the
 existing criteria field on later visits. If the user asks in chat to repeat the interview or revise existing
 criteria, fetch the latest saved criteria and revision first. Treat the saved
 text as the starting point: ask whether it captures the user's intent, identify
@@ -176,22 +180,19 @@ and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
-After all chat interview decisions are settled, submit the complete criteria
-once; the rendered submission is the only criteria review before approval.
-Follow the server-wide fallback if `submit_resolution_criteria` is absent. Do
-not show a separate draft. Present the
+After all chat interview decisions are settled, show the complete criteria in
+chat and obtain explicit approval before submitting it once. The server-wide
+workflow records that approval and opens Bleavit Foresight with the approved
+criteria for review. Follow the server-wide fallback if
+`submit_resolution_criteria` is absent. Present the
 single complete outcome rule. The forecast question unit already displays its
 placeholders and allowed values; do not duplicate them as per-value criteria.
 Do not append a second No rule or repeat the original unit question inside the
 criteria.
 
-For the initial criteria review, ask whether the user approves the criteria
-and wants to continue to Background, or wants changes. On assent, follow the
-server-wide [approval routing](../../../src/foresight/instructions.md#workflow-state)
-to approve and continue, then follow the returned handoff to draft Background
-in the same turn. Approve and stay only when the user explicitly asks to stay
-at Criteria. After approval, compare the display question with the approved
-criteria. A reasonable reader
+After the approved criteria appears in Bleavit Foresight, compare the display
+question with the approved criteria before asking whether to continue to
+Background. A reasonable reader
 must not infer a materially different event, subject, threshold, outcome, or
 time frame; technical precision or omitted resolution details alone are not a
 mismatch. If the question and criteria substantially agree, do not propose a

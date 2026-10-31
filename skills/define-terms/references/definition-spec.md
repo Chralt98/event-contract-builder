@@ -13,7 +13,11 @@ question; do not redefine the unmet disposition.
 
 Each definition is neutral, dispute-resistant, and at most two sentences.
 Cite an authoritative methodology only when needed to fix meaning. Never guess
-missing facts. When the user must choose among materially different defensible
-definitions, present the alternatives with `request_user_input_async`,
-recommend one with a brief reason, and leave room for a free-form answer. Return
-a term-to-definition map after the choice; an empty map is valid.
+missing facts. Use `request_user_input_async` to ask which candidate terms the
+user wants defined; present the recommended selection and an explicit no-terms
+choice, and allow a free-form selection. Do not invent terms or force a
+definition when none is materially ambiguous. After the user's choice, show the
+selected term-to-definition map in text chat, including an empty map when the
+user chose none. Iterate there until the user confirms satisfaction with the
+exact map for entry. Only then submit it; the server-wide workflow records that
+chat approval and opens Bleavit Foresight with the approved map for review.

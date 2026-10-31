@@ -4,7 +4,11 @@ import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
 import { ForecastNewsTimeline } from "./news-timeline";
 import type { ForecastQuestionUnitT } from "./display-question";
-import { MAX_SOURCE_HIERARCHY_ENTRIES, SourceHierarchy } from "./resolution";
+import {
+  MAX_SOURCE_HIERARCHY_ENTRIES,
+  MAX_SOURCE_URLS,
+  SourceHierarchy,
+} from "./resolution";
 import {
   ForecastQuestionUnit,
   ForecastCondition,
@@ -220,7 +224,7 @@ export const SourceWorkingRow = z.strictObject({
   id: WorkspaceRowId,
   source_id: text,
   name: text,
-  url: text,
+  urls: z.array(text).max(MAX_SOURCE_URLS),
 });
 export const SourcesWorkingDraft = boundedPayload(
   z.strictObject({
@@ -330,7 +334,7 @@ export function contentDomainInput(draft: ContentWorkingDraft) {
       id: row.source_id,
       rank: index + 1,
       name: row.name,
-      ...(row.url ? { url: row.url } : {}),
+      urls: row.urls.map((url) => url.trim()).filter(Boolean),
     }));
   return {
     sources: hierarchy(draft.sources),
@@ -379,9 +383,11 @@ export function validateContentWorkingDraft(
               ? [
                   key,
                   rows[index]!.id,
-                  ...rest.map((part) =>
-                    part === "id" ? "source_id" : String(part),
-                  ),
+                  ...(rest[0] === "urls"
+                    ? ["urls"]
+                    : rest.map((part) =>
+                        part === "id" ? "source_id" : String(part),
+                      )),
                 ]
               : [key],
             issue.message,
@@ -489,7 +495,6 @@ export const contentStageDefinitions = {
       ...[
         ["source_id", "Source ID"],
         ["name", "Name"],
-        ["url", "URL (optional)"],
       ].map(([name, label]) => ({
         path: [key, "*", name!],
         label: label!,
@@ -497,6 +502,14 @@ export const contentStageDefinitions = {
         validation: `DataSource.${name === "source_id" ? "id" : name}`,
         ...(name === "source_id" ? { internal: true } : {}),
       })),
+      {
+        path: [key, "*", "urls"],
+        label: "URLs (one per line, optional)",
+        control: "prose",
+        validation: "DataSource.urls",
+        multiline: true,
+        maxLength: 32000,
+      },
     ]),
   },
   resolution_criteria: {
@@ -954,7 +967,10 @@ const leaf = z.discriminatedUnion("control", [
   z.strictObject({
     ...nodeBase,
     control: z.literal("source"),
-    value: z.strictObject({ name: text, url: text }),
+    value: z.strictObject({
+      name: text,
+      urls: z.array(text).max(MAX_SOURCE_URLS),
+    }),
   }),
 ]);
 /** Two row levels cover candidate variables and their values without arbitrary recursion. */

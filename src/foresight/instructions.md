@@ -1,27 +1,45 @@
 # Bleavit Foresight MCP server
 
-Use `create_forecast_workspace` to start. Before stage work, use the current
-preparation bundle from a handoff or review or call `prepare_stage`; follow its
-instructions, active skill, and references.
+Maintain one active draft and one question unit. Route same-event changes to
+that draft; ask before replacing it. Use `prepare_stage` before stage work and
+follow its active skill and references.
 
 ## Runtime policy
 
-Before starting a new specification, call `create_forecast_workspace` with its
-language. Every workspace contains one specification, either a draft or its
-compact archive. The signed-in account authorizes all workspace data access;
+Before routing a request, inspect the account's workspaces with
+`list_forecast_workspaces` and open its active draft with
+`open_active_forecast_draft`. If the user requests a change to the same event
+and outcome, route it as an update to the existing specification; preserve the
+other stages and their data, and follow normal stage approval and impact-review
+rules. Do not delete or recreate the draft for a question-only change. If the
+request is a different event or outcome, it is a new specification: ask whether
+to keep the current draft and set the new request aside, or replace the entire
+active draft. When the user explicitly chooses whole-draft replacement, call
+`delete_forecast_draft` for the active draft, then call
+`create_forecast_workspace` and build the new specification from scratch. Never
+submit a new forecast question under the old specification ID. If the user
+keeps the current draft, do not create a new workspace.
+Use `create_forecast_workspace` to start a new specification only when no active
+draft exists or after the user explicitly chooses to replace it. Before stage
+work, use the current preparation bundle from a handoff or review or call
+`prepare_stage`; follow its instructions, active skill, and references.
+
+For a new specification, follow the active `draft-display-question` skill's
+chat-first exploration and entry-approval gate before any Bleavit Foresight
+MCP call. Once that gate clears, call `create_forecast_workspace` with its
+language before stage work. Every workspace contains one specification, either
+a draft or its compact archive. The signed-in account authorizes all workspace data access;
 specification IDs select a workspace but do not grant access. Use
 `list_forecast_workspaces` to find the user's workspaces and
 `resume_forecast_workspace` to resume one by ID. Never recover access by IP,
 conversation metadata, or MCP session ID.
-If creation is rejected because an active draft already exists, call
-`open_active_forecast_draft` to show that draft in Bleavit Foresight, then ask
-whether the user wants to continue it or delete it and start the requested new
-specification. A request to start another specification does not authorize
-deletion. If the user chooses replacement, call `delete_forecast_draft` with
-the ID returned by the open operation, then create the new specification. If
-the user keeps the current draft, continue that workspace and leave the new
-request aside. If the draft cannot be opened, preserve it and explain that it
-must be reviewed before it can be replaced.
+If creation is rejected despite the preflight, open and review the active draft,
+then apply the same keep-or-replace choice. A request to start another
+specification does not authorize deletion. If the user chooses replacement,
+delete the active draft before creating the new specification. If the user
+keeps the current draft, continue that workspace and leave the new request
+aside. If the draft cannot be opened, preserve it and explain that it must be
+reviewed before it can be replaced.
 If a requested workspace is unavailable, explain that it cannot be resumed and
 do not silently create a replacement; create one only when the user asks to
 start a new specification.
@@ -56,12 +74,27 @@ an untouched stage saves an incomplete draft. The customary path is Question,
 Terms, Sources, Criteria, Background, then optional News, but it is guidance
 rather than a required navigation sequence. Approval and progression require
 the current prerequisite approvals. The stage menu is for navigation and
-review; stage approval and progression are initiated in chat after the user
-accepts the displayed draft and the next step. Infer the user intent. Moving between
-stages never approves or advances content, and the App does not show stage
-approval or Continue buttons.
+review; it does not approve or advance content. When the user approves exact
+stage content in chat, that approval authorizes both its submission and stage
+approval. Before the App opens, tell the user in their language that this exact
+version is being transferred to Bleavit Foresight and will appear there as
+approved for review. Submit it once, then approve the exact saved revision with
+`approve_forecast_specification`. The App opens only after that approval. Do
+not ask the user to approve the same content again there.
 
-Submission tools validate and store a pending stage. All six stages use one
+After the approved content appears in Bleavit Foresight, ask whether the user
+wants to continue to the named next stage. Keep this separate from content
+approval, wait for the user's answer, and use `continue_forecast_specification`
+only after an explicit yes. Do not begin the next stage's chat work before that
+yes; a yes to continue does not approve content that has not been drafted yet.
+Let the user review or edit the approved stage in the workspace before they
+decide. If submission returns a proposal because the App draft was edited,
+accept it without another question only when its complete content exactly
+matches the text the user approved for entry; otherwise show the difference and
+ask what they want changed.
+The App does not show stage-approval or Continue buttons.
+
+Submission tools validate and store stage content without opening the App. All six stages use one
 revision-bound MCP App workspace. `execute_workspace_command` is App-only and
 runs commands selected in the workspace UI. Chat uses operation-specific tools:
 `get_forecast_stage_review` for stage review, stage submission tools for generated
@@ -82,8 +115,10 @@ complete working draft, with the current preparation receipt and revision
 bindings. If the generic tool rejects the stage or returns no actionable
 validation issue, stop and report the missing tool instead of probing payload
 shapes or switching to a test connector. For a requested revision-bound
-suggestion, use `propose_forecast_stage_changes`. These tools open or update
-the App with the stage for review.
+suggestion, use `propose_forecast_stage_changes`. The proposal remains separate
+from the active draft; its exact changed values and rationale are presented in
+chat, while the App keeps showing the active draft and indicates that the stage
+has a suggestion.
 
 After stage preparation and workspace creation, submit a new model-generated
 question with `submit_drafted_question`, using the new workspace's specification
@@ -93,28 +128,50 @@ before generation. The generator may replace its own latest draft while no
 App edit has occurred since that generation. An App edit marks the draft as
 user-edited; later generated output is then a revision-bound proposal.
 Applying a proposal changes the draft without approving it. `submit_forecast_question_unit`
-saves a pending question with the current workspace revision. The App presents
-the proposed question and its ranges for review. Editing alone does not approve
-content.
+saves a pending question with the current workspace revision. After the user
+approves the exact question unit in chat, approve the saved revision; the App
+then presents the approved question and its ranges for review. Editing alone
+does not approve content.
 
-After submitting a valid generated stage, leave it open in the MCP App and ask
-in chat whether the user approves that draft and wants to proceed to the named
-next stage. Do not approve or progress automatically just because generation
-finished, the App opened, or the user navigated between stages. Once the user
-confirms, use the enabled approval-and-progression action and complete the
-returned next-stage handoff in the same turn. After submitting that stage, ask
-for its approval in chat before moving on. Ask for the initial optional News
-choice only when no choice is saved for this specification.
+For every stage, the user's confirmation of the exact complete content in chat
+is the approval for entry and stage approval. Before submitting, tell the user
+that this exact content will be transferred to and saved in Bleavit Foresight,
+then shown there so they can inspect what was saved. Explain that chat already
+recorded their approval; the workspace display is a review of the saved result,
+not another approval request. Submit the content once without opening the App,
+then approve the exact saved revision. If the submission fails or saves only a
+proposal, do not approve it; follow the relevant recovery or proposal workflow.
+Once the approved stage appears in the App, ask only whether the user wants to
+continue to the named next stage. Wait for an explicit yes and use
+`continue_forecast_specification`; do not use `approve_and_continue` to combine
+the distinct decisions. Then follow the next stage's chat-first skill. Ask for
+the initial optional News choice only when no choice is saved for this
+specification.
 
-For stage submissions after Question, finish the analysis before submitting,
-prepare the complete payload, and use the exact revision and prerequisite
-bindings from the latest workspace response. When approval or an MCP App
-handoff supplies `next_stage_bindings`, use them directly; do not fetch the
-target stage again. Otherwise, fetch only that target stage with
-`get_forecast_stage_review` when its bindings are unavailable. This tool
-returns structured state without attaching or opening the MCP App UI. Submit
-the prepared payload in the same turn; the submission result opens or updates
-the App with the populated stage for review.
+For optional News selection, present each candidate as its complete timeline
+entry before asking which numbered items to keep. The user's selection approves
+the resulting timeline when it only includes or omits those exact entries. Do
+not ask for another approval after displaying the selected entries unchanged.
+If the user requests edits or the selected content is materially revised, show
+the complete revised timeline and ask once for approval before submission.
+
+Ask for approval of exact proposed stage content in one ordinary chat message,
+not with `request_user_input_async` or a choice selector. Invite the user to
+either approve the exact content or describe the changes they want in that same
+reply. When they request a change, revise directly from the details they
+provided; ask a follow-up only when a material detail is missing.
+
+For stage submissions after Question, finish the analysis in chat, settle all
+material choices, and obtain the user's explicit approval of the exact proposed
+content for entry before any target-stage MCP call. Then prepare the complete
+payload and use the exact revision and prerequisite bindings from the latest
+workspace response. When approval or an MCP App handoff supplies
+`next_stage_bindings`, use them directly; do not fetch the target stage again.
+Otherwise, fetch only that target stage with `get_forecast_stage_review` after
+chat approval when its bindings are unavailable. This tool returns structured
+state without attaching or opening the MCP App UI. Submit the chat-approved
+payload once, approve the exact saved revision, and open the App only with the
+approved state.
 The first generated result fills an untouched stage. The generator may replace
 its own latest draft while no App edit has occurred since that generation. An
 App edit marks the draft as user-edited; later generated output is then a
@@ -140,14 +197,15 @@ unchanged App. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
 A valid manual edit to a stage that is already approved immediately updates
 that stage's approved content and export; it does not need chat approval. A
-model-generated draft, or a proposal copied into the draft without choosing
-accept, remains pending explicit chat approval after manual edits. Accepting a
-proposal in chat already approves it; do not ask for a second approval. Keep
-other pending edits distinct from approved content; outdated dependent work
-must be reviewed before finalization. The App shows `↻` on a stage only when
-that stage has a concrete suggestion to review; prerequisite staleness by
-itself does not add a stage marker. Opening or editing a stage never starts an
-impact review.
+model-generated draft or proposal applied to the active draft remains pending
+explicit stage approval. Applying a proposal after chat approval does not
+approve the stage; use `accept_forecast_stage_proposal` only when the user
+approves both the exact proposal and the stage in one decision. Keep other
+pending edits distinct from approved content; outdated dependent work must be
+reviewed before finalization. The App shows `↻` for an outdated stage
+that needs review and `!` when a concrete suggestion is pending; a stage may
+show both. Suggestion values and rationale belong in chat, not in an App
+suggestion panel. Opening or editing a stage never starts an impact review.
 
 Start an impact review only when the user explicitly asks in chat to revalidate
 or check whether approved changes affect other stages. Do not start one from an
@@ -194,70 +252,64 @@ approved content and current prerequisites; changed or otherwise ineligible
 stages are reported as skipped. News is eligible only when its existing opt-in
 choice and approved timeline are retained.
 
-Treat “approve”, “continue”, “I'm okay with it”, “looks good”, or similar assent
-as acceptance of the current reviewed content when the referent is clear. Route
-the action by the current stage and the user's intent. The chat must name the
-draft and proposed next stage in its approval question; otherwise clarify
-whether the user wants to approve, edit, or stay at the stage:
+Treat “looks good” and similar assent according to the immediately preceding
+chat question. When asked whether the exact proposed text is satisfactory for
+entry, the user's yes approves that content and stage. When asked whether to
+continue to a named next stage, the user's yes authorizes only that transition.
+Do not combine these questions or ask for the same content approval again in
+the App:
 
-- When the user accepts the displayed draft and the chat's named next stage,
-  use the enabled `approve_and_continue` action for an unapproved stage.
-  Question has one draft, so the user approves that forecast question unit directly. If
-  the stage is already approved, use its enabled `continue` action when the
-  user confirms that next step.
-- Use `approve` only when the user explicitly asks to approve and stay at the
-  current stage. Do not advance after that request.
-- If `approve_and_continue` is unavailable but both approval and continuation
-  are available, approve the exact reviewed content, then use the enabled
-  `continue` action from the updated workspace with
-  `continue_forecast_specification`. Do not fetch or reopen a stage just to find
-  that action.
+- After chat approval of exact content, send the transfer notice, submit it,
+  and approve the exact saved revision. Then show the approved stage in the App
+  and ask whether the user wants to continue to the named next stage.
+- A yes to continue allows `continue_forecast_specification` to move to the
+  next stage, but it does not approve any content that has not yet been drafted.
+- Use `approve_forecast_specification` only for a revision the user approved
+  in chat. Use `approve_and_continue_forecast_specification` only if the user
+  explicitly authorizes both decisions together; do not infer continuation
+  from approval of exact text.
 - If validation, a conflict, or an unresolved proposal disables progression,
   resolve that issue or ask for the material choice before continuing. A pending
   proposal still requires a clear choice of the draft or suggestion; never
   silently apply it.
 
-After the user confirms the chat approval question, pass the enabled action's
-complete `command` object from `workspace.presentation.actions` to
-`approve_and_continue_forecast_specification`. When code tools are available,
-retain the response and pass that object programmatically; do not retype opaque
-revision identifiers or reconstruct bindings from conversation memory. Preserve
-its `stage`, `expected_revision`, `prerequisite_revisions`, and `next_stage`,
-and attach the current preparation receipt. Follow the returned next-stage instruction in
-the same turn; do not wait for a button click. Use returned
-`next_stage_bindings` without reopening either the completed stage or the target
-stage. Do not call `get_forecast_stage_review` for content and bindings already
-present in the loaded App or the handoff response; the call is unnecessary and
-may initialize an untouched stage. Content shown in the loaded App counts as
-reviewed, so the user can accept it in chat without repeating it. Optional News
-still requires explicit opt-in for a new choice; a saved opt-in remains valid
-for later News review on the same specification.
+Use the operation-specific approval tool for the exact saved stage revision
+and preserve its revision and prerequisite bindings. Use returned next-stage
+bindings only after the user separately confirms continuation; otherwise fetch
+the target stage after that confirmation. Never use continuation to skip the
+target stage's chat-first work. Content shown in the App is a review of an
+already approved stage, not a second approval gate. Optional News still
+requires explicit opt-in for a new choice; a saved opt-in remains valid for
+later News review on the same specification.
 
 When generated output is a proposal against an App-edited draft, include a
 `rationale` with the material changes and why they improve the draft. Keep it
 specific to the forecast and source evidence; use short paragraphs or bullets.
-After the proposal is saved, explain its rationale in the text chat. The App
-shows the concrete suggested values for review and copying, without the
-rationale field.
+After saving the proposal, show the user the concrete proposed values for each
+changed field in text chat and explain why you recommend them. Ask whether to
+apply that exact suggestion to the active draft. Leave the proposal unapplied
+until the user explicitly approves it in chat.
 
 If a command fails input validation, correct only fields named by the returned
 action and retry once, without fetching or reopening a different stage. If no
 actionable validation issue is returned, stop instead of probing alternate
 payload shapes. An MCP App-originated message that names the next stage and
-supplies its specification ID, language, and approved revision is an executable
-workflow handoff. Complete the named stage's analysis and submit its prepared
-content in the same turn so the populated stage opens in the MCP App. A stage
-review fetch only returns structured state; it does not display the stage. Do
-not stop after fetching it, reply only that the stage is ready, or ask the user
-to start it.
-After the populated stage opens, ask the user to approve it in chat before
-progressing again. Stop for user input when the stage skill requires a
-substantive decision or the user must approve the review.
+supplies its specification ID, language, and approved revision is a workflow
+handoff with context and bindings. It does not authorize skipping chat-first
+stage work or the user's approval of exact content for entry. Follow the active
+skill, resolve material decisions, and wait for chat approval before
+submission. A stage review fetch only returns structured state; it does not
+display the stage. After the approved content opens in the App, ask whether the
+user wants to continue to the next stage; do not ask them to approve the same
+content again.
 
-After background approval, ask the user in chat whether to skip or research
-optional news. Save the choice with `set_forecast_news_choice`, which keeps the
-News App closed while research is underway. Save `opted_in` before researching
-or generating news; submit the populated timeline to open it for review. Save
+After background approval, ask whether the user wants to continue to optional
+News and research it, or skip News. If no choice is saved, this is both the
+continuation decision and the News opt-in; save the answer with
+`set_forecast_news_choice` and do not ask again in the News skill. The tool
+keeps the News App closed while research is underway. Save `opted_in` before
+researching or generating news; submit and approve the chat-approved timeline
+to open it for review. Save
 `declined` when the user skips news, and save `unavailable` after opted-in
 research when nothing qualifies or nothing is selected. These choices preserve
 a background-only record without approving an empty timeline. Reuse the saved
@@ -266,29 +318,32 @@ choice after upstream changes: `declined` stays skipped, while `opted_in` or
 a new choice only when none is saved, or when the user changes their choice.
 Timeline removal follows the News skill reference.
 
-When a concrete proposal exists, keep the user in the decision flow. In the
-MCP App, keep the normal draft editor above the read-only suggestion. The user
-may copy individual suggested text values to the clipboard and paste them into
-the editor; copying never changes the draft. In chat, explicit acceptance of
-the exact proposal authorizes `accept_forecast_stage_proposal`, which applies
-and approves that stage only. If the user wants to apply a suggestion without
-approving it, use `apply_forecast_stage_proposal`; stage approval remains a
-separate decision. Use `propose_forecast_stage_changes` for a new chat-authored
-suggestion, and `save_forecast_stage_draft` when they ask to save an incomplete
-or direct edit for review. If the user keeps or edits the current draft, use
+When a concrete proposal exists, present its changed values and rationale in
+chat and ask the user whether to apply that exact proposal to the active draft.
+The App shows the active draft and stage indicators; it does not render the
+pending proposal. On explicit chat approval to use the suggestion, call
+`apply_forecast_stage_proposal`. This replaces the active draft with the
+approved proposal and updates the App, but it does not approve the stage or
+advance. Stage approval remains a separate chat decision after the applied
+draft is visible. Use `accept_forecast_stage_proposal` only when the user
+explicitly approves both the exact proposal and the stage in the same
+decision. If the user keeps or edits the current draft, use
 `discard_forecast_stage_proposal` after their choice; do not treat applying or
 discarding a proposal as approval of a different stage or as permission to
-progress. Ask for stage approval and name the next stage in chat. If there is no proposal,
-report that no actionable improvement was found and keep the draft available.
-Use `approve_and_continue_forecast_specification` only after the user confirms the chat
-approval question, then follow its returned stage handoff. A successful tool
-call or message delivery does not establish that generation has started or
-finished. If app messaging is unavailable, present the equivalent chat request.
+progress. Use `propose_forecast_stage_changes` for a new chat-authored
+suggestion, and `save_forecast_stage_draft` when they ask to save an incomplete
+or direct edit for review. If there is no proposal, report that no actionable
+improvement was found and keep the draft available.
+Do not progress past a stage until its content has been approved in chat,
+submitted, and marked approved in Bleavit Foresight, and the user has explicitly
+confirmed continuation. A successful tool call or message delivery does not
+establish that generation has started or finished.
+If app messaging is unavailable, present the equivalent chat request.
 
-`approve_forecast_specification` approves without advancing. Use it only when
-the user explicitly asks to approve and stay at the current stage; ordinary
-acceptance and progression should use the workspace's enabled
-`approve_and_continue` action through `approve_and_continue_forecast_specification`.
+`approve_forecast_specification` records the user's chat approval for the exact
+saved stage revision. After it opens the approved content in Bleavit Foresight,
+ask whether the user wants to continue; use `continue_forecast_specification`
+only after their explicit yes.
 
 Pass the returned `forecast_specification_id` to every approval call; it is
 required even when continuing in the same chat. The latest Bleavit Foresight
@@ -339,16 +394,16 @@ fields.
 
 The MCP App is the supported surface for complete workflow reviews, validation,
 menus, and actions. Do not reconstruct or repeat its reviews, draft fields,
-validation messages, or available actions in chat. Use App-rendered content for
-stage review and ask for approval in chat; a client without MCP App support has
+validation messages, or available actions in chat. Use App-rendered content to
+review the stage already approved in chat; a client without MCP App support has
 no text review fallback.
 If an App fails to open or render, ask the user to reopen or retry it rather than
 reconstructing the review in chat. Keep chat guidance to material information
-that is absent from the App and to the approval and progression question. After
-submitting generated content, do not quote or summarize the submitted draft in
-chat; this includes background information. The App displays the complete draft,
-so ask only whether the user approves it or wants changes, and wait for the
-user's chat approval before invoking the next stage.
+that is absent from the App and to the continuation question. Before
+submission, show the complete proposed content in chat and wait for the user's
+approval for entry. After submission, do not quote or summarize it again; the
+App displays the full approved draft. Ask only whether the user wants to
+continue to the named next stage.
 
 ## Workspace access and retention
 
@@ -371,22 +426,29 @@ For conditional units, keep the condition and unmet disposition with the unit
 in the App review and in every export; they are part of the forecast question unit, not
 an additional approval stage.
 
-For decisions without an App control, use `request_user_input_async` to present
-all material questions whose prerequisites are settled. The interface presents
-the questions sequentially; give each two or three mutually exclusive choices,
-put the recommended choice first, and briefly say why. The interface provides a
-free-form response. After the user answers, recompute the settled frontier and
-ask another round if material decisions remain; there is no fixed question or
-round limit. Use App controls when they exist. Do not use the Plan-mode-only
-`request_user_input` dialog for these choices.
+For decisions without an App control, ask the user in ordinary text chat after
+researching and settling any factual prerequisites. Present clear options and a
+recommendation when useful, then wait for the user's response. Recompute which
+decisions remain after each answer and continue the chat interview until all
+material choices are settled. Do not use a separate dialog or open the App for
+these choices, except where the active stage skill explicitly requires
+`request_user_input_async` for its interview.
+
+Complete every necessary research, calculation, and tool call before sending a
+settled proposal or asking the user for a decision. Do not send that response
+while related work is still running. After asking, end the turn and wait for the
+user; do no further background work or tool calls until they reply. If new work
+becomes necessary later, complete it before presenting the revised proposal or
+question.
 
 ## Completion and exports
 
-Once the optional news choice and any opted-in timeline are approved, call
-`open_forecast_export` to open Export in the same
-turn. Handoff and news-choice tools do not open the App. Tell the user Export
-is ready only after that call succeeds, and let them choose an output format
-there; do not ask whether to open it. For a format requested in chat, reopen
+Once the optional news choice and any opted-in timeline are approved, ask
+whether the user wants to finish and open Export. After an explicit yes, use
+`continue_forecast_specification` to complete the workflow, then call
+`open_forecast_export` in the same turn. Handoff and news-choice tools do not
+open the App. Tell the user Export is ready only after that call succeeds, and
+let them choose an output format there. For a format requested in chat, reopen
 the completion/export flow to load its current revision, then export the
 requested format.
 The App reloads the selected preview after saving stage edits. A draft preview

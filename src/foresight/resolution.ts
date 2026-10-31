@@ -2,6 +2,9 @@ import { z } from "zod";
 import { sourceHierarchyRankError } from "./source-validation";
 import { Slug } from "./common";
 
+export const MAX_SOURCE_URLS = 12;
+export const MAX_SOURCE_HIERARCHY_ENTRIES = 4;
+
 /** A resolution data source with availability characteristics. */
 export const DataSource = z.object({
   id: Slug,
@@ -14,22 +17,23 @@ export const DataSource = z.object({
     .string()
     .min(3)
     .describe(
-      "Name of the organization, account, or feed responsible for the source. For social accounts, include the platform to distinguish the account.",
+      "Name of the organization, account, feed, private dataset, or composite calculation responsible for the source. For social accounts, include the platform to distinguish the account.",
     ),
-  url: z
-    .httpUrl({
-      error:
-        "Enter a complete HTTP or HTTPS web address, such as https://example.com/results.",
-    })
-    .optional()
+  urls: z
+    .array(
+      z.httpUrl({
+        error:
+          "Enter a complete HTTP or HTTPS web address, such as https://example.com/results.",
+      }),
+    )
+    .max(MAX_SOURCE_URLS)
+    .default([])
     .describe(
-      "Optional direct URL for a web-addressable source. Omit when the source is identified by an account, feed, or other specific name.",
+      "URLs locating this source. List every input for a composite calculation; leave empty when none.",
     ),
 });
 
 export type DataSourceT = z.infer<typeof DataSource>;
-
-export const MAX_SOURCE_HIERARCHY_ENTRIES = 4;
 
 /** Shared approval validator for each outcome or condition hierarchy. */
 export const SourceHierarchy = z

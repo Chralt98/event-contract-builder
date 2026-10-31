@@ -70,6 +70,8 @@ review only; do not include it in the submitted criteria text.
   hierarchy and its conditions for moving to a fallback; do not omit a source,
   introduce an unapproved one, or describe fallback sources as co-equal
   consensus unless that was approved.
+- A mirror, republication, or derived dataset can be used under its approved
+  fallback trigger, but must not be described as independent confirmation.
 - If the hierarchy has no fallback, do not imply one. Verify source names and
   roles against the approved source records, not memory or an external example.
 

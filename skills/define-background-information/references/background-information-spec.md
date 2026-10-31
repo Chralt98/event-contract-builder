@@ -26,3 +26,11 @@ include no resolution details in the background; the criteria must contain
 everything needed to resolve the question. Do not advocate, offer trading
 advice, claim an outcome, or include transient status/news updates. Keep the
 exact forecast question unit and every approved upstream stage unchanged.
+
+Use `request_user_input_async` before research when the desired context needs
+material clarification, such as focus, audience, or requested inclusions and
+exclusions. Then draft the complete background in text chat. Ask whether the
+user is satisfied or wants changes, iterate in chat, and ask again after each
+revision. Only after the user confirms satisfaction with the exact text for
+entry should it be submitted. The server-wide workflow records that approval
+and opens Bleavit Foresight with the approved background for review.

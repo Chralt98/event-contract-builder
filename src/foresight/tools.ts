@@ -308,7 +308,7 @@ const proposalRationaleShape = {
     .max(1000)
     .optional()
     .describe(
-      "For a proposal, provide the material changes and why they improve the draft so the assistant can explain the suggestion in chat. The App shows the concrete proposed values for review and copying.",
+      "For a proposal, provide the material changes and why they improve the draft so the assistant can present the exact proposed values and rationale in chat before asking whether to apply it to the active draft.",
     ),
 };
 
@@ -368,10 +368,10 @@ export const resolutionSourceShape = {
     "The exact approved forecast question unit being sourced.",
   ),
   sources: SourceHierarchy.describe(
-    "Ranked hierarchy for the forecast outcome; prefer an independent primary and fallback.",
+    "Ranked outcome sources, including user-authorized private data. Put every locator for one source in its urls list; leave it empty when that source has no URL.",
   ),
   condition_sources: SourceHierarchy.optional().describe(
-    "Separate ranked hierarchy for the forecast question unit's condition.",
+    "Separate ranked condition sources, using the same source names and URL lists.",
   ),
   ...proposalRationaleShape,
   followUp: z
@@ -588,7 +588,7 @@ const save_forecast_stage_draftTool = {
 const propose_forecast_stage_changesTool = {
   title: "Propose Forecast Stage Changes",
   description:
-    "Create a revision-bound proposal for one forecast stage without applying or approving it. Use after the user asks for a suggestion or proposed changes; requires current stage preparation and review bindings.",
+    "Create a revision-bound stage proposal without changing the active draft. Present changed values and rationale in chat; wait for chat approval before applying it. Requires current preparation and revision bindings.",
   inputSchema: proposeForecastStageChangesShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -602,7 +602,7 @@ const propose_forecast_stage_changesTool = {
 const apply_forecast_stage_proposalTool = {
   title: "Apply Forecast Stage Proposal",
   description:
-    "Apply a current proposal to its stage draft without approving the stage. Use only when the user asks to apply that proposal but has not approved the resulting stage.",
+    "Apply a current proposal to its active stage draft without approving the stage. Use only after the user explicitly approves that exact proposal in chat; this updates the active draft and App, and stage approval remains separate.",
   inputSchema: applyForecastStageProposalShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -616,7 +616,7 @@ const apply_forecast_stage_proposalTool = {
 const accept_forecast_stage_proposalTool = {
   title: "Accept Forecast Stage Proposal",
   description:
-    "Apply and approve one current forecast stage proposal. Call only after the user explicitly accepts that exact proposal; this approval can trigger a whole-specification impact review.",
+    "Apply and approve one current forecast stage proposal. Use only when the user's chat approval authorizes that exact proposal as content for the approved stage; this approval can trigger a whole-specification impact review.",
   inputSchema: forecastStageProposalShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -704,7 +704,7 @@ const advance_forecast_specificationTool = {
 const approve_and_continue_forecast_specificationTool = {
   title: "Approve and Continue Forecast Specification",
   description:
-    "Approve the exact pending stage revision and continue to its next stage. Requires the user's explicit approval of that revision.",
+    "Approve the exact pending stage revision and continue to its next stage. Use only when the user explicitly approves the revision and asks to continue in the same decision.",
   inputSchema: ApproveAndContinueCommand,
   outputSchema: z.strictObject({
     result: z.unknown(),
@@ -722,7 +722,7 @@ const approve_and_continue_forecast_specificationTool = {
 const continue_forecast_specificationTool = {
   title: "Continue Forecast Specification",
   description:
-    "Continue from an already approved stage to its next stage. Requires explicit approval of the exact approved revision.",
+    "Continue from the exact stage revision already approved in chat. Use only after the user explicitly confirms the named next stage; this does not approve new content.",
   inputSchema: ContinueForecastCommand,
   outputSchema: z.strictObject({
     result: z.unknown(),
@@ -822,7 +822,7 @@ const get_forecast_stage_reviewTool = {
 const approve_forecast_specificationTool = {
   title: "Approve Forecast Specification Stage",
   description:
-    "Approve a stage without advancing. Use only when the user explicitly asks to stay; otherwise use approve_and_continue through advance_forecast_specification.",
+    "Approve the exact saved stage revision the user approved in chat, without advancing. After it opens in Bleavit Foresight for review, ask separately whether the user wants to continue.",
   inputSchema: approvalShape,
   outputSchema: approvalOutputSchema,
   annotations: {
@@ -906,7 +906,7 @@ const delete_plugin_feedbackTool = {
 const submit_defined_termsTool = {
   title: "Submit Defined Terms",
   description:
-    "Save generated definitions for the approved unit with a current stage preparation receipt. After an App edit, saves a proposal instead of replacing the draft.",
+    "Save chat-approved definitions for the approved unit without opening the App; then approve the exact saved revision to open it as approved. After an App edit, saves a proposal instead of replacing the draft.",
   inputSchema: definedTermsShape,
   outputSchema: definedTermsOutputSchema,
   annotations: {
@@ -920,7 +920,7 @@ const submit_defined_termsTool = {
 const submit_drafted_questionTool = {
   title: "Submit Drafted Question",
   description:
-    "Save a generated question in the current workspace with a current stage preparation receipt. After an App edit, saves a proposal.",
+    "Save the chat-approved question in the current workspace without opening the App; then approve the exact saved revision to open it as approved. After an App edit, saves a proposal.",
   inputSchema: draftedQuestionsShape,
   outputSchema: draftedQuestionsOutputSchema,
   annotations: {
@@ -934,7 +934,7 @@ const submit_drafted_questionTool = {
 const submit_resolution_sourceTool = {
   title: "Resolution Source Hierarchy",
   description:
-    "Save generated source hierarchies after definitions approval, with a current stage preparation receipt. After an App edit, saves a proposal instead of replacing the draft.",
+    "Save chat-approved source hierarchies after definitions approval without opening the App; then approve the exact saved revision to open it as approved. After an App edit, saves a proposal instead of replacing the draft.",
   inputSchema: resolutionSourceShape,
   outputSchema: resolutionSourceOutputSchema,
   annotations: {
@@ -948,7 +948,7 @@ const submit_resolution_sourceTool = {
 const submit_resolution_criteriaTool = {
   title: "Resolution Criteria",
   description:
-    "Validate and store one complete source-grounded Resolution Criteria text after source approval. Requires the current stage preparation receipt.",
+    "Validate and save the chat-approved Resolution Criteria after source approval without opening the App; then approve the exact saved revision to open it as approved.",
   inputSchema: resolutionCriteriaShape,
   outputSchema: resolutionCriteriaOutputSchema,
   annotations: {
@@ -962,7 +962,7 @@ const submit_resolution_criteriaTool = {
 const submit_background_informationTool = {
   title: "Context and Background Information",
   description:
-    "Validate, store, and render pending neutral background information after criteria approval. Requires the current stage preparation receipt.",
+    "Validate and save chat-approved neutral background information after criteria approval without opening the App; then approve the exact saved revision to open it as approved.",
   inputSchema: backgroundInformationShape,
   outputSchema: backgroundInformationOutputSchema,
   annotations: {
@@ -976,7 +976,7 @@ const submit_background_informationTool = {
 const submit_news_timelineTool = {
   title: "Submit Relevant News Timeline",
   description:
-    "Save optional news after explicit opt-in and background approval, with a current stage preparation receipt. An empty timeline is only for requested removal of approved news.",
+    "After opt-in and background approval, submit the chat-approved optional news timeline; this records approval and opens the App with the approved timeline. An empty timeline is only for requested removal of approved news.",
   inputSchema: newsTimelineShape,
   outputSchema: newsTimelineOutputSchema,
   annotations: {
@@ -990,7 +990,7 @@ const submit_news_timelineTool = {
 const submit_forecast_question_unitTool = {
   title: "Submit Forecast Question Unit",
   description:
-    "Save a forecast question unit as an unapproved working draft using its current workspace revision. Explicit approval is a separate command. Requires the current stage preparation receipt.",
+    "Save the chat-approved forecast question unit without opening the App; then approve the exact saved revision to open it as approved. After an App edit, saves a proposal instead of replacing the draft.",
   inputSchema: forecastQuestionUnitShape,
   outputSchema: forecastQuestionUnitOutputSchema,
   annotations: {
