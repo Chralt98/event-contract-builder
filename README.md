@@ -98,8 +98,9 @@ components are provided separately.
 
 The repository-linked plugin connects to the production service by default.
 For local development, run `bun run refresh:plugin -- --local` to install the
-connection from `mcp.local.json` (`http://localhost:8787/mcp`). Start the MCP worker
-in its owning project, since this repository does not include its runtime.
+connection from `mcp.local.json` (`http://localhost:8787/mcp`). Run
+`bun run start:server` in the sibling `bleavit-foresight` checkout; see that
+repository's development instructions for checkout watching and Worker integration.
 
 The repository-linked plugin uses the local app mapping from `.app.json`. To
 create that mapping for this checkout, copy the example and replace the

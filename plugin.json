@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bleavit-foresight",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Prepare forecast contracts for research, decision-making, and prediction markets by drafting focused questions, clarifying conditions, identifying resolution sources, and setting evidence-based criteria.",
   "author": {
     "name": "Christopher Maximilian Altmann",
