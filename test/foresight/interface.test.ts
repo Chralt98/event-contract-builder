@@ -232,6 +232,9 @@ describe("public forecast interface", () => {
     expect(schema.safeParse({ ...input, sources: fourSources }).success).toBe(
       true,
     );
+    expect(
+      schema.safeParse({ ...input, condition_sources: [] }).success,
+    ).toBe(true);
     const fiveSources = [
       ...fourSources,
       {

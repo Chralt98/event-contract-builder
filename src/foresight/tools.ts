@@ -25,7 +25,11 @@ import {
   editableWorkspaceStages,
 } from "./workspace";
 import { Definitions } from "./display-question";
-import { SourceHierarchy } from "./resolution";
+import {
+  DataSource,
+  MAX_SOURCE_HIERARCHY_ENTRIES,
+  SourceHierarchy,
+} from "./resolution";
 import { ConnectorForecastQuestionUnit } from "./connector-forecast-question-unit";
 import { ResolutionCriteria } from "./resolution-criteria";
 import { ForecastBackgroundInformation } from "./background-information";
@@ -370,9 +374,24 @@ export const resolutionSourceShape = {
   sources: SourceHierarchy.describe(
     "Ranked outcome sources, including user-authorized private data. Put every locator for one source in its urls list; leave it empty when that source has no URL.",
   ),
-  condition_sources: SourceHierarchy.optional().describe(
-    "Separate ranked condition sources, using the same source names and URL lists.",
-  ),
+  condition_sources: z
+    .array(DataSource)
+    .max(MAX_SOURCE_HIERARCHY_ENTRIES)
+    .optional()
+    .superRefine((sources, ctx) => {
+      if (!sources?.length) return;
+      const result = SourceHierarchy.safeParse(sources);
+      if (!result.success)
+        for (const issue of result.error.issues)
+          ctx.addIssue({
+            code: "custom",
+            message: issue.message,
+            path: issue.path,
+          });
+    })
+    .describe(
+      "Separate ranked condition sources, using the same source names and URL lists. Omit this field when the forecast question has no condition.",
+    ),
   ...proposalRationaleShape,
   followUp: z
     .string()
