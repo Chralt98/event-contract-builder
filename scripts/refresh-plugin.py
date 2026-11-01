@@ -72,6 +72,11 @@ def main():
         action="store_true",
         help="Install with mcp.production.json (the default)",
     )
+    connection.add_argument(
+        "--staging",
+        action="store_true",
+        help="Install with mcp.staging.json",
+    )
     parser.add_argument("--marketplace-path", type=Path, default=Path.home() / ".agents/plugins/marketplace.json")
     args = parser.parse_args()
     if args.setup and args.check:
@@ -84,7 +89,13 @@ def main():
     manifest = json.loads((root / ".codex-plugin/plugin.json").read_text())
     portable_manifest = json.loads((root / "plugin.json").read_text())
     package = json.loads((root / "package.json").read_text())
-    connection_filename = "mcp.local.json" if args.local else "mcp.production.json"
+    connection_filename = (
+        "mcp.local.json"
+        if args.local
+        else "mcp.staging.json"
+        if args.staging
+        else "mcp.production.json"
+    )
     connection_config = json.loads((root / connection_filename).read_text())
     connection_servers = connection_config.get("mcpServers")
     connection_server = (
@@ -193,6 +204,7 @@ def main():
         "mcp.json",
         "mcp.production.json",
         "mcp.local.json",
+        "mcp.staging.json",
         "skills",
         "assets",
         ".mcp.json",

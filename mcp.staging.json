@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "bleavit-foresight": {
+      "type": "streamable-http",
+      "url": "https://api.staging.foresight.bleavit.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "dcr"
+            },
+            "registrationUrl": "https://auth.staging.foresight.bleavit.com/oauth/register",
+            "baseScopes": ["mcp:read", "mcp:write", "offline_access"]
+          }
+        }
+      }
+    }
+  }
+}

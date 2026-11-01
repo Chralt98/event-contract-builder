@@ -102,6 +102,12 @@ connection from `mcp.local.json` (`http://localhost:8787/mcp`). Run
 `bun run start:server` in the sibling `bleavit-foresight` checkout; see that
 repository's development instructions for checkout watching and Worker integration.
 
+To use the deployed staging service, run `bun run refresh:plugin -- --staging`.
+This installs the connection from `mcp.staging.json` (`https://api.staging.foresight.bleavit.com/mcp`)
+with OAuth registration at the staging auth endpoint. Deploy the staging workers
+from the sibling `bleavit-foresight` checkout first; this command only changes
+the MCP connection in the locally installed plugin.
+
 The repository-linked plugin uses the local app mapping from `.app.json`. To
 create that mapping for this checkout, copy the example and replace the
 placeholder with the app's ID:
@@ -116,8 +122,8 @@ OAuth. Local refresh omits portable per-server `extensions`, which Codex Desktop
 0.163 rejects. Public packaging retains the explicit OAuth configuration from
 `mcp.production.json`.
 A normal `bun run refresh:plugin` installs the connection from
-`mcp.production.json`, including after a local refresh. `--production` remains an
-explicit alias for the default; it cannot be combined with `--local`. Refresh
+`mcp.production.json`; `--production` remains an explicit alias for the default.
+`--local`, `--staging`, and `--production` are mutually exclusive. Refresh
 changes the installed copy without rewriting the source MCP configs. The distributable plugin
 omits the local app mapping and uses the production configuration described
 below.
