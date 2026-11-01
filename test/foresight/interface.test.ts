@@ -1017,6 +1017,9 @@ describe("public forecast interface", () => {
     expect(foresightTools.get_forecast_stage_review.description).toContain(
       "does not attach or open the MCP App UI",
     );
+    expect(foresightTools.continue_forecast_specification.description).toContain(
+      "prerequisites list upstream stages only",
+    );
     for (const tool of Object.values(foresightTools)) {
       expect(tool.description.length).toBeLessThanOrEqual(260);
       expect(tool.description).not.toContain("language_code");

@@ -80,7 +80,9 @@ approval. Before the App opens, tell the user in their language that this exact
 version is being transferred to Bleavit Foresight and will appear there as
 approved for review. Submit it once, then approve the exact saved revision with
 `approve_forecast_specification`. The App opens only after that approval. Do
-not ask the user to approve the same content again there.
+not ask the user to approve the same content again there. Keep that approval
+mechanic internal; do not explain to the user that another approval is
+unnecessary.
 
 After the approved content appears in Bleavit Foresight, ask whether the user
 wants to continue to the named next stage. Keep this separate from content

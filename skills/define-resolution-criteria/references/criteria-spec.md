@@ -27,9 +27,9 @@ question or round limit. Continue until no material decision remains; do not
 open or fetch the Criteria workspace during these rounds.
 
 When the interview is complete, construct and validate the criteria, show the
-complete proposal in text chat, and ask whether the user is satisfied or wants
+complete proposal in text chat, and ask whether the user approves it or wants
 changes. Make each requested revision in chat and ask again whether the user
-is satisfied. Only after the user confirms satisfaction with the exact text
+approves it. Only after the user explicitly approves the exact text
 for entry, submit it once. Use `submit_resolution_criteria` when it is in the live tool catalog;
 otherwise follow the server-wide
 [fallback](../../../src/foresight/instructions.md#workflow-state). The result

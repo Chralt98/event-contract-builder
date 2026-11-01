@@ -18,6 +18,6 @@ user wants defined; present the recommended selection and an explicit no-terms
 choice, and allow a free-form selection. Do not invent terms or force a
 definition when none is materially ambiguous. After the user's choice, show the
 selected term-to-definition map in text chat, including an empty map when the
-user chose none. Iterate there until the user confirms satisfaction with the
+user chose none. Iterate there until the user explicitly approves the
 exact map for entry. Only then submit it; the server-wide workflow records that
 chat approval and opens Bleavit Foresight with the approved map for review.

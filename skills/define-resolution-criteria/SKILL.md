@@ -18,9 +18,9 @@ single complete Resolution Criteria text.
    [criteria interview](references/criteria-spec.md#chat-interview), using
    `request_user_input_async` for each round of material user decisions.
 3. Once decisions are settled, construct and validate the criteria, show the
-   complete proposal in text chat, and ask whether the user is satisfied or
+   complete proposal in text chat, and ask whether the user approves it or
    wants changes. Revise in chat and ask again after each revision. Only when
-   the user confirms satisfaction with the exact text for entry, submit it
+   the user explicitly approves the exact text for entry, submit it
    once. Use `submit_resolution_criteria` when it is in the live tool catalog;
    otherwise follow the server-wide
    [fallback](../../src/foresight/instructions.md#workflow-state). Resolve any
@@ -28,7 +28,7 @@ single complete Resolution Criteria text.
    review after the chat-approved text has been submitted.
 4. For a later criteria interview or edit, wait for the user to ask in chat.
    Read the current saved criteria and revision, then use the same interview
-   and iterative chat proposal. Get explicit satisfaction with the exact
+   and iterative chat proposal. Get explicit approval of the exact
    revised text before submitting it as a revision-bound proposal; do not
    trigger this workflow from an App suggestion action.
 5. Use the submission response according to the server-wide

@@ -28,7 +28,7 @@ rules.
    Follow the server-wide
    [turn-completion rule](../../src/foresight/instructions.md#workflow-state)
    when presenting the proposal and waiting for the user's response. Only after
-   the user confirms satisfaction with the exact hierarchy for entry, submit
+   the user explicitly approves the exact hierarchy for entry, submit
    it once. Use `submit_resolution_source` when it is in the live tool catalog;
    otherwise follow the server-wide
    [fallback](../../src/foresight/instructions.md#workflow-state).

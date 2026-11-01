@@ -28,7 +28,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    feasibility and present viable question-unit options for the user to select
    and refine. Use `request_user_input_async` for material choices, then show
    the complete question unit as a text-chat proposal and iterate until the
-   user confirms satisfaction with the exact unit for entry. Do not create a
+   user explicitly approves the exact unit for entry. Do not create a
    workspace, prepare a stage, or open its App while the user is still deciding
    what to forecast.
 3. For an update to the same event/outcome, clarify the intended change and

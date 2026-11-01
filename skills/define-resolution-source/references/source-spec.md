@@ -107,8 +107,8 @@ and allow a free-form answer. Resolve those choices before drafting.
 If no independent fallback exists, include a suitable mirror or other fallback
 when it offers a real technical access path. If no useful fallback exists,
 submit the best authoritative primary source available. Show the complete
-proposed hierarchy in text chat and ask whether the user is satisfied or wants
+proposed hierarchy in text chat and ask whether the user approves it or wants
 changes. Iterate in chat after each change. Only after the user confirms
-satisfaction with the exact hierarchy for entry, submit it; the server-wide
+approval of the exact hierarchy for entry, submit it; the server-wide
 workflow records that approval and opens Bleavit Foresight with the approved
 hierarchy for review.

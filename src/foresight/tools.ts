@@ -722,7 +722,7 @@ const approve_and_continue_forecast_specificationTool = {
 const continue_forecast_specificationTool = {
   title: "Continue Forecast Specification",
   description:
-    "Continue from the exact stage revision already approved in chat. Use only after the user explicitly confirms the named next stage; this does not approve new content.",
+    "Continue from the approved revision after explicit confirmation. Copy expected_revision and prerequisite_revisions verbatim from the latest review; prerequisites list upstream stages only.",
   inputSchema: ContinueForecastCommand,
   outputSchema: z.strictObject({
     result: z.unknown(),

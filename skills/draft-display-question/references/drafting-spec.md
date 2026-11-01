@@ -54,7 +54,8 @@ coverage after any material change. Do not move the choice into the App.
 Before submission, restate the single selected question unit in full, including
 its condition, unmet disposition, and variables with values, plus the source
 that supports its resolution. Show it as a text-chat proposal, iterate on
-requested edits, and ask whether the user is satisfied after each revision.
+requested edits, and ask whether the user approves the exact proposal after
+each revision.
 Submit only after the user approves that exact complete unit for entry. If the
 user has selected an option but has not made clear that they want it entered,
 ask in chat before making any Bleavit Foresight MCP call.
