@@ -29,7 +29,7 @@ export const workspaceContractVersion = 1 as const;
 export const WorkspaceRevision = z
   .string({
     error:
-      "Missing revision. Reopen the workspace or fetch get_forecast_stage_review, review and retry.",
+      "Missing revision. Reopen the workspace or fetch get_forecast_specification_stage_review, review and retry.",
   })
   .min(1)
   .max(128);

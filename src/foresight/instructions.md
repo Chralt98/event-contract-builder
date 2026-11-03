@@ -1,7 +1,6 @@
-# Bleavit Foresight MCP server
+# Bleavit Foresight
 
-Maintain one active draft and one question unit. Route same-event changes to that draft; ask before replacing it. Use `prepare_stage` before stage work and
-follow its skill and references.
+Maintain one active draft and one question unit. Update it for the same event; ask before replacing it. Use `prepare_forecast_specification_stage` before stage work; follow its skill and references.
 
 ## Runtime policy
 
@@ -21,7 +20,7 @@ keeps the current draft, do not create a new workspace.
 Use `create_forecast_specification` to start a new specification only when no active
 draft exists or after the user explicitly chooses to replace it. Before stage
 work, use the current preparation bundle from a handoff or review or call
-`prepare_stage`; follow its instructions, active skill, and references.
+`prepare_forecast_specification_stage`; follow its instructions, active skill, and references.
 
 For a new specification, follow the active `draft-display-question` skill's
 chat-first exploration and entry-approval gate before any Bleavit Foresight
@@ -96,9 +95,9 @@ ask what they want changed.
 The App does not show stage-approval or Continue buttons.
 
 Submission tools validate and store stage content without opening the App. All six stages use one
-revision-bound MCP App workspace. `execute_workspace_command` is App-only and
-runs commands selected in the workspace UI. Chat uses operation-specific tools:
-`get_forecast_stage_review` for stage review, stage submission tools for generated
+revision-bound MCP App workspace. The App saves edits through its dedicated draft tool.
+Chat uses operation-specific tools:
+`get_forecast_specification_stage_review` for stage review, stage submission tools for generated
 drafts and proposals, `save_forecast_stage_draft` for an incomplete or direct
 draft edit, dedicated proposal actions for apply, accept, or discard, and the
 revalidation, review-completion, news-choice, approval, and continuation tools
@@ -168,7 +167,7 @@ content for entry before any target-stage MCP call. Then prepare the complete
 payload and use the exact revision and prerequisite bindings from the latest
 workspace response. When approval or an MCP App handoff supplies
 `next_stage_bindings`, use them directly; do not fetch the target stage again.
-Otherwise, fetch only that target stage with `get_forecast_stage_review` after
+Otherwise, fetch only that target stage with `get_forecast_specification_stage_review` after
 chat approval when its bindings are unavailable. This tool returns structured
 state without attaching or opening the MCP App UI. Submit the chat-approved
 payload once, approve the exact saved revision, and open the App only with the
@@ -180,7 +179,7 @@ revision-bound proposal. These tools and `approve_forecast_specification` adapt
 to the same workspace commands; use the returned actions for edits, proposal
 decisions, approval, and continuation.
 
-Use one `get_forecast_stage_review` call when the target stage's current content
+Use one `get_forecast_specification_stage_review` call when the target stage's current content
 or bindings are not already available. It may initialize an untouched stage,
 but does not attach or open the MCP App UI. Do not fetch a previously reviewed
 stage just to repeat an approval or progression action. Read the complete response
@@ -189,7 +188,7 @@ again to retrieve fields or refresh the App. If acknowledgement is uncertain,
 fetch only the affected stage and retry only if the review shows that the
 submission was not saved.
 
-Missing or stale bindings require one fresh review (`get_forecast_stage_review`
+Missing or stale bindings require one fresh review (`get_forecast_specification_stage_review`
 for a saved stage, or a workspace `reopen`) and reconciliation. Compare the
 rejected bindings with the fresh response before retrying once with a corrected
 command. If the bindings are identical or the same conflict persists, report

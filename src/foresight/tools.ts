@@ -8,7 +8,6 @@ import {
 } from "./completion";
 import { z } from "zod";
 import {
-  WorkspaceCommand,
   AdvanceForecastCommand,
   ApproveAndContinueCommand,
   ContinueForecastCommand,
@@ -525,10 +524,10 @@ export const forecastQuestionUnitOutputSchema = z
   })
   .strict();
 
-const prepare_stageTool = {
-  title: "Prepare Forecast Stage",
+const prepare_forecast_specification_stageTool = {
+  title: "Prepare Forecast Specification Stage",
   description:
-    "Deliver the canonical shared instructions, active skill, and required references before stage analysis or drafting. Issues a reusable receipt without creating a record or opening the App.",
+    "Load the guidance and references required to work on a forecast specification stage. Use before analyzing or drafting a stage. Returns a receipt required by certain stage actions; does not create or change the specification.",
   inputSchema: {
     stage: approvalStageSchema,
     preparation_receipt: PreparationReceipt.optional(),
@@ -569,23 +568,6 @@ const create_question_workspaceTool = {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
-    openWorldHint: false,
-  },
-} as const;
-
-const execute_workspace_commandTool = {
-  title: "Workspace App Action",
-  description:
-    "Run a revision-bound command selected from the workspace App, such as navigation, draft editing, or proposal review. Model workflows use the operation-specific review, submission, approval, and continuation tools.",
-  inputSchema: WorkspaceCommand,
-  outputSchema: z.strictObject({
-    result: WorkspaceCommandResult,
-    impact_review: impactReviewOfferSchema.optional(),
-  }),
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: true,
-    idempotentHint: true,
     openWorldHint: false,
   },
 } as const;
@@ -814,7 +796,7 @@ const set_forecast_news_choiceTool = {
   },
 } as const;
 
-const get_forecast_stage_reviewTool = {
+const get_forecast_specification_stage_reviewTool = {
   title: "Get Forecast Stage Review",
   description:
     "Fetch a saved workflow stage's structured workspace, revision, and prerequisite bindings. Initializes an untouched stage without approval; does not attach or open the MCP App UI.",
@@ -1021,9 +1003,8 @@ const submit_forecast_question_unitTool = {
 } as const;
 
 const baseForesightTools: {
-  readonly prepare_stage: typeof prepare_stageTool;
+  readonly prepare_forecast_specification_stage: typeof prepare_forecast_specification_stageTool;
   readonly create_question_workspace: typeof create_question_workspaceTool;
-  readonly execute_workspace_command: typeof execute_workspace_commandTool;
   readonly save_forecast_stage_draft: typeof save_forecast_stage_draftTool;
   readonly propose_forecast_stage_changes: typeof propose_forecast_stage_changesTool;
   readonly apply_forecast_stage_proposal: typeof apply_forecast_stage_proposalTool;
@@ -1036,7 +1017,7 @@ const baseForesightTools: {
   readonly approve_and_continue_forecast_specification: typeof approve_and_continue_forecast_specificationTool;
   readonly continue_forecast_specification: typeof continue_forecast_specificationTool;
   readonly set_forecast_news_choice: typeof set_forecast_news_choiceTool;
-  readonly get_forecast_stage_review: typeof get_forecast_stage_reviewTool;
+  readonly get_forecast_specification_stage_review: typeof get_forecast_specification_stage_reviewTool;
   readonly decide_forecast_impact_review: typeof decide_forecast_impact_reviewTool;
   readonly approve_forecast_specification: typeof approve_forecast_specificationTool;
   readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
@@ -1055,9 +1036,8 @@ const baseForesightTools: {
   readonly submit_news_timeline: typeof submit_news_timelineTool;
   readonly submit_forecast_question_unit: typeof submit_forecast_question_unitTool;
 } = {
-  prepare_stage: prepare_stageTool,
+  prepare_forecast_specification_stage: prepare_forecast_specification_stageTool,
   create_question_workspace: create_question_workspaceTool,
-  execute_workspace_command: execute_workspace_commandTool,
   save_forecast_stage_draft: save_forecast_stage_draftTool,
   propose_forecast_stage_changes: propose_forecast_stage_changesTool,
   apply_forecast_stage_proposal: apply_forecast_stage_proposalTool,
@@ -1072,7 +1052,7 @@ const baseForesightTools: {
     approve_and_continue_forecast_specificationTool,
   continue_forecast_specification: continue_forecast_specificationTool,
   set_forecast_news_choice: set_forecast_news_choiceTool,
-  get_forecast_stage_review: get_forecast_stage_reviewTool,
+  get_forecast_specification_stage_review: get_forecast_specification_stage_reviewTool,
   decide_forecast_impact_review: decide_forecast_impact_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,

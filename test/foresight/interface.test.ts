@@ -47,7 +47,7 @@ describe("public forecast interface", () => {
     expect(
       new TextEncoder().encode(foresightDiscoveryInstructions).byteLength,
     ).toBeLessThan(600);
-    expect(foresightDiscoveryInstructions).toContain("prepare_stage");
+    expect(foresightDiscoveryInstructions).toContain("prepare_forecast_specification_stage");
     expect(
       foresightServerInstructions.startsWith(foresightDiscoveryInstructions),
     ).toBe(true);
@@ -717,9 +717,6 @@ describe("public forecast interface", () => {
       /After submission, do not quote or summarize it again/,
     );
     expect(foresightServerInstructions).not.toContain("review_markdown");
-    expect(foresightTools.execute_workspace_command.description).toContain(
-      "Model workflows use the operation-specific",
-    );
     expect(foresightTools.advance_forecast_specification.description).toContain(
       "without attaching or opening the App UI",
     );
@@ -1017,7 +1014,7 @@ describe("public forecast interface", () => {
   });
 
   test("keeps tool descriptions concise and delegates procedure to skills", () => {
-    expect(foresightTools.get_forecast_stage_review.description).toContain(
+    expect(foresightTools.get_forecast_specification_stage_review.description).toContain(
       "does not attach or open the MCP App UI",
     );
     expect(foresightTools.continue_forecast_specification.description).toContain(

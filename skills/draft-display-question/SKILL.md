@@ -34,7 +34,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
 3. For an update to the same event/outcome, clarify the intended change and
    source feasibility in chat
    until there is one concrete revised question unit. Fetch its current question
-   and revision with `get_forecast_stage_review` only after the user approves
+   and revision with `get_forecast_specification_stage_review` only after the user approves
    that revision for entry. If the current content materially changes it, return
    to chat and get approval for the revised unit before submission.
    Once reconciled, update the existing specification with
