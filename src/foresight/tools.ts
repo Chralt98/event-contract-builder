@@ -560,7 +560,7 @@ const execute_completion_commandTool = {
 const create_question_workspaceTool = {
   title: "Create Question Workspace",
   description:
-    "Create an empty question draft in the local in-memory adapter. Hosted clients use create_forecast_workspace.",
+    "Create an empty question draft in the local in-memory adapter. Hosted clients use create_forecast_specification.",
   inputSchema: { language_code: ForecastSpecificationLanguageCode },
   outputSchema: z.strictObject({
     workspace: QuestionWorkspaceSnapshot,

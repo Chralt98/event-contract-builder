@@ -1,13 +1,12 @@
 # Bleavit Foresight MCP server
 
-Maintain one active draft and one question unit. Route same-event changes to
-that draft; ask before replacing it. Use `prepare_stage` before stage work and
-follow its active skill and references.
+Maintain one active draft and one question unit. Route same-event changes to that draft; ask before replacing it. Use `prepare_stage` before stage work and
+follow its skill and references.
 
 ## Runtime policy
 
 Before routing a request, inspect the account's workspaces with
-`list_forecast_workspaces` and open its active draft with
+`list_forecast_specifications` and open its active draft with
 `open_active_forecast_draft`. If the user requests a change to the same event
 and outcome, route it as an update to the existing specification; preserve the
 other stages and their data, and follow normal stage approval and impact-review
@@ -16,22 +15,22 @@ request is a different event or outcome, it is a new specification: ask whether
 to keep the current draft and set the new request aside, or replace the entire
 active draft. When the user explicitly chooses whole-draft replacement, call
 `delete_forecast_draft` for the active draft, then call
-`create_forecast_workspace` and build the new specification from scratch. Never
+`create_forecast_specification` and build the new specification from scratch. Never
 submit a new forecast question under the old specification ID. If the user
 keeps the current draft, do not create a new workspace.
-Use `create_forecast_workspace` to start a new specification only when no active
+Use `create_forecast_specification` to start a new specification only when no active
 draft exists or after the user explicitly chooses to replace it. Before stage
 work, use the current preparation bundle from a handoff or review or call
 `prepare_stage`; follow its instructions, active skill, and references.
 
 For a new specification, follow the active `draft-display-question` skill's
 chat-first exploration and entry-approval gate before any Bleavit Foresight
-MCP call. Once that gate clears, call `create_forecast_workspace` with its
+MCP call. Once that gate clears, call `create_forecast_specification` with its
 language before stage work. Every workspace contains one specification, either
 a draft or its compact archive. The signed-in account authorizes all workspace data access;
 specification IDs select a workspace but do not grant access. Use
-`list_forecast_workspaces` to find the user's workspaces and
-`resume_forecast_workspace` to resume one by ID. Never recover access by IP,
+`list_forecast_specifications` to find the user's workspaces and
+`resume_forecast_specification` to resume one by ID. Never recover access by IP,
 conversation metadata, or MCP session ID.
 If creation is rejected despite the preflight, open and review the active draft,
 then apply the same keep-or-replace choice. A request to start another
@@ -413,7 +412,7 @@ A new specification gets a separate workspace; it never replaces another
 workspace's draft or archive. An account may have one active draft and three
 unexpired archives. If an operation would exceed its allowance, preserve the
 current specification and ask the user to delete an archive explicitly. Use
-`list_forecast_workspaces` and `resume_forecast_workspace` to select a workspace.
+`list_forecast_specifications` and `resume_forecast_specification` to select a workspace.
 To edit an archive, use `reopen_forecast_archive`; it restores the editable
 draft and opens its Question workspace in the associated App in the same call.
 Reaching a ready Export stage replaces the draft with a compact archive retained for 30 days;

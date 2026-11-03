@@ -66,7 +66,7 @@
             {
               "description": "Setup: use the dedicated reviewer account, start a new conversation, and make sure there is no active draft. Pass when the assistant saves the user’s OpenAI AGI-release question with the requested cutoff and presents it for approval.",
               "prompt": "Will OpenAI publicly release an AI system that it explicitly identifies as artificial general intelligence (AGI) by 31 December 2030, 23:59 UTC?",
-              "tools_triggered": "create_forecast_workspace(language_code=\"en\"), prepare_stage(stage=\"forecast_question_unit\"), submit_drafted_question, approve_and_continue_forecast_specification after user approval",
+              "tools_triggered": "create_forecast_specification(language_code=\"en\"), prepare_stage(stage=\"forecast_question_unit\"), submit_drafted_question, approve_and_continue_forecast_specification after user approval",
               "expected_behavior": "The saved question preserves OpenAI, a public AI-system release, an explicit AGI identification, and the 31 December 2030, 23:59 UTC cutoff. The assistant presents the draft for review and advances only after the user approves it."
             },
             {
@@ -84,7 +84,7 @@
             {
               "description": "Setup: an active OpenAI draft exists in the dedicated reviewer account. The user asks for the same question for Anthropic, then chooses to delete the OpenAI draft when asked what to do with it. Pass when the plugin follows that choice and completes the Anthropic specification using the user’s criteria and news preference.",
               "prompt": "Please create another draft for the same question but for Anthropic instead.",
-              "tools_triggered": "After the user explicitly chooses deletion: delete_forecast_draft, create_forecast_workspace(language_code=\"en\"), prepare_stage, submit_drafted_question, submit_defined_terms, submit_resolution_source, submit_resolution_criteria, submit_background_information, set_forecast_news_choice(choice=\"declined\"), approve_and_continue_forecast_specification after user approvals",
+              "tools_triggered": "After the user explicitly chooses deletion: delete_forecast_draft, create_forecast_specification(language_code=\"en\"), prepare_stage, submit_drafted_question, submit_defined_terms, submit_resolution_source, submit_resolution_criteria, submit_background_information, set_forecast_news_choice(choice=\"declined\"), approve_and_continue_forecast_specification after user approvals",
               "expected_behavior": "The assistant confirms what should happen to the existing draft before permanently deleting it. After the user chooses deletion, the new question preserves the AGI-release event and 2030 cutoff while substituting Anthropic. Resolution criteria follow the user’s instruction that No requires affirmative evidence; absence of evidence alone does not resolve No. The assistant skips news as requested, presents stages for review, and advances only after approval."
             },
             {

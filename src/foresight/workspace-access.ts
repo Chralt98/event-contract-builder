@@ -7,10 +7,10 @@ import { QuestionWorkspaceSnapshot } from "./workspace";
 
 /** Hosted account tools. Authorization is provided by the MCP OAuth connection. */
 export const workspaceAccessTools = {
-  create_forecast_workspace: {
-    title: "Create Forecast Workspace",
+  create_forecast_specification: {
+    title: "Create Forecast Specification",
     description:
-      "Create one editable specification draft in the signed-in account. Each workspace contains one specification.",
+      "Create one editable forecast specification draft. Use when the user wants to start a forecast specification they can develop and revisit.",
     inputSchema: { language_code: ForecastSpecificationLanguageCode },
     outputSchema: z.strictObject({
       forecast_specification_id: ForecastSpecificationId,
@@ -23,10 +23,10 @@ export const workspaceAccessTools = {
       openWorldHint: false,
     },
   },
-  list_forecast_workspaces: {
-    title: "List Forecast Workspaces",
+  list_forecast_specifications: {
+    title: "List Forecast Specifications",
     description:
-      "List the signed-in account's active draft and unexpired archived specifications.",
+      "List the forecast specifications available to the current user, including active drafts and archived specifications that have not expired. Use when the user wants to find a saved specification to resume or review.",
     inputSchema: {},
     outputSchema: z.strictObject({
       workspaces: z.array(
@@ -44,10 +44,10 @@ export const workspaceAccessTools = {
       openWorldHint: false,
     },
   },
-  resume_forecast_workspace: {
-    title: "Resume Forecast Workspace",
+  resume_forecast_specification: {
+    title: "Resume Forecast Specification",
     description:
-      "Resume one of the signed-in account's workspaces by its specification ID.",
+      "Load a saved forecast specification draft or archive by its ID so the user can continue editing or review it. Use when the user selects a saved specification to resume.",
     inputSchema: { forecast_specification_id: ForecastSpecificationId },
     outputSchema: z.strictObject({
       status: z.enum(["draft", "archived", "unavailable"]),

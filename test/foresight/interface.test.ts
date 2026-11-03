@@ -967,7 +967,7 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
-    expect(foresightServerInstructions).toContain("resume_forecast_workspace");
+    expect(foresightServerInstructions).toContain("resume_forecast_specification");
     expect(foresightServerInstructions).not.toContain(
       "check_active_forecast_draft",
     );
@@ -983,7 +983,7 @@ describe("public forecast interface", () => {
       /Never\s+submit a new forecast question under the old specification ID/,
     );
     expect(foresightServerInstructions).toMatch(
-      /delete_forecast_draft[\s\S]*create_forecast_workspace/,
+      /delete_forecast_draft[\s\S]*create_forecast_specification/,
     );
     expect(foresightServerInstructions).toContain(
       "do not silently create a replacement",

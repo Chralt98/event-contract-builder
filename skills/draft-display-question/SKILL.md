@@ -13,7 +13,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    and finite values in chat. Use `request_user_input_async` for unresolved
    material choices about these elements, including condition cutoffs and the
    unmet-condition disposition. Once the intended forecast is concrete enough to
-   classify, check for an active draft with `list_forecast_workspaces` and open
+   classify, check for an active draft with `list_forecast_specifications` and open
    it with `open_active_forecast_draft`. An account can have one active specification,
    and each specification has one question unit. Classify the request against
    its active question: a change to the same event/outcome is an update that
