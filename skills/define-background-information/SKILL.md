@@ -24,7 +24,7 @@ for the content and source standard.
 5. After the approved background appears in the App, ask whether to continue
    to optional News and research it, or skip News. This is the next-stage
    decision and, when no choice is saved, the News opt-in; save it with
-   `set_forecast_news_choice` and do not ask for opt-in again. Run
+   `set_forecast_specification_news_choice` and do not ask for opt-in again. Run
    `define-relevant-news` only after `opted_in` is saved.
 
 Follow the server-wide language, metadata, rendering, export, and approval

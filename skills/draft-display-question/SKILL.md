@@ -14,7 +14,7 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    material choices about these elements, including condition cutoffs and the
    unmet-condition disposition. Once the intended forecast is concrete enough to
    classify, check for an active draft with `list_forecast_specifications` and open
-   it with `open_active_forecast_draft`. An account can have one active specification,
+   it with `open_forecast_specification_stage` with stage `forecast_question_unit`. An account can have one active specification,
    and each specification has one question unit. Classify the request against
    its active question: a change to the same event/outcome is an update that
    preserves the other stage content; a different event/outcome is a new

@@ -44,20 +44,4 @@ export const workspaceAccessTools = {
       openWorldHint: false,
     },
   },
-  resume_forecast_specification: {
-    title: "Resume Forecast Specification",
-    description:
-      "Load a saved forecast specification draft or archive by its ID so the user can continue editing or review it. Use when the user selects a saved specification to resume.",
-    inputSchema: { forecast_specification_id: ForecastSpecificationId },
-    outputSchema: z.strictObject({
-      status: z.enum(["draft", "archived", "unavailable"]),
-      specification: z.unknown().optional(),
-    }),
-    annotations: {
-      readOnlyHint: true,
-      destructiveHint: false,
-      idempotentHint: true,
-      openWorldHint: false,
-    },
-  },
 } as const;

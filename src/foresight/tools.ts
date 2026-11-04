@@ -1,17 +1,11 @@
 import { workspaceAccessTools } from "./workspace-access";
 import { PreparationReceipt, StagePreparation } from "./stage-preparation";
-import {
-  CompletionCommand,
-  CompletionOutput,
-  ReopenCompletionCommand,
-  ExportCompletionCommand,
-} from "./completion";
+import { CompletionOutput, ExportCompletionCommand } from "./completion";
 import { z } from "zod";
 import {
-  ContinueForecastCommand,
+  ContinueForecastInput,
   SetForecastNewsChoiceCommand,
   SetForecastNewsChoiceResult,
-  QuestionWorkspaceSnapshot,
   WorkspaceSnapshot,
   WorkspaceRevision,
   workspaceRevisionBindingShape,
@@ -19,13 +13,7 @@ import {
   WorkspaceDraft,
   editableWorkspaceStages,
 } from "./workspace";
-import {
-  optionalForecastSpecificationId,
-  ForecastSpecificationId,
-  ForecastSpecificationLanguageCode,
-  approvalStageSchema,
-  approvedForecastSpecificationRecallSchema,
-} from "./workflow";
+import { ForecastSpecificationId, approvalStageSchema } from "./workflow";
 
 const chatWorkspaceMutationShape = {
   forecast_specification_id: ForecastSpecificationId,
@@ -171,10 +159,6 @@ export const impactReviewDecisionOutputSchema = z.strictObject({
   stages_with_existing_proposals: z.array(approvalStageSchema),
 });
 
-export const approvedForecastSpecificationLookupShape = {
-  forecast_specification_id: optionalForecastSpecificationId,
-};
-
 export const deleteForecastSpecificationShape = {
   forecast_specification_id: ForecastSpecificationId.describe(
     "The exact forecast specification record the user explicitly asked to delete.",
@@ -242,41 +226,10 @@ const prepare_forecast_specification_stageTool = {
   },
 } as const;
 
-const execute_completion_commandTool = {
-  title: "Forecast Completion",
-  description:
-    "Load the App completion/export flow or generate approved YAML, JSON, and Markdown documents. Exporting saves that revision as complete.",
-  inputSchema: CompletionCommand,
-  outputSchema: CompletionOutput,
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: true,
-    idempotentHint: true,
-    openWorldHint: false,
-  },
-} as const;
-
-/** Client-visible MCP contract. Execution is provided by the private backend. */
-const create_question_workspaceTool = {
-  title: "Create Question Workspace",
-  description:
-    "Create an empty question draft in the local in-memory adapter. Hosted clients use create_forecast_specification.",
-  inputSchema: { language_code: ForecastSpecificationLanguageCode },
-  outputSchema: z.strictObject({
-    workspace: QuestionWorkspaceSnapshot,
-  }),
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: false,
-    openWorldHint: false,
-  },
-} as const;
-
 const propose_forecast_specification_stage_changesTool = {
   title: "Propose Forecast Specification Stage Changes",
   description:
-    "Propose complete content for any forecast specification stage, including the first Question, without changing approved content. Requires current preparation and revision bindings; review the proposal in chat before exact approval.",
+    "Propose complete content for a forecast specification stage. Use when the user wants to review proposed content in chat before approving the stage. Requires current preparation and revision bindings.",
   inputSchema: proposeForecastStageChangesShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -340,8 +293,8 @@ const revalidate_unchanged_forecast_specification_stagesTool = {
 const continue_forecast_specificationTool = {
   title: "Continue Forecast Specification",
   description:
-    "Continue from the approved revision after explicit confirmation. Copy expected_revision and prerequisite_revisions verbatim from the latest review; prerequisites list upstream stages only.",
-  inputSchema: ContinueForecastCommand,
+    "Continue from the approved revision. Use when the user explicitly confirms they want to proceed. Requires the latest revision and prerequisite bindings; prerequisites list upstream stages only.",
+  inputSchema: ContinueForecastInput,
   outputSchema: z.strictObject({
     result: z.unknown(),
     preparation: StagePreparation.optional(),
@@ -355,24 +308,10 @@ const continue_forecast_specificationTool = {
   },
 } as const;
 
-const open_forecast_exportTool = {
-  title: "Open Forecast Export",
+const generate_forecast_specification_exportsTool = {
+  title: "Generate Forecast Specification Exports",
   description:
-    "Open the Export view for one forecast specification so the user can review available formats.",
-  inputSchema: ReopenCompletionCommand,
-  outputSchema: CompletionOutput,
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: true,
-    openWorldHint: false,
-  },
-} as const;
-
-const export_forecast_specificationTool = {
-  title: "Export Forecast Specification",
-  description:
-    "Generate the selected formats for the exact approved revision. Exporting saves that revision as complete.",
+    "Generate exports of the approved forecast specification. Use when the user selects export formats. Saves the approved revision as complete.",
   inputSchema: ExportCompletionCommand,
   outputSchema: CompletionOutput,
   annotations: {
@@ -383,10 +322,10 @@ const export_forecast_specificationTool = {
   },
 } as const;
 
-const decide_forecast_impact_reviewTool = {
-  title: "Record Forecast Impact Review Decision",
+const start_forecast_specification_impact_reviewTool = {
+  title: "Start Forecast Specification Impact Review",
   description:
-    "Start or decline a whole-specification impact review only after the user explicitly requests it, then mark it complete after all eligible stages are reviewed.",
+    "Record the status of a whole-specification impact review. Use when the user explicitly requests or declines a review, or when all eligible stages have been reviewed and the review is complete.",
   inputSchema: impactReviewDecisionShape,
   outputSchema: impactReviewDecisionOutputSchema,
   annotations: {
@@ -397,10 +336,10 @@ const decide_forecast_impact_reviewTool = {
   },
 } as const;
 
-const set_forecast_news_choiceTool = {
-  title: "Set Forecast News Choice",
+const set_forecast_specification_news_choiceTool = {
+  title: "Set Forecast Specification News Choice",
   description:
-    "Save the user's Skip, Research, or no-qualifying-news choice without opening the News App. Skip clears existing items from the editable draft; the approved timeline remains until its removal is approved.",
+    "Record the user's choice about optional news. Use when the user chooses to skip news, research news, or no qualifying news was found. This does not remove an approved timeline.",
   inputSchema: SetForecastNewsChoiceCommand,
   outputSchema: z.strictObject({
     result: SetForecastNewsChoiceResult,
@@ -414,9 +353,9 @@ const set_forecast_news_choiceTool = {
 } as const;
 
 const get_forecast_specification_stage_reviewTool = {
-  title: "Get Forecast Stage Review",
+  title: "Get Forecast Specification Stage Review",
   description:
-    "Fetch a saved workflow stage's structured workspace, revision, and prerequisite bindings. Initializes an untouched stage without approval; does not attach or open the MCP App UI.",
+    "Fetch a forecast specification stage's workspace and revision bindings. Use when current stage content or bindings are needed for a proposal or conflict resolution. Initializes an untouched stage without approval; does not attach or open the MCP App UI.",
   inputSchema: {
     forecast_specification_id: ForecastSpecificationId,
     stage: approvalStageSchema,
@@ -431,20 +370,6 @@ const get_forecast_specification_stage_reviewTool = {
   }),
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: true,
-    openWorldHint: false,
-  },
-} as const;
-
-const get_approved_forecast_specificationTool = {
-  title: "Get Approved Forecast Specification",
-  description:
-    "Retrieve the approved stages of one Forecast Specification. Omit the ID only for the current session's most recently updated record; provide it for an explicit HTTP handoff.",
-  inputSchema: approvedForecastSpecificationLookupShape,
-  outputSchema: approvedForecastSpecificationRecallSchema,
-  annotations: {
-    readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
     openWorldHint: false,
@@ -482,7 +407,7 @@ const get_plugin_feedback_stepTool = {
 const submit_plugin_feedbackTool = {
   title: "Submit Plugin Feedback",
   description:
-    "Store feedback the user explicitly chose to submit about Bleavit Foresight. Stores only the submitted text and a deletion receipt for 180 days.",
+    "Store feedback about Bleavit Foresight. Use when the user explicitly chooses to submit feedback. Stores only the submitted text and a deletion receipt for 180 days.",
   inputSchema: submitPluginFeedbackShape,
   outputSchema: submitPluginFeedbackOutputSchema,
   annotations: {
@@ -509,19 +434,15 @@ const delete_plugin_feedbackTool = {
 
 const baseForesightTools: {
   readonly prepare_forecast_specification_stage: typeof prepare_forecast_specification_stageTool;
-  readonly create_question_workspace: typeof create_question_workspaceTool;
   readonly propose_forecast_specification_stage_changes: typeof propose_forecast_specification_stage_changesTool;
   readonly approve_forecast_specification_stage_proposal: typeof approve_forecast_specification_stage_proposalTool;
   readonly discard_forecast_specification_stage_proposal: typeof discard_forecast_specification_stage_proposalTool;
   readonly revalidate_unchanged_forecast_specification_stages: typeof revalidate_unchanged_forecast_specification_stagesTool;
   readonly continue_forecast_specification: typeof continue_forecast_specificationTool;
-  readonly set_forecast_news_choice: typeof set_forecast_news_choiceTool;
+  readonly set_forecast_specification_news_choice: typeof set_forecast_specification_news_choiceTool;
   readonly get_forecast_specification_stage_review: typeof get_forecast_specification_stage_reviewTool;
-  readonly decide_forecast_impact_review: typeof decide_forecast_impact_reviewTool;
-  readonly get_approved_forecast_specification: typeof get_approved_forecast_specificationTool;
-  readonly execute_completion_command: typeof execute_completion_commandTool;
-  readonly open_forecast_export: typeof open_forecast_exportTool;
-  readonly export_forecast_specification: typeof export_forecast_specificationTool;
+  readonly start_forecast_specification_impact_review: typeof start_forecast_specification_impact_reviewTool;
+  readonly generate_forecast_specification_exports: typeof generate_forecast_specification_exportsTool;
   readonly delete_forecast_specification: typeof delete_forecast_specificationTool;
   readonly get_plugin_feedback_step: typeof get_plugin_feedback_stepTool;
   readonly submit_plugin_feedback: typeof submit_plugin_feedbackTool;
@@ -529,7 +450,6 @@ const baseForesightTools: {
 } = {
   prepare_forecast_specification_stage:
     prepare_forecast_specification_stageTool,
-  create_question_workspace: create_question_workspaceTool,
   propose_forecast_specification_stage_changes:
     propose_forecast_specification_stage_changesTool,
   approve_forecast_specification_stage_proposal:
@@ -539,14 +459,14 @@ const baseForesightTools: {
   revalidate_unchanged_forecast_specification_stages:
     revalidate_unchanged_forecast_specification_stagesTool,
   continue_forecast_specification: continue_forecast_specificationTool,
-  set_forecast_news_choice: set_forecast_news_choiceTool,
+  set_forecast_specification_news_choice:
+    set_forecast_specification_news_choiceTool,
   get_forecast_specification_stage_review:
     get_forecast_specification_stage_reviewTool,
-  decide_forecast_impact_review: decide_forecast_impact_reviewTool,
-  get_approved_forecast_specification: get_approved_forecast_specificationTool,
-  execute_completion_command: execute_completion_commandTool,
-  open_forecast_export: open_forecast_exportTool,
-  export_forecast_specification: export_forecast_specificationTool,
+  start_forecast_specification_impact_review:
+    start_forecast_specification_impact_reviewTool,
+  generate_forecast_specification_exports:
+    generate_forecast_specification_exportsTool,
   delete_forecast_specification: delete_forecast_specificationTool,
   get_plugin_feedback_step: get_plugin_feedback_stepTool,
   submit_plugin_feedback: submit_plugin_feedbackTool,

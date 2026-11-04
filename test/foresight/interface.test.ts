@@ -397,27 +397,23 @@ describe("public forecast interface", () => {
       "background_information",
       "news_timeline",
     ]);
-    expect(foresightTools.execute_completion_command).toBeDefined();
   });
 
   test("model completion operations have separate schemas and risk hints", () => {
     expect(
-      foresightTools.open_forecast_export.inputSchema.safeParse({
-        kind: "reopen",
-        forecast_specification_id: "00000000-0000-4000-8000-000000000002",
-      }).success,
-    ).toBe(true);
-    expect(
-      foresightTools.export_forecast_specification.inputSchema.safeParse({
-        kind: "reopen",
-        forecast_specification_id: "00000000-0000-4000-8000-000000000002",
-      }).success,
+      foresightTools.generate_forecast_specification_exports.inputSchema.safeParse(
+        {
+          kind: "reopen",
+          forecast_specification_id: "00000000-0000-4000-8000-000000000002",
+        },
+      ).success,
     ).toBe(false);
     expect(
-      foresightTools.set_forecast_news_choice.annotations.destructiveHint,
+      foresightTools.set_forecast_specification_news_choice.annotations
+        .destructiveHint,
     ).toBe(true);
     expect(
-      foresightTools.create_question_workspace.annotations.destructiveHint,
+      foresightTools.create_forecast_specification.annotations.destructiveHint,
     ).toBe(false);
   });
 
@@ -678,15 +674,14 @@ describe("public forecast interface", () => {
     expect(foresightServerInstructions).toContain(
       "Pass the returned `forecast_specification_id` to every approval call",
     );
-    expect(foresightServerInstructions).toContain("open_forecast_export");
     expect(foresightServerInstructions).toContain(
-      "export_forecast_specification",
+      "open_forecast_specification_stage",
+    );
+    expect(foresightServerInstructions).toContain(
+      "generate_forecast_specification_exports",
     );
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
-    expect(foresightServerInstructions).toContain(
-      "resume_forecast_specification",
-    );
     expect(foresightServerInstructions).not.toContain(
       "check_active_forecast_draft",
     );
@@ -702,7 +697,7 @@ describe("public forecast interface", () => {
       /Never\s+submit a new forecast question under the old specification ID/,
     );
     expect(foresightServerInstructions).toMatch(
-      /delete_forecast_draft[\s\S]*create_forecast_specification/,
+      /delete_forecast_specification[\s\S]*create_forecast_specification/,
     );
     expect(foresightServerInstructions).toContain(
       "do not silently create a replacement",

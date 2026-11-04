@@ -19,10 +19,9 @@ not establish that sources are independent or that a forecast is legally
 compliant; the plugin's workflow instructions and review process address those
 questions separately.
 
-Approved forecast specifications are retrieved through the public
-`get_approved_forecast_specification` tool. The client-visible Markdown
-instructions define the review format; rendering and deployment
-implementations remain private.
+Approved forecast specification stages are reviewed through the stage workflow.
+The client-visible Markdown instructions define the review format; rendering
+and deployment implementations remain private.
 
 The public source and npm package use Apache-2.0. Hosted-service code retains
 the license and attribution of inherited public material. Narrowing the

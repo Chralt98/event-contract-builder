@@ -749,6 +749,10 @@ export const ContinueForecastCommand = z.strictObject({
   approved_revision: WorkspaceRevision,
   next_stage: WorkspaceNextStage,
 });
+/** Public tool input. The server supplies the internal command discriminator. */
+export const ContinueForecastInput = z.object(
+  ContinueForecastCommand.omit({ kind: true }).shape,
+);
 type AdvancingWorkspaceCommand = {
   kind: "continue";
   stage: z.infer<typeof editableWorkspaceStages>;

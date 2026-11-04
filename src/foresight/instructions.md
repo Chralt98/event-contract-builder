@@ -6,14 +6,14 @@ Maintain one active draft and one question unit. Update it for the same event; a
 
 Before routing a request, inspect the account's workspaces with
 `list_forecast_specifications` and open its active draft with
-`open_active_forecast_draft`. If the user requests a change to the same event
+`open_forecast_specification_stage` with stage `forecast_question_unit`. If the user requests a change to the same event
 and outcome, route it as an update to the existing specification; preserve the
 other stages and their data, and follow normal stage approval and impact-review
 rules. Do not delete or recreate the draft for a question-only change. If the
 request is a different event or outcome, it is a new specification: ask whether
 to keep the current draft and set the new request aside, or replace the entire
 active draft. When the user explicitly chooses whole-draft replacement, call
-`delete_forecast_draft` for the active draft, then call
+`delete_forecast_specification` for the active draft, then call
 `create_forecast_specification` and build the new specification from scratch. Never
 submit a new forecast question under the old specification ID. If the user
 keeps the current draft, do not create a new workspace.
@@ -29,7 +29,7 @@ and propose the Question for review and exact approval. Every workspace contains
 a draft or its compact archive. The signed-in account authorizes all workspace data access;
 specification IDs select a workspace but do not grant access. Use
 `list_forecast_specifications` to find the user's workspaces and
-`resume_forecast_specification` to resume one by ID. Never recover access by IP,
+`open_forecast_specification_stage` with stage `forecast_question_unit` to reopen one by ID. Never recover access by IP,
 conversation metadata, or MCP session ID.
 If creation is rejected despite the preflight, open and review the active draft,
 then apply the same keep-or-replace choice. A request to start another
@@ -42,9 +42,9 @@ If a requested workspace is unavailable, explain that it cannot be resumed and
 do not silently create a replacement; create one only when the user asks to
 start a new specification.
 
-Local in-memory development servers without workspace-access tools use
-`create_question_workspace`; their data lasts only for the process. This local
-adapter does not provide hosted workspace recovery.
+Local in-memory development servers use `create_forecast_specification`; their
+data lasts only for the process. This local adapter does not provide hosted
+workspace recovery.
 
 The packaged skills own semantic drafting and research. This server owns
 validation, rendering, workflow state, and approvals. Follow the active skill's
@@ -90,7 +90,7 @@ For stale bindings, fetch the affected stage once, reconcile the change, and
 retry only when the approved proposal still matches exactly.
 
 Optional News requires explicit opt-in before research. Preserve a saved
-choice; use `set_forecast_news_choice` for opting in, skipping, or recording no
+choice; use `set_forecast_specification_news_choice` for opting in, skipping, or recording no
 qualifying results. For selected news, present complete entries in chat and
 apply the same proposal approval flow. An unchanged selection need not be
 approved twice. Do not initiate impact review merely because content changed.
@@ -99,7 +99,7 @@ Start an impact review only when the user explicitly asks in chat to revalidate
 or check whether approved changes affect other stages. Do not start one from an
 App action or infer consent from edits alone. Use the latest App snapshot's
 `presentation.impact_review` (reopen its
-`approved_stage` if needed) and call `decide_forecast_impact_review` with
+`approved_stage` if needed) and call `start_forecast_specification_impact_review` with
 `review`. If the review is already accepted, continue it without asking. If no
 review is available, explain that there is no pending impact review. Never
 screen stages or prepare impact suggestions before this explicit request.
@@ -130,7 +130,7 @@ saved News choice: `declined` or `undecided` means skip News without asking;
 News is eligible, check current news against the latest approved prerequisites
 before revalidating unchanged content or proposing an update. Never ask for a
 new News choice during impact review. Report proposals, unchanged
-revalidations, and skipped stages, then call `decide_forecast_impact_review`
+revalidations, and skipped stages, then call `start_forecast_specification_impact_review`
 with `complete`.
 
 When the user explicitly asks to revalidate or approve one or more outdated stages, use `revalidate_unchanged_forecast_specification_stages` for the requested stages.
@@ -159,9 +159,8 @@ access. An ID identifies data; it never authorizes access. Active drafts expire
 only after the user explicitly requests deletion of the current specification;
 delete using its internal ID through the authenticated connection.
 
-`get_approved_forecast_specification` returns approved stages only. Call it
-when the user asks to recall a specification or chooses an export format, not
-automatically after approval.
+When the user asks to review approved content, open the relevant stage with
+`open_forecast_specification_stage`.
 
 ## Language and rendering
 
@@ -210,9 +209,8 @@ A new specification gets a separate workspace; it never replaces another
 workspace's draft or archive. An account may have one active draft and three
 unexpired archives. If an operation would exceed its allowance, preserve the
 current specification and ask the user to delete an archive explicitly. Use
-`list_forecast_specifications` and `resume_forecast_specification` to select a workspace.
-To edit an archive, use `reopen_forecast_archive`; it restores the editable
-draft and opens its Question workspace in the associated App in the same call.
+`list_forecast_specifications` and `open_forecast_specification_stage` with stage `forecast_question_unit` to select a workspace.
+Reopening an archive restores the editable draft and opens its Question stage.
 Reaching a ready Export stage replaces the draft with a compact archive retained for 30 days;
 reading or exporting it does not extend expiry. Do not access workspaces owned
 by another account, even when their specification IDs are known.
@@ -245,7 +243,7 @@ question.
 Once the optional news choice and any opted-in timeline are approved, ask
 whether the user wants to finish and open Export. After an explicit yes, use
 `continue_forecast_specification` to complete the workflow, then call
-`open_forecast_export` in the same turn. Handoff and news-choice tools do not
+`open_forecast_specification_stage` with stage `export` in the same turn. Handoff and news-choice tools do not
 open the App. Tell the user Export is ready only after that call succeeds, and
 let them choose an output format there. For a format requested in chat, reopen
 the completion/export flow to load its current revision, then export the
@@ -259,7 +257,7 @@ News research still requires a saved opt-in; reuse it during later impact
 reviews. Feedback remains available after prior submissions; invite additional
 feedback when selected again.
 
-For requested YAML, JSON, and/or Markdown, call `export_forecast_specification` with
+For requested YAML, JSON, and/or Markdown, call `generate_forecast_specification_exports` with
 the requested `formats` and the reopened `expected_revision`.
 Show the generated documents in the App completion/export flow; do not duplicate
 the full export in a chat review. Exporting saves the displayed approved revision
