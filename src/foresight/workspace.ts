@@ -695,28 +695,20 @@ export const WorkspaceActionKind = z.enum([
   "reopen",
   "set_news_choice",
   "edit_draft",
-  "submit_generated_draft",
   "submit_proposal",
   "discard_proposal",
   "accept_proposal",
   "revalidate_unchanged",
-  "approve",
-  "approve_and_continue",
-  "complete_review",
   "continue",
 ]);
 export const workspaceActionLabels = {
   reopen: "Refresh",
   set_news_choice: "Choose news",
   edit_draft: "Save draft",
-  submit_generated_draft: "Save generated draft",
   submit_proposal: "Propose changes",
   discard_proposal: "Discard",
   accept_proposal: "Accept suggestion",
   revalidate_unchanged: "Confirm unchanged content",
-  approve: "Approve only (stay)",
-  approve_and_continue: "Approve and continue",
-  complete_review: "Complete AI review",
   continue: "Continue",
 } satisfies Record<z.infer<typeof WorkspaceActionKind>, string>;
 export function workspaceActionLabel(command: WorkspaceCommand): string {
@@ -750,12 +742,6 @@ const mutation = {
   ...workspaceRevisionBindingShape,
   stage: editableWorkspaceStages,
 };
-export const ApproveAndContinueCommand = z.strictObject({
-  ...mutation,
-  kind: z.literal("approve_and_continue"),
-  preparation_receipt: OptionalPreparationReceipt,
-  next_stage: WorkspaceNextStage,
-});
 export const ContinueForecastCommand = z.strictObject({
   ...mutation,
   kind: z.literal("continue"),
@@ -764,7 +750,7 @@ export const ContinueForecastCommand = z.strictObject({
   next_stage: WorkspaceNextStage,
 });
 type AdvancingWorkspaceCommand = {
-  kind: "approve_and_continue" | "continue";
+  kind: "continue";
   stage: z.infer<typeof editableWorkspaceStages>;
   next_stage: z.infer<typeof WorkspaceNextStage>;
 };
@@ -784,15 +770,6 @@ function validateNextStage(
       message: "Continue must request the next workflow stage.",
     });
 }
-/** Model-facing revision-bound approval/continue actions without App coupling. */
-export const AdvanceForecastCommand = boundedPayload(
-  z
-    .discriminatedUnion("kind", [
-      ApproveAndContinueCommand,
-      ContinueForecastCommand,
-    ])
-    .superRefine(validateNextStage),
-);
 /** Model-facing optional-news choice without opening the MCP App. */
 export const SetForecastNewsChoiceCommand = boundedPayload(
   z.strictObject({
@@ -847,12 +824,6 @@ export const WorkspaceCommand = boundedPayload(
       }),
       z.strictObject({
         ...mutation,
-        kind: z.literal("submit_generated_draft"),
-        preparation_receipt: OptionalPreparationReceipt,
-        draft: WorkspaceDraft,
-      }),
-      z.strictObject({
-        ...mutation,
         kind: z.literal("submit_proposal"),
         preparation_receipt: OptionalPreparationReceipt,
         proposal_id: z.uuid(),
@@ -888,15 +859,6 @@ export const WorkspaceCommand = boundedPayload(
         kind: z.literal("set_news_choice"),
         choice: NewsChoice.exclude(["undecided"]),
       }),
-      z.strictObject({ ...mutation, kind: z.literal("approve") }),
-      ApproveAndContinueCommand,
-      z.strictObject({
-        ...mutation,
-        stage: z.enum(["forecast_question_unit", "defined_terms"]),
-        kind: z.literal("complete_review"),
-        approved_revision: WorkspaceRevision,
-        feedback: z.string().trim().min(1).max(4000),
-      }),
       ContinueForecastCommand,
     ])
     .superRefine((command, ctx) => {
@@ -912,11 +874,7 @@ export const WorkspaceCommand = boundedPayload(
           path: ["draft"],
           message: "Draft must match the command stage.",
         });
-      if (
-        command.kind === "continue" ||
-        command.kind === "approve_and_continue"
-      )
-        validateNextStage(command, ctx);
+      if (command.kind === "continue") validateNextStage(command, ctx);
     }),
 );
 export type WorkspaceCommand = z.infer<typeof WorkspaceCommand>;
@@ -1039,13 +997,6 @@ export const QuestionWorkspaceSnapshot = boundedPayload(
         outdated: z.boolean(),
       })
       .nullable(),
-    question_review: z
-      .strictObject({
-        approved_revision: WorkspaceRevision,
-        feedback: z.string().trim().min(1).max(4000),
-      })
-      .nullable()
-      .default(null),
     proposals: z
       .array(
         z.strictObject({
@@ -1135,13 +1086,6 @@ export const ContentWorkspaceSnapshot = boundedPayload(
           outdated: z.boolean(),
         })
         .nullable(),
-      terms_review: z
-        .strictObject({
-          approved_revision: WorkspaceRevision,
-          feedback: z.string().trim().min(1).max(4000),
-        })
-        .nullable()
-        .default(null),
       proposals: z
         .array(
           z.strictObject({

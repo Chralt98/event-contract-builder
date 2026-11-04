@@ -40,17 +40,9 @@ test("stage bundles contain the canonical skill and its required references", ()
   }
 });
 
-test("every model submission requires a preparation receipt in its schema", () => {
-  for (const name of [
-    "submit_drafted_question",
-    "submit_forecast_question_unit",
-    "submit_defined_terms",
-    "submit_resolution_source",
-    "submit_resolution_criteria",
-    "submit_background_information",
-    "submit_news_timeline",
-  ] as const) {
-    const schema = z.toJSONSchema(z.object(foresightTools[name].inputSchema));
-    expect(schema.required).toContain("preparation_receipt");
-  }
+test("stage proposals require a preparation receipt", () => {
+  const schema = z.toJSONSchema(
+    foresightTools.propose_forecast_specification_stage_changes.inputSchema,
+  );
+  expect(schema.required).toContain("preparation_receipt");
 });

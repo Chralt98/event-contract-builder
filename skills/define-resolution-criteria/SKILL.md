@@ -17,26 +17,12 @@ single complete Resolution Criteria text.
    open the Criteria App while conducting the chat interview. Follow the
    [criteria interview](references/criteria-spec.md#chat-interview), using
    `request_user_input_async` for each round of material user decisions.
-3. Once decisions are settled, construct and validate the criteria, show the
-   complete proposal in text chat, and ask whether the user approves it or
-   wants changes. Revise in chat and ask again after each revision. Only when
-   the user explicitly approves the exact text for entry, submit it
-   once. Use `submit_resolution_criteria` when it is in the live tool catalog;
-   otherwise follow the server-wide
-   [fallback](../../src/foresight/instructions.md#workflow-state). Resolve any
-   missing material choice in chat before drafting. The App is the final
-   review after the chat-approved text has been submitted.
-4. For a later criteria interview or edit, wait for the user to ask in chat.
-   Read the current saved criteria and revision, then use the same interview
-   and iterative chat proposal. Get explicit approval of the exact
-   revised text before submitting it as a revision-bound proposal; do not
-   trigger this workflow from an App suggestion action.
-5. Use the submission response according to the server-wide
-   [MCP App rendering rule](../../src/foresight/instructions.md#language-and-rendering).
-   Follow the server-wide
-   [transfer, approval, and continuation routing](../../src/foresight/instructions.md#workflow-state).
-   Apply the reference's post-approval question alignment check before asking
-   whether to continue.
+3. Construct and validate the criteria. Prepare Criteria and propose the
+   complete text with current bindings; present it in chat and handle revisions
+   and exact approval under the server-wide
+   [workflow](../../src/foresight/instructions.md#workflow-state).
+4. Apply the reference's post-approval question alignment check before asking
+   separately whether to continue.
 
 Do not modify the forecast question unit, definitions, or source hierarchy. Follow the
 server-wide language, metadata, rendering, and approval rules.

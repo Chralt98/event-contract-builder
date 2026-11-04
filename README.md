@@ -39,7 +39,8 @@ const draft: ForecastQuestionUnitT = {
 };
 
 const validatedDraft = ForecastQuestionUnit.parse(draft);
-const submitQuestionTool = foresightTools.submit_drafted_question;
+const submitQuestionTool =
+  foresightTools.propose_forecast_specification_stage_changes;
 
 console.log(validatedDraft.question);
 console.log(submitQuestionTool.title);

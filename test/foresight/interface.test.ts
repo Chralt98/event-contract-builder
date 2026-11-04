@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { z } from "zod";
 import {
   DataSource,
+  SourceHierarchy,
+  ResolutionCriteria,
   ForecastBackgroundInformation,
   ForecastNewsTimeline,
   approvalStageSchema,
@@ -10,7 +12,6 @@ import {
   ForecastSpecificationLanguageCode,
   foresightTools,
   parseConnectorResolutionCriteria,
-  parseConnectorForecastQuestionUnit,
   foresightServerInstructions,
   foresightDiscoveryInstructions,
   MAX_SOURCE_URLS,
@@ -74,19 +75,6 @@ describe("public forecast interface", () => {
     };
 
     expect(
-      foresightTools.save_chat_authored_forecast_specification_stage_draft.inputSchema.safeParse(
-        prepared,
-      ).success,
-    ).toBe(true);
-    expect(
-      foresightTools.save_chat_authored_forecast_specification_stage_draft.inputSchema.safeParse(
-        {
-          ...prepared,
-          stage: "resolution_sources",
-        },
-      ).success,
-    ).toBe(false);
-    expect(
       foresightTools.propose_forecast_specification_stage_changes.inputSchema.safeParse(
         prepared,
       ).success,
@@ -94,7 +82,7 @@ describe("public forecast interface", () => {
 
     const proposal = { ...bindings, proposal_id: id };
     expect(
-      foresightTools.discard_forecast_stage_proposal.inputSchema.safeParse(
+      foresightTools.discard_forecast_specification_stage_proposal.inputSchema.safeParse(
         proposal,
       ).success,
     ).toBe(true);
@@ -107,22 +95,16 @@ describe("public forecast interface", () => {
     ).toBe(true);
 
     expect(
-      foresightTools.revalidate_unchanged_forecast_stage.inputSchema.safeParse({
-        ...bindings,
-        approved_revision: "approved-revision",
-        rationale: "Content is unchanged and prerequisites are current.",
-      }).success,
+      foresightTools.revalidate_unchanged_forecast_specification_stages.inputSchema.safeParse(
+        {
+          forecast_specification_id: id,
+          stages: ["news_timeline"],
+          rationale: "The saved timeline remains unchanged.",
+        },
+      ).success,
     ).toBe(true);
     expect(
-      foresightTools.revalidate_unchanged_forecast_stage.inputSchema.safeParse({
-        ...bindings,
-        stage: "news_timeline",
-        approved_revision: "approved-revision",
-        rationale: "The saved timeline remains unchanged.",
-      }).success,
-    ).toBe(true);
-    expect(
-      foresightTools.revalidate_unchanged_forecast_stages.inputSchema.safeParse(
+      foresightTools.revalidate_unchanged_forecast_specification_stages.inputSchema.safeParse(
         {
           forecast_specification_id: id,
           stages: ["defined_terms", "resolution_criteria", "news_timeline"],
@@ -131,7 +113,7 @@ describe("public forecast interface", () => {
       ).success,
     ).toBe(true);
     expect(
-      foresightTools.revalidate_unchanged_forecast_stages.inputSchema.safeParse(
+      foresightTools.revalidate_unchanged_forecast_specification_stages.inputSchema.safeParse(
         {
           forecast_specification_id: id,
           stages: ["defined_terms", "defined_terms"],
@@ -139,23 +121,11 @@ describe("public forecast interface", () => {
         },
       ).success,
     ).toBe(false);
-    expect(
-      foresightTools.complete_forecast_stage_review.inputSchema.safeParse({
-        ...bindings,
-        stage: "forecast_question_unit",
-        approved_revision: "approved-revision",
-        feedback: "The approved question is clear.",
-      }).success,
-    ).toBe(true);
-
     for (const name of [
-      "save_chat_authored_forecast_specification_stage_draft",
       "propose_forecast_specification_stage_changes",
       "approve_forecast_specification_stage_proposal",
-      "discard_forecast_stage_proposal",
-      "revalidate_unchanged_forecast_stage",
-      "revalidate_unchanged_forecast_stages",
-      "complete_forecast_stage_review",
+      "discard_forecast_specification_stage_proposal",
+      "revalidate_unchanged_forecast_specification_stages",
     ] as const) {
       const tool = foresightTools[name];
       expect(tool.description.length).toBeGreaterThan(20);
@@ -200,9 +170,12 @@ describe("public forecast interface", () => {
   });
 
   test("source schemas validate ranks and allow repeated source details", () => {
-    const schema = z.object(
-      foresightTools.submit_resolution_source.inputSchema,
-    );
+    const schema = z.object({
+      sources: SourceHierarchy,
+      condition_sources: z
+        .union([SourceHierarchy, z.array(DataSource).length(0)])
+        .optional(),
+    });
     expect(schema.shape).not.toHaveProperty("coverage_gaps");
     expect(schema.shape).not.toHaveProperty(
       "alternative_forecast_specification",
@@ -280,9 +253,12 @@ describe("public forecast interface", () => {
   });
 
   test("fallbacks and private data sources need only a name and URL list", () => {
-    const schema = z.object(
-      foresightTools.submit_resolution_source.inputSchema,
-    );
+    const schema = z.object({
+      sources: SourceHierarchy,
+      condition_sources: z
+        .union([SourceHierarchy, z.array(DataSource).length(0)])
+        .optional(),
+    });
     const mirror = {
       id: "mirror-feed",
       rank: 2,
@@ -311,9 +287,12 @@ describe("public forecast interface", () => {
   });
 
   test("conditional sources use an independently validated hierarchy", () => {
-    const schema = z.object(
-      foresightTools.submit_resolution_source.inputSchema,
-    );
+    const schema = z.object({
+      sources: SourceHierarchy,
+      condition_sources: z
+        .union([SourceHierarchy, z.array(DataSource).length(0)])
+        .optional(),
+    });
     const conditionalUnit = {
       question: "Will Alice win the election?",
       condition: {
@@ -343,9 +322,12 @@ describe("public forecast interface", () => {
       rank: 1,
       name: "Official account on a social platform",
     };
-    const schema = z.object(
-      foresightTools.submit_resolution_source.inputSchema,
-    );
+    const schema = z.object({
+      sources: SourceHierarchy,
+      condition_sources: z
+        .union([SourceHierarchy, z.array(DataSource).length(0)])
+        .optional(),
+    });
 
     expect(DataSource.parse(accountSource)).toMatchObject({
       ...accountSource,
@@ -357,9 +339,12 @@ describe("public forecast interface", () => {
   });
 
   test("sources can omit URLs and one source can use multiple locators", () => {
-    const schema = z.object(
-      foresightTools.submit_resolution_source.inputSchema,
-    );
+    const schema = z.object({
+      sources: SourceHierarchy,
+      condition_sources: z
+        .union([SourceHierarchy, z.array(DataSource).length(0)])
+        .optional(),
+    });
     expect(
       schema.safeParse({
         ...input,
@@ -403,139 +388,6 @@ describe("public forecast interface", () => {
     ).toBe(false);
   });
 
-  test("connector shape stays flat while runtime validates domain invariants", () => {
-    const schema = z.toJSONSchema(
-      z.object(foresightTools.submit_forecast_question_unit.inputSchema),
-    );
-    const draftSchema = z.toJSONSchema(
-      z.object(foresightTools.submit_drafted_question.inputSchema),
-    );
-    const unit = schema.properties!.forecast_question_unit!;
-    expect(unit).not.toHaveProperty("oneOf");
-    expect(draftSchema.properties!.language_code).not.toHaveProperty("pattern");
-    expect(draftSchema.required).toEqual(
-      expect.arrayContaining(["language_code", "units", "followUp"]),
-    );
-    expect(draftSchema.properties).not.toHaveProperty("draft_units");
-    expect(
-      parseConnectorForecastQuestionUnit({
-        question: "Will it rain tomorrow?",
-      }),
-    ).toEqual({ question: "Will it rain tomorrow?" });
-    expect(() =>
-      parseConnectorForecastQuestionUnit({
-        question: "No question mark here",
-      }),
-    ).toThrow();
-  });
-
-  test("first drafts submit one App question and keep nearby ideas in chat", () => {
-    const schema = z.object(foresightTools.submit_drafted_question.inputSchema);
-    const unit = (question: string) => ({
-      question,
-    });
-    const first = unit("Will the event happen by the deadline?");
-    const second = unit("Will the event be confirmed by the deadline?");
-    const third = unit("Will a reliable proxy indicate the event by then?");
-    const payload = {
-      preparation_receipt: input.preparation_receipt,
-      language_code: "de",
-      units: [first],
-      followUp: "Does this question look right?",
-    };
-
-    expect(schema.safeParse(payload).success).toBe(true);
-    expect(schema.safeParse({ ...payload, units: [] }).success).toBe(false);
-    expect(
-      schema.safeParse({
-        ...payload,
-        units: Array.from({ length: 6 }, (_, index) =>
-          unit(`Will event ${index} happen before the deadline?`),
-        ),
-      }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ ...payload, units: [first, second, third] }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({
-        ...payload,
-        units: [
-          first,
-          second,
-          third,
-          unit("Will data source A report an outcome?"),
-          unit("Will data source B report an outcome?"),
-        ],
-      }).success,
-    ).toBe(false);
-    expect(
-      foresightTools.submit_drafted_question.outputSchema.safeParse({
-        ...payload,
-        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-        units: [first],
-        expected_revision: "r1",
-        prerequisite_revisions: {},
-        workspace: {
-          forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-          language_code: "de",
-          revision: "r1",
-          stage: "forecast_question_unit",
-          draft: { candidates: [], selected_candidate_id: null },
-          approved: null,
-          proposals: [],
-          presentation: {
-            title: "Forecast question",
-            fields: [],
-            validation_issues: [],
-            actions: [],
-          },
-        },
-      }).success,
-    ).toBe(true);
-    expect(
-      foresightTools.submit_drafted_question.outputSchema.safeParse({
-        ...payload,
-        forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-        language_code: undefined,
-        units: [first, second, third],
-        expected_revision: "r1",
-        prerequisite_revisions: {},
-        workspace: {
-          forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-          language_code: "de",
-          revision: "r1",
-          stage: "forecast_question_unit",
-          draft: { candidates: [], selected_candidate_id: null },
-          approved: null,
-          proposals: [],
-          presentation: {
-            title: "Forecast question",
-            fields: [],
-            validation_issues: [],
-            actions: [],
-          },
-        },
-      }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ ...payload, units: [first, first, second] }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({
-        ...payload,
-        units: [
-          {
-            questions: [
-              "Will the event happen before the deadline?",
-              "Will the event happen on or after the deadline?",
-            ],
-          },
-        ],
-      }).success,
-    ).toBe(false);
-  });
-
   test("forecast approval stages put optional news after historical background", () => {
     expect(approvalStageSchema.options).toEqual([
       "forecast_question_unit",
@@ -546,44 +398,6 @@ describe("public forecast interface", () => {
       "news_timeline",
     ]);
     expect(foresightTools.execute_completion_command).toBeDefined();
-  });
-
-  test("model advancement accepts only valid approve or continue actions", () => {
-    const action = {
-      contract_version: 1,
-      command_id: "00000000-0000-4000-8000-000000000001",
-      forecast_specification_id: "00000000-0000-4000-8000-000000000002",
-      expected_revision: "revision-1",
-      prerequisite_revisions: {},
-      stage: "forecast_question_unit",
-      kind: "approve_and_continue",
-      next_stage: "defined_terms",
-    };
-    const schema = foresightTools.advance_forecast_specification.inputSchema;
-
-    expect(schema.safeParse(action).success).toBe(true);
-    expect(
-      schema.safeParse({ ...action, mcp_access_token: "token" }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ ...action, next_stage: "resolution_sources" }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({ ...action, kind: "reopen", next_stage: undefined })
-        .success,
-    ).toBe(false);
-    expect(
-      foresightTools.approve_and_continue_forecast_specification.inputSchema.safeParse(
-        action,
-      ).success,
-    ).toBe(true);
-    expect(
-      foresightTools.continue_forecast_specification.inputSchema.safeParse({
-        ...action,
-        kind: "continue",
-        approved_revision: "revision-1",
-      }).success,
-    ).toBe(true);
   });
 
   test("model completion operations have separate schemas and risk hints", () => {
@@ -605,64 +419,6 @@ describe("public forecast interface", () => {
     expect(
       foresightTools.create_question_workspace.annotations.destructiveHint,
     ).toBe(false);
-  });
-
-  test("approval outputs carry handoff metadata without a text review", () => {
-    const schema = foresightTools.approve_forecast_specification.outputSchema;
-    const finalSummary = {
-      expected_revision: "r1",
-      prerequisite_revisions: {},
-      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-      language_code: "en",
-      unit_number: 1,
-      forecast_question_unit: input.forecast_question_unit,
-      approved_stage: "background_information" as const,
-    };
-
-    expect(schema.safeParse(finalSummary).success).toBe(true);
-    expect(
-      schema.safeParse({ ...finalSummary, review_markdown: "A text review" })
-        .success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({
-        ...finalSummary,
-        forecast_specification_id: undefined,
-      }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({
-        approved_stage: "background_information",
-      }).success,
-    ).toBe(false);
-    expect(
-      schema.safeParse({
-        ...finalSummary,
-        approved_stage: "news_timeline",
-        news_timeline: { items: [] },
-      }).success,
-    ).toBe(false);
-
-    expect(
-      schema.safeParse({
-        ...finalSummary,
-        approved_stage: "news_timeline",
-      }).success,
-    ).toBe(true);
-
-    const criteriaApproval = {
-      expected_revision: "r1",
-      prerequisite_revisions: {},
-      forecast_specification_id: "00000000-0000-4000-8000-000000000001",
-      language_code: "de",
-      unit_number: 1,
-      forecast_question_unit: input.forecast_question_unit,
-      approved_stage: "resolution_criteria" as const,
-    };
-    expect(schema.safeParse(criteriaApproval).success).toBe(true);
-    expect(foresightServerInstructions).toMatch(
-      /Final approvals return this metadata in structured tool\s+output/,
-    );
   });
 
   test("language code is a BCP 47 tag and canonicalized before storage", () => {
@@ -692,54 +448,10 @@ describe("public forecast interface", () => {
     );
   });
 
-  test("workflow instructions make impact reviews explicitly user-triggered and specification-wide", () => {
-    expect(foresightServerInstructions).toContain(
-      "The MCP App is the supported surface for complete workflow reviews",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /a client without MCP App support has\s+no text review fallback/,
-    );
-    expect(foresightServerInstructions).toContain("`revalidate_unchanged`");
-    expect(foresightServerInstructions).toMatch(
-      /Opening or editing a stage never starts an\s+impact\s+review\./,
-    );
-    expect(foresightServerInstructions).toContain(
-      "`decide_forecast_impact_review`",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Start an impact review only when the user explicitly asks in chat to revalidate\s+or check whether approved changes affect other stages\./,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /The App shows `↻` for an outdated stage\s+that needs review/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /do not\s+mark that stage without a concrete proposal/,
-    );
-    expect(foresightServerInstructions).toContain(
-      "and `!` when a concrete suggestion is pending",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /Before\s+submission, show the complete proposed content in chat/,
-    );
-    expect(foresightServerInstructions).toMatch(
-      /After submission, do not quote or summarize it again/,
-    );
-    expect(foresightServerInstructions).not.toContain("review_markdown");
-    expect(foresightTools.advance_forecast_specification.description).toContain(
-      "without attaching or opening the App UI",
-    );
-    expect(foresightTools.approve_forecast_specification.description).toContain(
-      "without advancing",
-    );
-    expect(foresightServerInstructions).toMatch(
-      /or repeat its reviews, draft fields,\s+validation messages, or available actions in chat/,
-    );
-  });
-
   test("background information is plain text without subheadings or references", () => {
-    const schema = z.object(
-      foresightTools.submit_background_information.inputSchema,
-    );
+    const schema = z.object({
+      background_information: ForecastBackgroundInformation,
+    });
     const payload = {
       preparation_receipt: input.preparation_receipt,
       unit_number: 1,
@@ -800,7 +512,7 @@ describe("public forecast interface", () => {
       summary: "The agency opened a public consultation.",
     };
     const timeline = { items: [item, olderItem] };
-    const schema = z.object(foresightTools.submit_news_timeline.inputSchema);
+    const schema = z.object({ news_timeline: ForecastNewsTimeline });
     const payload = {
       preparation_receipt: input.preparation_receipt,
       unit_number: 1,
@@ -868,9 +580,9 @@ describe("public forecast interface", () => {
   });
 
   test("resolution criteria accept one complete criteria text without a question field", () => {
-    const schema = z.object(
-      foresightTools.submit_resolution_criteria.inputSchema,
-    );
+    const schema = z.object({
+      resolution_criteria: ResolutionCriteria.strict(),
+    });
     const payload = {
       preparation_receipt: input.preparation_receipt,
       unit_number: 1,
@@ -961,7 +673,7 @@ describe("public forecast interface", () => {
     );
 
     expect(foresightServerInstructions).toContain(
-      "Submission tools validate and store stage content without opening the App.",
+      "The proposal does not\nchange approved content.",
     );
     expect(foresightServerInstructions).toContain(
       "Pass the returned `forecast_specification_id` to every approval call",
@@ -1037,7 +749,11 @@ describe("public forecast interface", () => {
           ? 500
           : name === "propose_forecast_specification_stage_changes"
             ? 416
-            : 260;
+            : name === "revalidate_unchanged_forecast_specification_stages"
+              ? 320
+              : name === "discard_forecast_specification_stage_proposal"
+                ? 280
+                : 260;
       expect(tool.description.length).toBeLessThanOrEqual(limit);
       expect(tool.description).not.toContain("language_code");
       expect(tool.description).not.toContain("forecast_specification_id");

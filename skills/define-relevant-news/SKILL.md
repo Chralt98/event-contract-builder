@@ -22,12 +22,10 @@ selection, removal, and approval rules.
    `request_user_input_async` for material selection choices. Follow the
    reference's approval rule so an unchanged selection is not approved twice.
    If nothing qualifies or the user selects none, do not submit.
-3. Only after the user explicitly approves the exact timeline for
-   entry, call `submit_news_timeline` with the
-   approved candidates and follow the server-wide
-   [transfer and approval routing](../../src/foresight/instructions.md#workflow-state).
-   The App shows the approved timeline for review. Then ask whether the user
-   wants to finish and open Export.
+3. Prepare News and propose the selected complete timeline with current
+   bindings. Present it in chat and follow the server-wide
+   [proposal and approval routing](../../src/foresight/instructions.md#workflow-state).
+   Then ask whether the user wants to finish and open Export.
 4. If nothing qualifies or nothing is selected, keep the background-only
    record and show the server-defined export menu.
 

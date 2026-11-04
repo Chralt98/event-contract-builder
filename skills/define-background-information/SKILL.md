@@ -18,13 +18,9 @@ for the content and source standard.
    free-form answer; do not force questions when the intent is already clear.
 3. Research durable explanatory context and draft the complete background
    payload without changing any approved stage.
-4. Show the complete proposed background in text chat and ask for approval or
-   requested edits in one ordinary chat reply. Do not use a choice selector for
-   this approval gate. Revise directly from any changes the user describes;
-   only ask a follow-up when a material detail is missing. After the user
-   approves the exact text for entry, call `submit_background_information`
-   once and follow the server-wide
-   [transfer and approval routing](../../src/foresight/instructions.md#workflow-state).
+4. Prepare Background and propose the complete text with current bindings.
+   Present it in chat and follow the server-wide
+   [proposal and approval routing](../../src/foresight/instructions.md#workflow-state).
 5. After the approved background appears in the App, ask whether to continue
    to optional News and research it, or skip News. This is the next-stage
    decision and, when no choice is saved, the News opt-in; save it with

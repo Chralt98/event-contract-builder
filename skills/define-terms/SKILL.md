@@ -14,15 +14,10 @@ analysis. It is the sole source for ambiguity and definition rules.
    wants defined, offering the candidate terms, a recommended selection, and
    an explicit choice to define none. Resolve additions, omissions, or
    uncertainties through the same chat question flow.
-2. Draft the selected term definitions in text chat. Ask whether the user
-   approves the exact map or wants changes; revise in chat and ask again after every change.
-   Only after the user explicitly approves the exact map for entry may
-   you proceed to the Terms workspace.
-3. Only after explicit chat approval, use `next_stage_bindings` from the
-   approval or stage handoff when supplied; do not reopen the prior stage or
-   fetch Terms again. If bindings are unavailable, fetch `defined_terms` once.
-   Then call `submit_defined_terms` once and follow the server-wide
-   [transfer and approval routing](../../src/foresight/instructions.md#workflow-state).
+2. Draft the selected term definitions in chat. Prepare Terms and submit the
+   complete revision-bound proposal using the current stage bindings.
+3. Present the exact proposal, handle requested revisions, and follow the
+   server-wide [approval routing](../../src/foresight/instructions.md#workflow-state).
 4. Run any required post-approval review against the exact approved revision,
    then follow the server-wide continuation routing before
    `define-resolution-source`.

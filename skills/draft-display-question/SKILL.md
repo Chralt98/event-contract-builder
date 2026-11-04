@@ -24,28 +24,14 @@ For this term's meaning, see the [forecast domain glossary](../../GLOSSARY.md).
    user explicitly chooses whole-draft replacement, delete the active draft,
    then create a new workspace. Never submit a new event under the old
    specification ID.
-2. For a new request, continue the exploration in chat. Research source
-   feasibility and present viable question-unit options for the user to select
-   and refine. Use `request_user_input_async` for material choices, then show
-   the complete question unit as a text-chat proposal and iterate until the
-   user explicitly approves the exact unit for entry. Do not create a
-   workspace, prepare a stage, or open its App while the user is still deciding
-   what to forecast.
-3. For an update to the same event/outcome, clarify the intended change and
-   source feasibility in chat
-   until there is one concrete revised question unit. Fetch its current question
-   and revision with `get_forecast_specification_stage_review` only after the user approves
-   that revision for entry. If the current content materially changes it, return
-   to chat and get approval for the revised unit before submission.
-   Once reconciled, update the existing specification with
-   `submit_drafted_question`; preserve its other stage content and follow the
-   server's normal approval and impact-review rules.
-4. For a new specification, create the workspace, prepare the stage, and submit
-   only after the user approves one complete question unit for entry. Follow
-   server-wide routing and submit that one unit with `submit_drafted_question`.
-5. After chat approval, follow the server-wide transfer, approval, and
-   continuation routing before `define-terms`. The App shows the approved
-   question for review; do not ask the user to approve it a second time.
+2. Explore the event and source feasibility in chat until one complete question
+   unit expresses the user's intent.
+3. Create a workspace for a new specification or review the existing Question
+   for an update. Prepare Question and submit a complete revision-bound
+   proposal. Preserve other stage content on updates.
+4. Present the exact proposal in chat and follow the server-wide
+   [proposal, approval, and continuation routing](../../src/foresight/instructions.md#workflow-state).
+   The App shows the approved question after exact approval.
 
 Follow the server-wide rules for language, internal metadata, rendering,
 separate records, and approvals.

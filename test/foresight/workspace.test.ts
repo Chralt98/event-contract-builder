@@ -53,7 +53,6 @@ const snapshot = {
   stage: "forecast_question_unit" as const,
   draft,
   approved: null,
-  question_review: null,
   proposals: [],
   presentation: {
     title: "Forecast question",
@@ -68,12 +67,13 @@ const snapshot = {
     validation_issues: [],
     actions: [
       {
-        label: "Approve only (stay)",
+        label: "Save draft",
         enabled: true,
         command: {
           ...identity,
           ...binding,
-          kind: "approve" as const,
+          kind: "edit_draft" as const,
+          draft,
         },
       },
     ],
@@ -215,7 +215,6 @@ test("duplicate row identities and dangling selection are rejected", () => {
 test("every mutation requires its base revision and prerequisite bindings", () => {
   const commands = [
     { kind: "edit_draft", draft },
-    { kind: "submit_generated_draft", draft },
     {
       kind: "submit_proposal",
       proposal_id: id(),
@@ -236,7 +235,6 @@ test("every mutation requires its base revision and prerequisite bindings", () =
       approved_revision: "approved-r2",
       rationale: "The approved timeline remains unchanged.",
     },
-    { kind: "approve" },
     {
       kind: "continue",
       approved_revision: "approved-1",
@@ -286,66 +284,6 @@ test("chat-driven news choices are revision-bound workspace commands", () => {
   ).toBe(false);
 });
 
-test("approve-and-continue validates stage-specific fields", () => {
-  const common = {
-    ...identity,
-    ...binding,
-    kind: "approve_and_continue",
-  } as const;
-
-  expect(
-    WorkspaceCommand.safeParse({
-      ...common,
-      stage: "forecast_question_unit",
-      next_stage: "defined_terms",
-    }).success,
-  ).toBe(true);
-  expect(
-    WorkspaceCommand.safeParse({
-      ...common,
-      stage: "defined_terms",
-      next_stage: "resolution_sources",
-    }).success,
-  ).toBe(true);
-  expect(
-    WorkspaceCommand.safeParse({
-      ...common,
-      stage: "forecast_question_unit",
-      next_stage: "resolution_sources",
-    }).success,
-  ).toBe(false);
-  expect(
-    WorkspaceCommand.safeParse({
-      ...common,
-      stage: "defined_terms",
-      candidate_id: candidate.id,
-      next_stage: "resolution_sources",
-    }).success,
-  ).toBe(false);
-  expect(
-    WorkspaceCommand.safeParse({
-      ...common,
-      stage: "forecast_question_unit",
-      kind: "select_and_approve",
-      candidate_id: candidate.id,
-    }).success,
-  ).toBe(false);
-});
-
-test("approval labels distinguish staying from advancing", () => {
-  expect(
-    workspaceActionLabel({ ...identity, ...binding, kind: "approve" }),
-  ).toBe("Approve only (stay)");
-  expect(
-    workspaceActionLabel({
-      ...identity,
-      ...binding,
-      kind: "approve_and_continue",
-      next_stage: "defined_terms",
-    }),
-  ).toBe("Approve and continue");
-});
-
 test("News choice labels stay JSON-Schema-compatible with the action shape", () => {
   const base = {
     command: {
@@ -370,40 +308,6 @@ test("News choice labels stay JSON-Schema-compatible with the action shape", () 
   expect(
     workspaceActionLabel({ ...base.command, choice: "declined" as const }),
   ).toBe("Skip");
-});
-
-test("review feedback must contain non-whitespace text", () => {
-  const command = {
-    ...identity,
-    ...binding,
-    kind: "complete_review" as const,
-    approved_revision: "approved-1",
-    feedback: " \t  ",
-  };
-  expect(WorkspaceCommand.safeParse(command).success).toBe(false);
-  expect(
-    WorkspaceCommand.parse({ ...command, feedback: "  Looks good.  " }),
-  ).toMatchObject({ feedback: "Looks good." });
-
-  expect(
-    QuestionWorkspaceSnapshot.safeParse({
-      ...snapshot,
-      question_review: {
-        approved_revision: "approved-1",
-        feedback: " \t  ",
-      },
-    }).success,
-  ).toBe(false);
-  expect(
-    WorkspaceCommand.safeParse({
-      ...identity,
-      ...binding,
-      stage: "defined_terms",
-      kind: "complete_review",
-      approved_revision: "approved-terms-1",
-      feedback: "Definitions are clear and scoped.",
-    }).success,
-  ).toBe(true);
 });
 
 test("conflicts and Continue carry recoverable, revision-bound intent", () => {

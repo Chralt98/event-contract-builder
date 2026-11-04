@@ -23,23 +23,11 @@ rules.
    the intent, ask whether the user wants to resolve it from private data they
    can authorize and identify; follow the source reference's private-source
    checks.
-4. Show the proposed complete hierarchy in text chat, including names, URLs
-   (or private sources with no URL), priorities, and any condition sources.
-   Follow the server-wide
-   [turn-completion rule](../../src/foresight/instructions.md#workflow-state)
-   when presenting the proposal and waiting for the user's response. Only after
-   the user explicitly approves the exact hierarchy for entry, submit
-   it once. Use `submit_resolution_source` when it is in the live tool catalog;
-   otherwise follow the server-wide
-   [fallback](../../src/foresight/instructions.md#workflow-state).
-5. For later user-requested edits, likewise settle and approve the complete
-   revised hierarchy in chat before using MCP tools. If the user asks for an
-   AI review, submit the full
-   suggested hierarchy using the current revision bindings, following the
-   server-wide fallback when the stage-specific tool is absent. After explicit
-   approval, follow the server-wide
-   [transfer, approval, and continuation routing](../../src/foresight/instructions.md#workflow-state)
-   to `define-resolution-criteria`.
+4. Prepare Sources and propose the complete hierarchy with current bindings.
+   Present the exact names, URLs, priorities, and condition sources in chat.
+   Handle revisions and exact approval using the server-wide
+   [workflow](../../src/foresight/instructions.md#workflow-state), then follow
+   separate continuation to `define-resolution-criteria`.
 
 Follow the server-wide rules for language, internal metadata, rendering,
 separate alternative records, and approvals.

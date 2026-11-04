@@ -26,24 +26,12 @@ frontier and ask another round if material decisions remain. There is no fixed
 question or round limit. Continue until no material decision remains; do not
 open or fetch the Criteria workspace during these rounds.
 
-When the interview is complete, construct and validate the criteria, show the
-complete proposal in text chat, and ask whether the user approves it or wants
-changes. Make each requested revision in chat and ask again whether the user
-approves it. Only after the user explicitly approves the exact text
-for entry, submit it once. Use `submit_resolution_criteria` when it is in the live tool catalog;
-otherwise follow the server-wide
-[fallback](../../../src/foresight/instructions.md#workflow-state). The result
-is saved without opening the App; the server-wide approval step then opens the
-Criteria workspace with the approved text in its editable field. After the
-first approval, use the
-existing criteria field on later visits. If the user asks in chat to repeat the interview or revise existing
-criteria, fetch the latest saved criteria and revision first. Treat the saved
-text as the starting point: ask whether it captures the user's intent, identify
-needed clarifications, and invite additional information. Use the same
-iterative in-chat interview when material choices remain. After the interview is complete,
-submit the complete revised criteria as a revision-bound proposal without
-overwriting or approving the saved draft. Do not start this workflow from an
-App suggestion action.
+When the interview is complete, construct and validate the criteria, then
+follow the server-wide [proposal and approval workflow](../../../src/foresight/instructions.md#workflow-state).
+For a later interview or revision, fetch the approved criteria and current
+bindings first. Treat the saved text as the starting point and ask for material
+clarifications in chat. Propose the complete revision without changing approved
+content until exact approval.
 
 ## Criteria
 
@@ -180,11 +168,8 @@ and exception rules consistently to every allowed value.
 
 ## Submission and recovery
 
-After all chat interview decisions are settled, show the complete criteria in
-chat and obtain explicit approval before submitting it once. The server-wide
-workflow records that approval and opens Bleavit Foresight with the approved
-criteria for review. Follow the server-wide fallback if
-`submit_resolution_criteria` is absent. Present the
+After all chat interview decisions are settled, propose the complete criteria,
+then follow the server-wide approval workflow. Present the
 single complete outcome rule. The forecast question unit already displays its
 placeholders and allowed values; do not duplicate them as per-value criteria.
 Do not append a second No rule or repeat the original unit question inside the

@@ -1,7 +1,7 @@
 # Resolution-criteria validation
 
 Run this semantic review on the single complete Resolution Criteria text after
-the chat interview and before `submit_resolution_criteria`. Compare it with the
+the chat interview and before proposing the criteria. Compare it with the
 complete approved forecast question unit,
 definitions, resolution deadline, and approved source hierarchy. Review meaning
 and coverage; wording may vary, so do not require exact phrases, case, or regex

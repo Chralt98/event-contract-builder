@@ -14,8 +14,8 @@ describe("README package usage", () => {
     };
 
     expect(ForecastQuestionUnit.parse(draft)).toEqual(draft);
-    expect(foresightTools.submit_drafted_question.title).toBe(
-      "Submit Drafted Question",
-    );
+    expect(
+      foresightTools.propose_forecast_specification_stage_changes.title,
+    ).toBe("Propose Forecast Specification Stage Changes");
   });
 });
