@@ -697,7 +697,6 @@ export const WorkspaceActionKind = z.enum([
   "edit_draft",
   "submit_generated_draft",
   "submit_proposal",
-  "apply_proposal",
   "discard_proposal",
   "accept_proposal",
   "revalidate_unchanged",
@@ -712,7 +711,6 @@ export const workspaceActionLabels = {
   edit_draft: "Save draft",
   submit_generated_draft: "Save generated draft",
   submit_proposal: "Propose changes",
-  apply_proposal: "Apply",
   discard_proposal: "Discard",
   accept_proposal: "Accept suggestion",
   revalidate_unchanged: "Confirm unchanged content",
@@ -860,14 +858,6 @@ export const WorkspaceCommand = boundedPayload(
         proposal_id: z.uuid(),
         draft: WorkspaceDraft,
         rationale: z.string().trim().min(1).max(1000).optional(),
-      }),
-      z.strictObject({
-        ...mutation,
-        kind: z.literal("apply_proposal"),
-        proposal_id: z.uuid(),
-        draft: WorkspaceDraft.optional().describe(
-          "Optional user-selected version when applying only part of a proposal. It must match the command stage.",
-        ),
       }),
       z.strictObject({
         ...mutation,

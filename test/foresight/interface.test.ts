@@ -47,7 +47,9 @@ describe("public forecast interface", () => {
     expect(
       new TextEncoder().encode(foresightDiscoveryInstructions).byteLength,
     ).toBeLessThan(600);
-    expect(foresightDiscoveryInstructions).toContain("prepare_forecast_specification_stage");
+    expect(foresightDiscoveryInstructions).toContain(
+      "prepare_forecast_specification_stage",
+    );
     expect(
       foresightServerInstructions.startsWith(foresightDiscoveryInstructions),
     ).toBe(true);
@@ -72,30 +74,37 @@ describe("public forecast interface", () => {
     };
 
     expect(
-      foresightTools.save_forecast_stage_draft.inputSchema.safeParse(prepared)
-        .success,
+      foresightTools.save_chat_authored_forecast_specification_stage_draft.inputSchema.safeParse(
+        prepared,
+      ).success,
     ).toBe(true);
     expect(
-      foresightTools.save_forecast_stage_draft.inputSchema.safeParse({
-        ...prepared,
-        stage: "resolution_sources",
-      }).success,
+      foresightTools.save_chat_authored_forecast_specification_stage_draft.inputSchema.safeParse(
+        {
+          ...prepared,
+          stage: "resolution_sources",
+        },
+      ).success,
     ).toBe(false);
     expect(
-      foresightTools.propose_forecast_stage_changes.inputSchema.safeParse(
+      foresightTools.propose_forecast_specification_stage_changes.inputSchema.safeParse(
         prepared,
       ).success,
     ).toBe(true);
 
     const proposal = { ...bindings, proposal_id: id };
-    for (const name of [
-      "apply_forecast_stage_proposal",
-      "accept_forecast_stage_proposal",
-      "discard_forecast_stage_proposal",
-    ] as const)
-      expect(foresightTools[name].inputSchema.safeParse(proposal).success).toBe(
-        true,
-      );
+    expect(
+      foresightTools.discard_forecast_stage_proposal.inputSchema.safeParse(
+        proposal,
+      ).success,
+    ).toBe(true);
+    const approvalSchema =
+      foresightTools.approve_forecast_specification_stage_proposal.inputSchema;
+    expect(approvalSchema.safeParse(proposal).success).toBe(false);
+    expect(
+      approvalSchema.safeParse({ ...proposal, approved_draft_json: "{}" })
+        .success,
+    ).toBe(true);
 
     expect(
       foresightTools.revalidate_unchanged_forecast_stage.inputSchema.safeParse({
@@ -140,10 +149,9 @@ describe("public forecast interface", () => {
     ).toBe(true);
 
     for (const name of [
-      "save_forecast_stage_draft",
-      "propose_forecast_stage_changes",
-      "apply_forecast_stage_proposal",
-      "accept_forecast_stage_proposal",
+      "save_chat_authored_forecast_specification_stage_draft",
+      "propose_forecast_specification_stage_changes",
+      "approve_forecast_specification_stage_proposal",
       "discard_forecast_stage_proposal",
       "revalidate_unchanged_forecast_stage",
       "revalidate_unchanged_forecast_stages",
@@ -232,9 +240,9 @@ describe("public forecast interface", () => {
     expect(schema.safeParse({ ...input, sources: fourSources }).success).toBe(
       true,
     );
-    expect(
-      schema.safeParse({ ...input, condition_sources: [] }).success,
-    ).toBe(true);
+    expect(schema.safeParse({ ...input, condition_sources: [] }).success).toBe(
+      true,
+    );
     const fiveSources = [
       ...fourSources,
       {
@@ -964,7 +972,9 @@ describe("public forecast interface", () => {
     );
     expect(foresightServerInstructions).not.toContain("resolvesYesWhen");
     expect(foresightServerInstructions).not.toContain("current frontier");
-    expect(foresightServerInstructions).toContain("resume_forecast_specification");
+    expect(foresightServerInstructions).toContain(
+      "resume_forecast_specification",
+    );
     expect(foresightServerInstructions).not.toContain(
       "check_active_forecast_draft",
     );
@@ -1014,14 +1024,21 @@ describe("public forecast interface", () => {
   });
 
   test("keeps tool descriptions concise and delegates procedure to skills", () => {
-    expect(foresightTools.get_forecast_specification_stage_review.description).toContain(
-      "does not attach or open the MCP App UI",
-    );
-    expect(foresightTools.continue_forecast_specification.description).toContain(
-      "prerequisites list upstream stages only",
-    );
-    for (const tool of Object.values(foresightTools)) {
-      expect(tool.description.length).toBeLessThanOrEqual(260);
+    expect(
+      foresightTools.get_forecast_specification_stage_review.description,
+    ).toContain("does not attach or open the MCP App UI");
+    expect(
+      foresightTools.continue_forecast_specification.description,
+    ).toContain("prerequisites list upstream stages only");
+    for (const [name, tool] of Object.entries(foresightTools)) {
+      // These descriptions include the explicitly requested approval boundaries.
+      const limit =
+        name === "approve_forecast_specification_stage_proposal"
+          ? 500
+          : name === "propose_forecast_specification_stage_changes"
+            ? 416
+            : 260;
+      expect(tool.description.length).toBeLessThanOrEqual(limit);
       expect(tool.description).not.toContain("language_code");
       expect(tool.description).not.toContain("forecast_specification_id");
     }

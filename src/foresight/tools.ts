@@ -111,17 +111,6 @@ export const forecastStageProposalShape = z.strictObject({
   proposal_id: z.uuid(),
 });
 
-export const applyForecastStageProposalShape = boundedWorkspaceToolInput(
-  z
-    .strictObject({
-      ...forecastStageProposalShape.shape,
-      draft: WorkspaceDraft.optional(),
-    })
-    .superRefine((value, ctx) => {
-      addDraftStageIssue(value, ctx);
-    }),
-);
-
 export const revalidateUnchangedForecastStageShape = z.strictObject({
   ...chatWorkspaceMutationShape,
   stage: z.enum([
@@ -572,10 +561,10 @@ const create_question_workspaceTool = {
   },
 } as const;
 
-const save_forecast_stage_draftTool = {
-  title: "Save Forecast Stage Draft",
+const save_chat_authored_forecast_specification_stage_draftTool = {
+  title: "Save Chat-Authored Forecast Specification Stage Draft",
   description:
-    "Save a partial or complete chat-authored draft for one forecast stage using its reviewed revision bindings. The draft remains pending explicit stage approval and opens in the App for review.",
+    "Save a chat-authored draft for a forecast specification stage. Use when saving a partial or complete draft prepared in chat. Requires a current preparation receipt and revision bindings. The stage remains pending explicit approval.",
   inputSchema: saveForecastStageDraftShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -586,10 +575,10 @@ const save_forecast_stage_draftTool = {
   },
 } as const;
 
-const propose_forecast_stage_changesTool = {
-  title: "Propose Forecast Stage Changes",
+const propose_forecast_specification_stage_changesTool = {
+  title: "Propose Forecast Specification Stage Changes",
   description:
-    "Create a revision-bound stage proposal without changing the active draft. Present changed values and rationale in chat; wait for chat approval before applying it. Requires current preparation and revision bindings.",
+    "Propose changes to a forecast specification stage. Use when the user wants to review chat-prepared changes before they are applied. Requires a current preparation receipt and revision bindings. Returns a revision-bound proposal without changing the active draft. Present the changed values and rationale in chat, then wait for the user's explicit decision. This tool does not apply the proposal or approve the stage.",
   inputSchema: proposeForecastStageChangesShape,
   outputSchema: workspaceActionOutputSchema,
   annotations: {
@@ -600,25 +589,19 @@ const propose_forecast_stage_changesTool = {
   },
 } as const;
 
-const apply_forecast_stage_proposalTool = {
-  title: "Apply Forecast Stage Proposal",
+const approve_forecast_specification_stage_proposalTool = {
+  title: "Approve Forecast Specification Stage Proposal",
   description:
-    "Apply a current proposal to its active stage draft without approving the stage. Use only after the user explicitly approves that exact proposal in chat; this updates the active draft and App, and stage approval remains separate.",
-  inputSchema: applyForecastStageProposalShape,
-  outputSchema: workspaceActionOutputSchema,
-  annotations: {
-    readOnlyHint: false,
-    destructiveHint: true,
-    idempotentHint: false,
-    openWorldHint: false,
-  },
-} as const;
-
-const accept_forecast_stage_proposalTool = {
-  title: "Accept Forecast Stage Proposal",
-  description:
-    "Apply and approve one current forecast stage proposal. Use only when the user's chat approval authorizes that exact proposal as content for the approved stage; this approval can trigger a whole-specification impact review.",
-  inputSchema: forecastStageProposalShape,
+    "Approve a forecast specification stage proposal. Use when the user explicitly approves the exact proposal as the stage’s final content. Applies the proposal to the active draft and approves the stage in one operation. Requires the current proposal ID, revision bindings, and the complete approved draft copied verbatim from the current proposal, including row IDs. The server rejects any draft that differs from the stored proposal. Approval may trigger a whole-specification impact review.",
+  inputSchema: forecastStageProposalShape.extend({
+    approved_draft_json: z
+      .string()
+      .min(1)
+      .max(64000)
+      .describe(
+        "Complete user-approved proposal draft as JSON, including row IDs.",
+      ),
+  }),
   outputSchema: workspaceActionOutputSchema,
   annotations: {
     readOnlyHint: false,
@@ -1005,10 +988,9 @@ const submit_forecast_question_unitTool = {
 const baseForesightTools: {
   readonly prepare_forecast_specification_stage: typeof prepare_forecast_specification_stageTool;
   readonly create_question_workspace: typeof create_question_workspaceTool;
-  readonly save_forecast_stage_draft: typeof save_forecast_stage_draftTool;
-  readonly propose_forecast_stage_changes: typeof propose_forecast_stage_changesTool;
-  readonly apply_forecast_stage_proposal: typeof apply_forecast_stage_proposalTool;
-  readonly accept_forecast_stage_proposal: typeof accept_forecast_stage_proposalTool;
+  readonly save_chat_authored_forecast_specification_stage_draft: typeof save_chat_authored_forecast_specification_stage_draftTool;
+  readonly propose_forecast_specification_stage_changes: typeof propose_forecast_specification_stage_changesTool;
+  readonly approve_forecast_specification_stage_proposal: typeof approve_forecast_specification_stage_proposalTool;
   readonly discard_forecast_stage_proposal: typeof discard_forecast_stage_proposalTool;
   readonly revalidate_unchanged_forecast_stage: typeof revalidate_unchanged_forecast_stageTool;
   readonly revalidate_unchanged_forecast_stages: typeof revalidate_unchanged_forecast_stagesTool;
@@ -1036,12 +1018,15 @@ const baseForesightTools: {
   readonly submit_news_timeline: typeof submit_news_timelineTool;
   readonly submit_forecast_question_unit: typeof submit_forecast_question_unitTool;
 } = {
-  prepare_forecast_specification_stage: prepare_forecast_specification_stageTool,
+  prepare_forecast_specification_stage:
+    prepare_forecast_specification_stageTool,
   create_question_workspace: create_question_workspaceTool,
-  save_forecast_stage_draft: save_forecast_stage_draftTool,
-  propose_forecast_stage_changes: propose_forecast_stage_changesTool,
-  apply_forecast_stage_proposal: apply_forecast_stage_proposalTool,
-  accept_forecast_stage_proposal: accept_forecast_stage_proposalTool,
+  save_chat_authored_forecast_specification_stage_draft:
+    save_chat_authored_forecast_specification_stage_draftTool,
+  propose_forecast_specification_stage_changes:
+    propose_forecast_specification_stage_changesTool,
+  approve_forecast_specification_stage_proposal:
+    approve_forecast_specification_stage_proposalTool,
   discard_forecast_stage_proposal: discard_forecast_stage_proposalTool,
   revalidate_unchanged_forecast_stage: revalidate_unchanged_forecast_stageTool,
   revalidate_unchanged_forecast_stages:
@@ -1052,7 +1037,8 @@ const baseForesightTools: {
     approve_and_continue_forecast_specificationTool,
   continue_forecast_specification: continue_forecast_specificationTool,
   set_forecast_news_choice: set_forecast_news_choiceTool,
-  get_forecast_specification_stage_review: get_forecast_specification_stage_reviewTool,
+  get_forecast_specification_stage_review:
+    get_forecast_specification_stage_reviewTool,
   decide_forecast_impact_review: decide_forecast_impact_reviewTool,
   approve_forecast_specification: approve_forecast_specificationTool,
   get_approved_forecast_specification: get_approved_forecast_specificationTool,

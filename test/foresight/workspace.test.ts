@@ -222,16 +222,6 @@ test("every mutation requires its base revision and prerequisite bindings", () =
       draft,
       rationale: "An explicit cutoff makes resolution unambiguous.",
     },
-    { kind: "apply_proposal", proposal_id: id() },
-    {
-      kind: "apply_proposal",
-      proposal_id: id(),
-      stage: "defined_terms",
-      draft: {
-        stage: "defined_terms",
-        definitions: [{ id: id(), term: "Rain", definition: "Precipitation." }],
-      },
-    },
     { kind: "discard_proposal", proposal_id: id() },
     { kind: "accept_proposal", proposal_id: id() },
     {

@@ -1,6 +1,6 @@
 # Bleavit Foresight
 
-Maintain one active draft and one question unit. Update it for the same event; ask before replacing it. Use `prepare_forecast_specification_stage` before stage work; follow its skill and references.
+Maintain one active draft and one question unit. Update it for the same event; ask before replacing. Use `prepare_forecast_specification_stage` before stage work; follow its skill and references.
 
 ## Runtime policy
 
@@ -98,8 +98,8 @@ Submission tools validate and store stage content without opening the App. All s
 revision-bound MCP App workspace. The App saves edits through its dedicated draft tool.
 Chat uses operation-specific tools:
 `get_forecast_specification_stage_review` for stage review, stage submission tools for generated
-drafts and proposals, `save_forecast_stage_draft` for an incomplete or direct
-draft edit, dedicated proposal actions for apply, accept, or discard, and the
+drafts and proposals, `save_chat_authored_forecast_specification_stage_draft` for an incomplete or direct
+draft edit, dedicated proposal actions for accept or discard, and the
 revalidation, review-completion, news-choice, approval, and continuation tools
 for their named actions. These tools return structured state without requiring
 the App UI. Model-driven approval and continuation use the operation-specific
@@ -110,12 +110,12 @@ The App replaces only editable payloads, uses a fresh command ID for a new
 operation, and preserves the same ID and payload when retrying a lost
 acknowledgement. Model workflows must not call this App-only tool. If a
 stage-specific submission tool is absent from the live tool catalog, use
-`save_forecast_stage_draft` only when its live schema accepts that stage's
+`save_chat_authored_forecast_specification_stage_draft` only when its live schema accepts that stage's
 complete working draft, with the current preparation receipt and revision
 bindings. If the generic tool rejects the stage or returns no actionable
 validation issue, stop and report the missing tool instead of probing payload
 shapes or switching to a test connector. For a requested revision-bound
-suggestion, use `propose_forecast_stage_changes`. The proposal remains separate
+suggestion, use `propose_forecast_specification_stage_changes`. The proposal remains separate
 from the active draft; its exact changed values and rationale are presented in
 chat, while the App keeps showing the active draft and indicates that the stage
 has a suggestion.
@@ -127,7 +127,7 @@ On an existing record, pass the revision fetched
 before generation. The generator may replace its own latest draft while no
 App edit has occurred since that generation. An App edit marks the draft as
 user-edited; later generated output is then a revision-bound proposal.
-Applying a proposal changes the draft without approving it. `submit_forecast_question_unit`
+Accepting an approved proposal updates and approves the stage. `submit_forecast_question_unit`
 saves a pending question with the current workspace revision. After the user
 approves the exact question unit in chat, approve the saved revision; the App
 then presents the approved question and its ranges for review. Editing alone
@@ -140,7 +140,8 @@ then shown there so they can inspect what was saved. Explain that chat already
 recorded their approval; the workspace display is a review of the saved result,
 not another approval request. Submit the content once without opening the App,
 then approve the exact saved revision. If the submission fails or saves only a
-proposal, do not approve it; follow the relevant recovery or proposal workflow.
+proposal, do not assume approval; follow the proposal workflow and obtain
+explicit approval of its exact content and stage before accepting it.
 Once the approved stage appears in the App, ask only whether the user wants to
 continue to the named next stage. Wait for an explicit yes and use
 `continue_forecast_specification`; do not use `approve_and_continue` to combine
@@ -197,10 +198,9 @@ unchanged App. Preserve local edits on conflict. An incomplete draft may
 be saved with validation issues, but approval requires valid selected content.
 A valid manual edit to a stage that is already approved immediately updates
 that stage's approved content and export; it does not need chat approval. A
-model-generated draft or proposal applied to the active draft remains pending
-explicit stage approval. Applying a proposal after chat approval does not
-approve the stage; use `accept_forecast_stage_proposal` only when the user
-approves both the exact proposal and the stage in one decision. Keep other
+model-generated draft remains pending explicit stage approval. Use
+`approve_forecast_specification_stage_proposal` only when the user approves both the exact
+proposal and the stage in one decision. Keep other
 pending edits distinct from approved content; outdated dependent work must be
 reviewed before finalization. The App shows `↻` for an outdated stage
 that needs review and `!` when a concrete suggestion is pending; a stage may
@@ -287,8 +287,8 @@ When generated output is a proposal against an App-edited draft, include a
 specific to the forecast and source evidence; use short paragraphs or bullets.
 After saving the proposal, show the user the concrete proposed values for each
 changed field in text chat and explain why you recommend them. Ask whether to
-apply that exact suggestion to the active draft. Leave the proposal unapplied
-until the user explicitly approves it in chat.
+apply that exact suggestion and approve the stage. Leave the proposal unapplied
+until the user explicitly approves the exact content and stage in chat.
 
 If a command fails input validation, correct only fields named by the returned
 action and retry once, without fetching or reopening a different stage. If no
@@ -319,20 +319,21 @@ a new choice only when none is saved, or when the user changes their choice.
 Timeline removal follows the News skill reference.
 
 When a concrete proposal exists, present its changed values and rationale in
-chat and ask the user whether to apply that exact proposal to the active draft.
-The App shows the active draft and stage indicators; it does not render the
-pending proposal. On explicit chat approval to use the suggestion, call
-`apply_forecast_stage_proposal`. This replaces the active draft with the
-approved proposal and updates the App, but it does not approve the stage or
-advance. Stage approval remains a separate chat decision after the applied
-draft is visible. Use `accept_forecast_stage_proposal` only when the user
-explicitly approves both the exact proposal and the stage in the same
-decision. If the user keeps or edits the current draft, use
-`discard_forecast_stage_proposal` after their choice; do not treat applying or
-discarding a proposal as approval of a different stage or as permission to
-progress. Use `propose_forecast_stage_changes` for a new chat-authored
-suggestion, and `save_forecast_stage_draft` when they ask to save an incomplete
-or direct edit for review. If there is no proposal, report that no actionable
+chat and ask the user to explicitly approve the exact proposal as the approved
+stage content. The App shows the active draft and stage indicators; it does not
+render the pending proposal. On explicit approval of both, call
+`approve_forecast_specification_stage_proposal` with the current proposal ID, revision bindings,
+and complete proposal draft copied verbatim as `approved_draft_json`, including
+row IDs. This applies the proposal and approves the stage in one operation; it
+does not advance. If the user requests changes, retain the complete proposal
+content, discard that proposal after their request, then create the revised
+proposal using the latest revision bindings and seek approval for its exact
+content. If revision fails, preserve the proposed content in chat for recovery.
+If they keep or edit the current draft,
+use `discard_forecast_stage_proposal` after their choice. Use
+`propose_forecast_specification_stage_changes` for a new chat-authored proposal,
+and `save_chat_authored_forecast_specification_stage_draft` for an incomplete or
+direct edit for review. If there is no proposal, report that no actionable
 improvement was found and keep the draft available.
 Do not progress past a stage until its content has been approved in chat,
 submitted, and marked approved in Bleavit Foresight, and the user has explicitly
