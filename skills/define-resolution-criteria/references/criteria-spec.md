@@ -61,10 +61,19 @@ the end:
 3. **Target and timing** — Follow the question's wording to identify what is
    being forecast. If it asks what a named source will publish, announce, or
    decide, that source action is the target. Otherwise, the target is the
-   underlying event or value and approved sources are evidence for it. State
-   the exact date and any material time and time zone; clarify whether a cutoff
-   applies to the event, measurement period, or publication. If intent is
-   ambiguous and could change the outcome, settle it in the chat interview.
+   underlying event or value and approved sources are evidence for it. Define
+   the exact event predicate, including the subject and jurisdiction when
+   applicable. State the exact deadline, its time zone, and whether the boundary
+   is inclusive or exclusive. Clarify whether the cutoff applies to the event,
+   measurement period, or publication. Distinguish when an event occurred from
+   when it was published or discovered: unless publication by the deadline is
+   itself the target, evidence published or discovered later may establish that
+   the event occurred before the deadline. If late evidence counts, state the
+   evidence cutoff or waiting period after the event deadline, including its
+   time zone and boundary. If late evidence does not count, make the target
+   public confirmation by the deadline rather than the underlying occurrence.
+   If intent is ambiguous and could change the outcome, settle it in the chat
+   interview.
 4. **Sources** — List the exact approved primary source and every approved
    fallback in order, with each fallback's approved trigger. Never promote an
    evidence source into the event being forecast, or add a fallback, without
@@ -72,9 +81,12 @@ the end:
 5. **Method** — Give the resolver actionable steps for locating and applying
    the evidence, including material subject, measure, geography, query,
    aggregation, or cutoff settings.
-6. **Data versions** — When relevant, identify which release or vintage
-   controls and how to handle corrections or material methodology changes.
-   Omit this paragraph when versioning cannot affect the outcome.
+6. **Data versions** — Check whether revisions, corrections, or methodology
+   changes could affect the outcome. When they could, identify which release or
+   vintage controls and how later revisions are treated (for example, the
+   first published value, the final value, or the latest value available at a
+   specified time). If they cannot affect the outcome, no special version rule
+   is needed. Omit this paragraph when versioning cannot affect the outcome.
 7. **Exceptions** — When relevant, resolve material cases such as a source
    failing to publish, conflicting evidence, a canceled or postponed event, or
    an invalidated assumption. State the specific disposition and fallback;
@@ -102,6 +114,16 @@ before submission.
 Make the criteria as determinate as possible: state observable conditions and
 controlling evidence so different resolvers can apply them consistently with
 little room for judgment or after-the-fact disputes.
+
+Before proposing the criteria, test plausible edge cases that could change the
+result, including a silent or late source, disagreement between competent
+official sources, and evidence published or discovered after the deadline
+about an event that may have occurred before it. For offices, legal status,
+multi-step procedures, and similar predicates, define exactly which observable
+state or step satisfies the question. If two competent readers could reach
+opposite outcomes on a plausible material case, resolve the ambiguity in the
+chat interview and revise the criteria before submission; do not treat the
+specification as ready for approval while that disagreement remains.
 
 Make the criteria actionable for a resolver: specify what to check and how to
 apply the outcome condition, evidence hierarchy, and relevant exceptions. State

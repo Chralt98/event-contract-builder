@@ -6,7 +6,7 @@ Use this reference for a new event or an existing draft.
 
 Work out the user's intended forecast in chat before making any Bleavit
 Foresight MCP call or opening the App. Ask only for details that materially
-change the event, outcome, horizon, condition, condition cutoff, unmet
+change the event, outcome, jurisdiction, horizon, condition, condition cutoff, unmet
 disposition, or finite values. Use `request_user_input_async` for each round
 of unresolved material choices about those elements, including missing cutoff
 dates or values and a conditional unit's unmet disposition. Recompute which
@@ -60,6 +60,18 @@ Submit only after the user approves that exact complete unit for entry. If the
 user has selected an option but has not made clear that they want it entered,
 ask in chat before making any Bleavit Foresight MCP call.
 
+For the unit and its later resolution criteria, make the event predicate
+observable and exact, including the relevant jurisdiction. Establish the
+resolution deadline with date, time zone, and an inclusive or exclusive
+boundary. Clarify whether the deadline applies to the event itself, a
+measurement period, or a source's publication, and whether post-deadline
+publication or discovery may prove a pre-deadline event. If it may, specify
+the evidence cutoff or waiting period, including its time zone and boundary.
+If it may not, frame the target as public confirmation by the deadline rather
+than occurrence. The short display question need not carry all this detail
+when the criteria can state it unambiguously, but do not leave a material
+choice implicit.
+
 ## New-event draft
 
 Write a short, conversational, attention-catching display question for the
@@ -77,6 +89,10 @@ Use active voice and a question that makes sense on its own. Questions must be
 The submitted question is one Yes/No forecast question unit. Keep the selected
 intent intact. Do not treat a display question's lack of technical detail as a
 defect; put the measurement rule and evidence standard in resolution criteria.
+If the wording could refer to either an underlying event or a source's act of
+publishing, announcing, or deciding, clarify which one is the target. Do not
+silently equate an event happening by a deadline with its being reported by
+that deadline.
 
 Every forecast question unit is a Yes/No forecast question. A finite variable
 supplies values for a same-named angle-bracket placeholder in the question or
