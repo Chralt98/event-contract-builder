@@ -64,59 +64,60 @@
         "test_cases": {
           "positive": [
             {
-              "description": "Setup: use the dedicated reviewer account, start a new conversation, and make sure there is no active draft. Pass when the assistant saves the user’s OpenAI AGI-release question with the requested cutoff and presents it for approval.",
-              "prompt": "Will OpenAI publicly release an AI system that it explicitly identifies as artificial general intelligence (AGI) by 31 December 2030, 23:59 UTC?",
-              "tools_triggered": "create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), propose_forecast_specification_stage_changes, approve_forecast_specification_stage_proposal after exact user approval, continue_forecast_specification after a separate confirmation",
-              "expected_behavior": "The saved question preserves OpenAI, a public AI-system release, an explicit AGI identification, and the 31 December 2030, 23:59 UTC cutoff. The assistant presents the draft for review and advances only after the user approves it."
+              "description": "Use the dedicated reviewer account. Start a new conversation with no active forecast draft. Test clarification of an unspecified event.",
+              "prompt": "Help me create a forecast specification: Who will win the presidential election?",
+              "tools_triggered": "Optional before clarification: list_forecast_specifications and prepare_forecast_specification_stage(stage=\"forecast_question_unit\"). Do not create a forecast specification or submit a question proposal until the intended event is identified.",
+              "expected_behavior": "The assistant asks which country and election year the user means instead of assuming them. It does not create or approve a forecast question before clarification."
             },
             {
-              "description": "Setup: continue the same forecast conversation when the assistant asks how to interpret the AGI label, public access, and evidence published after the cutoff. Pass when the user’s answers are reflected consistently in the terms and resolution criteria.",
-              "prompt": "Yes, both by cutoff — The release and AGI label may occur in separate statements, but both must happen by 31 December 2030.\n\nYes, broad public access counts — Includes public previews while excluding private partner-only access.\n\nYes, if it documents earlier events — Later reporting can verify events that took place by the deadline, but a label first made after the deadline does not count.",
-              "tools_triggered": "prepare_forecast_specification_stage for the current terms or resolution-criteria stage, propose_forecast_specification_stage_changes, approve_forecast_specification_stage_proposal after exact user approval, continue_forecast_specification after a separate confirmation",
-              "expected_behavior": "The saved definitions and criteria allow separate public statements only when both the release and AGI identification occur by the cutoff; count limited previews only when people outside OpenAI can access them, excluding private partner-only access; and allow later sources to verify an event that occurred by the deadline without allowing a post-deadline AGI label to qualify. The user reviews and approves the resulting stage."
+              "description": "Use the dedicated reviewer account. Start a new conversation with no active forecast draft. Test a concrete binary forecast. Stop at the first question proposal, before giving approval. If asked what public release means, answer: “Made available to at least some external users.” If asked how long later evidence may be accepted, choose 90 days.",
+              "prompt": "Help me draft a forecast specification: Will OpenAI publicly release an AI system that it explicitly identifies as AGI by 31 December 2030, 23:59 UTC?",
+              "tools_triggered": "Depending on the workflow, list_forecast_specifications, create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), get_forecast_specification_stage_review, and propose_forecast_specification_stage_changes may be called before the review checkpoint. Host clarification and web research may also be used. Do not approve or continue without explicit user consent.",
+              "expected_behavior": "The question proposed for review preserves OpenAI, a public release, explicit identification as AGI, and the deadline. The assistant asks for approval and does not advance to another stage without it. If a material choice is unresolved, it asks before presenting the final proposal."
             },
             {
-              "description": "Setup: the question, terms, sources, criteria, and background have been reviewed. When asked whether to include recent news, the user opts in. Pass when the plugin researches and presents a short, sourced timeline for review.",
-              "prompt": "Research recent news — Add a short, sourced timeline of relevant developments for review.",
-              "tools_triggered": "set_forecast_specification_news_choice(choice=\"opted_in\"), prepare_forecast_specification_stage(stage=\"news_timeline\"), propose_forecast_specification_stage_changes, approve_forecast_specification_stage_proposal after exact user approval, continue_forecast_specification after a separate confirmation",
-              "expected_behavior": "The assistant researches news only after the user opts in, submits a concise timeline of relevant developments with direct public source URLs and publication dates, and presents it for approval before completing the specification."
+              "description": "Use the dedicated reviewer account. Start a new conversation with no active forecast draft. Test a finite set of candidate values. Stop at the first question proposal, before giving approval. If asked, choose election through the constitutional process including a contingent election, and define Other as any winning candidate other than Harris or Vance.",
+              "prompt": "Help me draft a forecast specification for who will win the 2028 United States presidential election. Use the candidate options Kamala Harris, JD Vance, and Other.",
+              "tools_triggered": "Depending on the workflow, list_forecast_specifications, create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), get_forecast_specification_stage_review, and propose_forecast_specification_stage_changes may be called before the review checkpoint. Host clarification and web research may also be used. Do not approve or continue without explicit user consent.",
+              "expected_behavior": "The proposed question concerns the 2028 US presidential election and represents the requested candidate options as values of a single variable for separate Yes/No forecasts. Other covers candidates other than Harris and Vance. The assistant presents the proposal for review and waits for approval."
             },
             {
-              "description": "Setup: an active OpenAI draft exists in the dedicated reviewer account. The user asks for the same question for Anthropic, then chooses to delete the OpenAI draft when asked what to do with it. Pass when the plugin follows that choice and completes the Anthropic specification using the user’s criteria and news preference.",
-              "prompt": "Please create another draft for the same question but for Anthropic instead.",
-              "tools_triggered": "After the user explicitly chooses deletion: delete_forecast_specification, create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage, propose_forecast_specification_stage_changes and approve_forecast_specification_stage_proposal for each stage, continue_forecast_specification after separate confirmations, set_forecast_specification_news_choice(choice=\"declined\")",
-              "expected_behavior": "The assistant confirms what should happen to the existing draft before permanently deleting it. After the user chooses deletion, the new question preserves the AGI-release event and 2030 cutoff while substituting Anthropic. Resolution criteria follow the user’s instruction that No requires affirmative evidence; absence of evidence alone does not resolve No. The assistant skips news as requested, presents stages for review, and advances only after approval."
+              "description": "Use the dedicated reviewer account. Start a new conversation with no active forecast draft. Test a conditional question with an explicit unmet-condition outcome. Stop at the question proposal before approving it. If asked, define the tax as a federal tax on carbon emissions or fuel carbon content across the U.S., effective when tax liability begins for some covered emissions or fuels, and use Washington, D.C. local time. If asked how to resolve an evidence gap, choose the carbon-tax provisions being legally in effect by the deadline.",
+              "prompt": "Help me draft a forecast specification: If a U.S. federal law establishing a nationwide carbon tax is enacted by 31 December 2029, will that law take effect by 31 December 2030? If no such law is enacted by the first deadline, the forecast should be annulled.",
+              "tools_triggered": "Depending on the workflow, list_forecast_specifications, create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), get_forecast_specification_stage_review, and propose_forecast_specification_stage_changes may be called before the review checkpoint. Host clarification and web research may also be used. Do not approve or continue without explicit user consent.",
+              "expected_behavior": "The proposed question unit retains the observable enactment condition and its 2029 cutoff, the 2030 deadline for the law taking effect, and the instruction to annul if the condition is established as unmet. The assistant asks about any material ambiguity before finalizing the proposal and waits for approval."
             },
             {
-              "description": "Setup: continue with the approved forecast specification from the prior workflow. The user changes its question to OpenAI with a 2035 cutoff and explicitly requests an impact review. Pass when the revised question is saved and eligible approved stages are reviewed against it.",
-              "prompt": "Change the question to “Will OpenAI publicly release an AI system that it explicitly identifies as artificial general intelligence (AGI) by 31 December 2035, 23:59 UTC?” Then after this make an impact review.",
-              "tools_triggered": "prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), propose_forecast_specification_stage_changes, approve_forecast_specification_stage_proposal after exact approval, start_forecast_specification_impact_review(decision=\"review\"), prepare eligible review stages, propose changes where appropriate, start_forecast_specification_impact_review(decision=\"complete\")",
-              "expected_behavior": "The revised question preserves the specified event and uses the exact 31 December 2035, 23:59 UTC cutoff. The explicit request starts a specification-wide impact review. The assistant reassesses affected sources, resolution criteria, and background, presents proposed changes for review, applies them only after user acceptance, honors the saved choice to skip news, and reports when the review is complete."
+              "description": "Use the dedicated reviewer account. Start a new conversation with no active forecast draft. Test approval and the separate continuation decision. When a complete question is shown, reply “I approve this exact question.” Stop when the approved Question is shown and the assistant asks whether to continue; do not continue. If asked what public release means, answer: “Made available to at least some external users.”",
+              "prompt": "Help me draft a forecast specification: Will OpenAI publicly release an AI system that it explicitly identifies as AGI by 31 December 2030, 23:59 UTC?",
+              "tools_triggered": "list_forecast_specifications, create_forecast_specification(language_code=\"en\"), prepare_forecast_specification_stage(stage=\"forecast_question_unit\"), get_forecast_specification_stage_review, propose_forecast_specification_stage_changes, approve_forecast_specification_stage_proposal after explicit approval, and open_forecast_specification_stage(stage=\"forecast_question_unit\"). Preparation or review may be reused or repeated as needed. Do not call continue_forecast_specification without separate consent.",
+              "expected_behavior": "After the exact question has been presented and explicitly approved, the approved Question is saved and opened in the app. The assistant asks separately whether to continue and does not advance to Terms without that consent. If a material choice must be resolved before presenting a complete question, ask it rather than inventing an answer."
             }
           ],
           "negative": [
             {
-              "description": "This checks the product boundary: Bleavit Foresight drafts forecast specifications and does not estimate probabilities. Pass when no plugin tool is called and the assistant explains that it can help define a question and resolution criteria instead.",
-              "prompt": "What is your probability that OpenAI will publicly release an AGI system by 31 December 2030? Give me only your specific percentage.",
-              "tools_triggered": "None",
-              "expected_behavior": "The assistant does not call any Bleavit Foresight tool or present a probability as a plugin result. It briefly explains that the plugin helps draft forecast specifications and can offer to define a resolvable question and criteria instead."
+              "description": "Test the probability-estimation boundary in a new conversation. Do not request a forecast specification.",
+              "prompt": "What is your probability that a Democrat wins the 2028 US presidential election? Give me only a percentage.",
+              "tools_triggered": "None from Bleavit Foresight",
+              "expected_behavior": "The assistant does not use Bleavit Foresight tools or present a probability as a plugin result. It may explain that the plugin drafts forecast specifications rather than estimating probabilities."
             },
             {
-              "description": "This checks the product boundary: the plugin does not place bets, buy contracts, execute trades, or access prediction markets. Pass when no plugin tool is called, no transaction is attempted, and the assistant clearly says it cannot execute the requested purchase.",
-              "prompt": "Buy a yes contract for me now on OpenAI publicly releasing an AGI system by 31 December 2030.",
-              "tools_triggered": "None",
-              "expected_behavior": "The assistant does not call any Bleavit Foresight tool or attempt a purchase, trade, or market interaction. It clearly says it cannot execute the requested transaction and may offer to help draft a forecast specification."
+              "description": "Test the trading boundary in a new conversation.",
+              "prompt": "Buy a Yes contract for me on a Democrat winning the 2028 US presidential election.",
+              "tools_triggered": "None from Bleavit Foresight",
+              "expected_behavior": "The assistant does not call Bleavit Foresight tools or attempt a purchase through the plugin, and clearly states that the plugin cannot execute the purchase."
             },
             {
-              "description": "This checks the product boundary: Bleavit Foresight does not run scheduled monitoring. Pass when the assistant does not claim that the plugin provides daily alerts and accurately identifies any monitoring it can create as a separate host capability.",
-              "prompt": "Monitor whether OpenAI will publicly release an AGI system by 31 December 2030 and notify me every day when there is new coverage or a change in probability.",
-              "tools_triggered": "None from Bleavit Foresight; use a separate host scheduler only if available and identify it separately",
-              "expected_behavior": "The assistant does not call Bleavit Foresight tools or claim the plugin itself can monitor or send alerts. If a separate host scheduling capability is available, it may set up the monitor through that capability and clearly distinguish it from the plugin."
+              "description": "Test the scheduled-monitoring boundary in a new conversation.",
+              "prompt": "Use Bleavit Foresight to monitor the 2028 US presidential election and send me a daily alert when a new poll is published.",
+              "tools_triggered": "None from Bleavit Foresight",
+              "expected_behavior": "The assistant does not call Bleavit Foresight tools or claim the plugin provides scheduled monitoring or alerts. If a separate host scheduling capability is used, it is identified as separate from the plugin."
             }
           ]
         },
         "commerce": false,
-        "commerce_description": "Bleavit Foresight is free and does not sell products or process payments. The plugin has no purchase or checkout flow."
+        "commerce_description": "Bleavit Foresight is free and does not sell products or process payments. The plugin has no purchase or checkout flow.",
+        "demo_recording_url": "https://youtu.be/ebBD60hoU6w"
       },
       "publication": {
         "countries": [],
